@@ -15,7 +15,7 @@ Concolic testing alternates between CONCrete program execution and symbOLIC anal
 ![alt text](PaperData/Adversarial_Examples.png)
 ![alt text](PaperData/Concolic_Testing_Results.png)
 ![alt text](PaperData/Distance_Comparison.png)
-![alt text](PaperData/Lipschitz_Constant_CoverageDistance_Comparison.png)
+![alt text](PaperData/Lipschitz_Constant_Coverage.png)
 
 # Run
 Two examples:
@@ -50,5 +50,6 @@ archivePrefix = "arXiv",
 # Remark
 This tool is under active development and maintenance, please feel free to contact us about any problem encountered.
 youcheng.sun@cs.ox.ac.uk
+
 min.wu@cs.ox.ac.uk
 
