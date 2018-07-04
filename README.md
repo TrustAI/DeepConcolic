@@ -28,6 +28,17 @@ python MNIST_nc.py ../../saved_models/mnist_complicated.h5
 L0 norm/CIFAR10:
 ```
 python CIFAR10_nc.py ../../saved_models/cifar10_complicated.h5
+
+# Dependencies
+We suggest create an environment using `conda`
+```
+conda create --name deepconcolic
+source activate deepconcolic
+conda install keras
+```
+
+
+
 ```
 
 # Citation
