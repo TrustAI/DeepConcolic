@@ -37,6 +37,7 @@ class cover_layert:
     self.layer_index=layer_index
     self.is_conv=is_conv
     self.activations=[]
+    self.pfactor=1.0 ## the proportional factor
 
 def get_layer_functions(dnn):
   layer_functions=[]
@@ -75,6 +76,21 @@ def eval_batch(layer_functions, ims):
     else:
       activations.append(layer_functions[l]([activations[l-1]])[0])
   return activations
+
+class raw_datat:
+  def __init__(self, data, labels):
+    self.data=data
+    self.labels=labels
+
+
+class test_objectt:
+  def __init__(self, dnn, raw_data, criterion, norm):
+    self.dnn=dnn
+    self.raw_data=raw_data
+    ## test config
+    self.norm=norm
+    self.criterion=criterion
+    self.channels_last=True
 
 #def show_adversarial_examples(imgs, ys, name):
 #  for i in range(0, 2):

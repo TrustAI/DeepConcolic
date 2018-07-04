@@ -12,27 +12,69 @@ from keras import *
 
 from utils import *
 
-class raw_datat:
-  def __init__(self, data, labels):
-    self.data=data
-    self.labels=labels
 
-class test_objectt:
-  def __init__(self, dnn, raw_data, criterion, norm):
-    self.dnn=dnn
-    self.raw_data=raw_data
-    ## test config
-    self.norm=norm
-    self.criterion=criterion
-    self.channels_last=True
+#def calculate_pfactors(actiavtions_, cover_layers_):
+#  print(len(activations_))
+#  #fks=[]
+#  #for clayer in cover_layers:
+#  #  layer_index=clayer.layer_index
+#  #  print(layer_index)
+#  #  sub_acts=np.abs(activations[layer_index])
+#  #  fks.append(np.average(sub_acts))
+#  #av=np.average(fks)
+#  #for i in range(0, len(fks)):
+#  #  cover_layers[i].pfactor=av/fks[i]
 
-def deepconcolic(test_object):
-  print('\n== Start DeepConcolic testing ==\n')
+def calculate_pfactors(activations, cover_layers):
+  pass
+  fks=[]
+  for clayer in cover_layers:
+    layer_index=clayer.layer_index
+    sub_acts=np.abs(activations[layer_index])
+    fks.append(np.average(sub_acts))
+  av=np.average(fks)
+  for i in range(0, len(fks)):
+    cover_layers[i].pfactor=av/fks[i]
+
+def run_nc_linf(test_object):
+  print('\n== nc, linf ==\n')
+  ## DIR to store outputs
+  outs = "concolic-nc-linf" + str(datetime.now()).replace(' ', '-') + '/'
+  outs=outs.replace(' ', '-')
+  outs=outs.replace(':', '-') ## windows compatibility
+  os.system('mkdir -p {0}'.format(outs))
 
   layer_functions=get_layer_functions(test_object.dnn)
   print('\n== Got layer functions: {0} ==\n'.format(len(layer_functions)))
   cover_layers=get_cover_layers(test_object.dnn)
   print('\n== Got cover layers: {0} ==\n'.format(len(cover_layers)))
+
+  activations = eval_batch(layer_functions, test_object.raw_data.data[0:10])
+  print(activations[0].shape)
+  print(len(activations))
+
+  calculate_pfactors(activations, cover_layers)
+
+
+def deepconcolic(test_object):
+  print('\n== Start DeepConcolic testing ==\n')
+  if test_object.criterion=='NC': ## neuron cover
+    if test_object.norm=='linf':
+      run_nc_linf(test_object)
+    elif test_object.norm=='l0':
+      pass #run_nc_l0(test_object)
+    else:
+      print('\n not supported norm...\n')
+      sys.exit(0)
+  else:
+      print('\n for now, let us focus on neuron cover...\n')
+      sys.exit(0)
+
+
+  #layer_functions=get_layer_functions(test_object.dnn)
+  #print('\n== Got layer functions: {0} ==\n'.format(len(layer_functions)))
+  #cover_layers=get_cover_layers(test_object.dnn)
+  #print('\n== Got cover layers: {0} ==\n'.format(len(cover_layers)))
 
   #for c_layer in cover_layers:
   #  isp=c_layer.layer.input.shape
@@ -50,21 +92,22 @@ def deepconcolic(test_object):
   #                #print("SSCover lp: {0}-{1}-{2}".format(c_layer.layer_index, [o_j, o_k, o_i], [i_j, i_k, i_i]))
 
 
-def cover(test_object):
-  ## we start from SSC
-  if (criterion=='SSC'):
-    sscover(test_object)
-  else:
-    print('More to be added...')
-    return
+#def cover(test_object):
+#  ## we start from SSC
+#  if (criterion=='SSC'):
+#    sscover(test_object)
+#  else:
+#    print('More to be added...')
+#    return
 
 def main():
   ## for testing purpose we fix the aicover configuration
   ##
   dnn=load_model("../saved_models/cifar10_complicated.h5")
+  dnn.summary()
   #dnn=VGG16()
   ##
-  criterion='SSC'
+  criterion='NC'
   img_rows, img_cols = 32, 32
   (x_train, y_train), (x_test, y_test) = cifar10.load_data()
   x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, 3)
