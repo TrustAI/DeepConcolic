@@ -18,36 +18,39 @@ class raw_datat:
     self.labels=labels
 
 class test_objectt:
-  def __init__(self, dnn, raw_data, norm):
+  def __init__(self, dnn, raw_data, criterion, norm):
     self.dnn=dnn
     self.raw_data=raw_data
+    ## test config
+    self.norm=norm
+    self.criterion=criterion
     self.channels_last=True
 
-def sscover(test_object):
-  print('\n== Start SSCover testing ==\n')
+def deepconcolic(test_object):
+  print('\n== Start DeepConcolic testing ==\n')
 
   layer_functions=get_layer_functions(test_object.dnn)
   print('\n== Got layer functions: {0} ==\n'.format(len(layer_functions)))
   cover_layers=get_cover_layers(test_object.dnn)
   print('\n== Got cover layers: {0} ==\n'.format(len(cover_layers)))
 
-  for c_layer in cover_layers:
-    isp=c_layer.layer.input.shape
-    osp=c_layer.layer.output.shape
-    if c_layer.is_conv:
-      ## output 
-      for o_i in range(0, osp[3]): # by default, we assume channel last
-        for o_j in range(0, osp[1]):
-          for o_k in range(0, osp[2]):
-            ## input 
-            for i_i in range(0, isp[3]): # by default, we assume channel last
-              for i_j in range(0, isp[1]):
-                for i_k in range(0, isp[2]):
-                  sscover_lp(c_layer.layer_index, [o_j, o_k, o_i], [i_j, i_k, i_i], test_object, layer_functions)
-                  #print("SSCover lp: {0}-{1}-{2}".format(c_layer.layer_index, [o_j, o_k, o_i], [i_j, i_k, i_i]))
+  #for c_layer in cover_layers:
+  #  isp=c_layer.layer.input.shape
+  #  osp=c_layer.layer.output.shape
+  #  if c_layer.is_conv:
+  #    ## output 
+  #    for o_i in range(0, osp[3]): # by default, we assume channel last
+  #      for o_j in range(0, osp[1]):
+  #        for o_k in range(0, osp[2]):
+  #          ## input 
+  #          for i_i in range(0, isp[3]): # by default, we assume channel last
+  #            for i_j in range(0, isp[1]):
+  #              for i_k in range(0, isp[2]):
+  #                sscover_lp(c_layer.layer_index, [o_j, o_k, o_i], [i_j, i_k, i_i], test_object, layer_functions)
+  #                #print("SSCover lp: {0}-{1}-{2}".format(c_layer.layer_index, [o_j, o_k, o_i], [i_j, i_k, i_i]))
 
 
-def cover(test_object, criterion):
+def cover(test_object):
   ## we start from SSC
   if (criterion=='SSC'):
     sscover(test_object)
@@ -58,7 +61,7 @@ def cover(test_object, criterion):
 def main():
   ## for testing purpose we fix the aicover configuration
   ##
-  dnn=load_model("models/cifar10_complicated.h5")
+  dnn=load_model("../saved_models/cifar10_complicated.h5")
   #dnn=VGG16()
   ##
   criterion='SSC'
@@ -69,7 +72,7 @@ def main():
   x_test /= 255
   raw_data=raw_datat(x_test, y_test)
 
-  cover(test_objectt(dnn, raw_data), criterion, "linf")
+  deepconcolic(test_objectt(dnn, raw_data, criterion, "linf"))
 
 if __name__=="__main__":
   main()
