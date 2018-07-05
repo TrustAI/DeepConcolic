@@ -10,31 +10,26 @@ from keras.layers import *
 from keras import *
 
 
+
 from utils import *
 
 
-#def calculate_pfactors(actiavtions_, cover_layers_):
-#  print(len(activations_))
-#  #fks=[]
-#  #for clayer in cover_layers:
-#  #  layer_index=clayer.layer_index
-#  #  print(layer_index)
-#  #  sub_acts=np.abs(activations[layer_index])
-#  #  fks.append(np.average(sub_acts))
-#  #av=np.average(fks)
-#  #for i in range(0, len(fks)):
-#  #  cover_layers[i].pfactor=av/fks[i]
-
-def calculate_pfactors(activations, cover_layers):
-  pass
-  fks=[]
-  for clayer in cover_layers:
-    layer_index=clayer.layer_index
-    sub_acts=np.abs(activations[layer_index])
-    fks.append(np.average(sub_acts))
-  av=np.average(fks)
-  for i in range(0, len(fks)):
-    cover_layers[i].pfactor=av/fks[i]
+def update_nc_map(clayers, layer_functions, im):
+  activations=eval(layer_functions, im)
+  for clayer in clayers:
+    act=activations[clayer.layer_index]
+    act[act>=0]=1
+    act=1.0/act
+    act[act>0]=0
+    act=np.abs(act)
+    clayer.activations.append(act)
+    if clayer.nc_map==None: ## not initialized yet
+      clayer.initialize_nc_map()
+      clayer.nc_map=np.logical_or(clayer.nc_map, act)
+    else:
+      clayer.nc_map=np.logical_and(clayer.nc_map, act)
+    ## update activations after nc_map change
+    clayer.update_activations() 
 
 def run_nc_linf(test_object):
   print('\n== nc, linf ==\n')
@@ -46,7 +41,7 @@ def run_nc_linf(test_object):
 
   layer_functions=get_layer_functions(test_object.dnn)
   print('\n== Got layer functions: {0} ==\n'.format(len(layer_functions)))
-  cover_layers=get_cover_layers(test_object.dnn)
+  cover_layers=get_cover_layers(test_object.dnn, 'NC')
   print('\n== Got cover layers: {0} ==\n'.format(len(cover_layers)))
 
   activations = eval_batch(layer_functions, test_object.raw_data.data[0:10])
@@ -54,6 +49,19 @@ def run_nc_linf(test_object):
   print(len(activations))
 
   calculate_pfactors(activations, cover_layers)
+
+  ### configuration phase done
+
+  test_cases=[]
+
+  xdata=test_object.raw_data.data
+  iseed=np.random.randint(0, len(xdata))
+  im=xdata[iseed]
+
+  test_cases.append(im)
+  update_nc_map(cover_layers, layer_functions, im)
+  y = test_object.dnn.predict_classes(np.array([im]))[0]
+  save_an_image(im, 'seed-image', outs)
 
 
 def deepconcolic(test_object):
