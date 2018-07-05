@@ -12,24 +12,7 @@ from keras import *
 
 
 from utils import *
-
-
-def update_nc_map(clayers, layer_functions, im):
-  activations=eval(layer_functions, im)
-  for clayer in clayers:
-    act=activations[clayer.layer_index]
-    act[act>=0]=1
-    act=1.0/act
-    act[act>0]=0
-    act=np.abs(act)
-    clayer.activations.append(act)
-    if clayer.nc_map==None: ## not initialized yet
-      clayer.initialize_nc_map()
-      clayer.nc_map=np.logical_or(clayer.nc_map, act)
-    else:
-      clayer.nc_map=np.logical_and(clayer.nc_map, act)
-    ## update activations after nc_map change
-    clayer.update_activations() 
+from nc_lp import *
 
 def run_nc_linf(test_object):
   print('\n== nc, linf ==\n')
@@ -57,11 +40,12 @@ def run_nc_linf(test_object):
   adversarials=[]
 
   xdata=test_object.raw_data.data
-  iseed=np.random.randint(0, len(xdata))
+  iseed=100 #np.random.randint(0, len(xdata))
   im=xdata[iseed]
 
   test_cases.append(im)
-  update_nc_map(cover_layers, layer_functions, im)
+  #update_nc_map(cover_layers, layer_functions, im)
+  update_nc_map_via_inst(cover_layers, eval(layer_functions, im))
   covered, not_covered=nc_report(cover_layers)
   print('\n== neuron coverage: {0}==\n'.format(covered*1.0/(covered+not_covered)))
   y = test_object.dnn.predict_classes(np.array([im]))[0]
@@ -69,6 +53,33 @@ def run_nc_linf(test_object):
   f = open(nc_results, "a")
   f.write('NC-cover {0} {1} {2} seed: {3}\n'.format(1.0 * covered / (covered + not_covered), len(test_cases), len(adversarials), iseed))
   f.close()
+
+  while True:
+    nc_layer, nc_pos, nc_value=get_nc_next(cover_layers)
+    #print (nc_layer.layer_index, nc_pos, nc_value/nc_layer.pfactor)
+    print (np.array(nc_layer.activations).shape)
+    pos=np.unravel_index(nc_pos, np.array(nc_layer.activations).shape)
+    im=test_cases[pos[0]]
+    act_inst=eval(layer_functions, im)
+
+    s=pos[0]*(pos[1])
+    if nc_layer.is_conv:
+      s*=(pos[2])*(pos[3])
+
+    feasible, d, new_im=negate(test_object.dnn, act_inst, nc_layer, nc_pos-s)
+    
+    new_im=xdata[201]
+    feasible=True
+
+    test_cases.append(new_im)
+    nc_layer.disable_by_pos(pos)
+    if feasible:
+      update_nc_map_via_inst(cover_layers, eval(layer_functions, new_im))
+    covered, not_covered=nc_report(cover_layers)
+    f = open(nc_results, "a")
+    f.write('NC-cover {0} {1} {2} \n'.format(1.0 * covered / (covered + not_covered), len(test_cases), len(adversarials)))
+    f.close()
+    break
 
 
 def deepconcolic(test_object):

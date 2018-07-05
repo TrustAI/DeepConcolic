@@ -5,6 +5,8 @@ from keras import backend as K
 import numpy as np
 from PIL import Image
 
+MIN=-100000
+
 ## some DNN model has an explicit input layer
 def is_input_layer(layer):
   return str(layer).find('InputLayer')>=0
@@ -51,9 +53,30 @@ class cover_layert:
       self.cover_map = np.zeros((1, sp[1]), dtype=bool)
 
   def update_activations(self):
-    self.activations=[np.multiply(act, self.nc_map) for act in self.activations]
-    #for i in range(0, len(self.activations)):
-    #  self.activations[i] = np.multiply(self.activations[i], self.nc_map)
+    #self.activations=[np.multiply(act, self.nc_map) for act in self.activations]
+    for act in self.activations:
+      act=np.multiply(act, self.nc_map)
+      act[act>=0]=MIN
+
+  ## to get the index of the next property to be satisfied
+  def get_nc_next(self):
+    spos = np.array(self.activations).argmax()
+    return spos, np.array(self.activations).item(spos)
+
+  def disable_by_pos(self, pos):
+    if self.is_conv:
+      self.activations[pos[0]][pos[1]][pos[2]][pos[3]][pos[4]]=MIN
+    else:
+      self.activations[pos[0]][pos[1]][pos[2]]=MIN
+
+def get_nc_next(clayers):
+  nc_layer, nc_pos, nc_value = None, None, MIN
+  for clayer in clayers:
+    pos, v=clayer.get_nc_next()
+    v*=clayer.pfactor
+    if v > nc_value:
+      nc_layer, nc_pos, nc_value= clayer, pos, v
+  return nc_layer, nc_pos, nc_value
 
 def get_layer_functions(dnn):
   layer_functions=[]
@@ -117,6 +140,24 @@ def calculate_pfactors(activations, cover_layers):
   av=np.average(fks)
   for i in range(0, len(fks)):
     cover_layers[i].pfactor=av/fks[i]
+
+def update_nc_map_via_inst(clayers, activations):
+  for clayer in clayers:
+    act=activations[clayer.layer_index]
+    act[act>=0]=0
+    if clayer.nc_map is None: ## not initialized yet
+      clayer.initialize_nc_map()
+      clayer.nc_map=np.logical_or(clayer.nc_map, act)
+    else:
+      clayer.nc_map=np.logical_and(clayer.nc_map, act)
+    ## update activations after nc_map change
+    #act[act>=0]=MIN
+    clayer.activations.append(act)
+    clayer.update_activations() 
+
+#def update_nc_map(clayers, layer_functions, im):
+#  activations=eval(layer_functions, im)
+#  update_nc_map_via_inst(clayers, activations)
 
 def nc_report(clayers):
   covered = 0
