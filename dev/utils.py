@@ -118,6 +118,21 @@ def calculate_pfactors(activations, cover_layers):
   for i in range(0, len(fks)):
     cover_layers[i].pfactor=av/fks[i]
 
+def nc_report(clayers):
+  covered = 0
+  non_covered = 0
+  for layer in clayers:
+    c = np.count_nonzero(layer.nc_map)
+    sp = layer.nc_map.shape
+    tot = 0
+    if layer.is_conv:
+        tot = sp[0] * sp[1] * sp[2] * sp[3]
+    else:
+        tot = sp[0] * sp[1]
+    non_covered += c
+    covered += (tot - c)
+  return covered, non_covered
+
 def save_an_image(im, title, di='./'):
   ## we assume im is normalized
   img=Image.fromarray(np.uint8(im*255))

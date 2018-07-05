@@ -38,6 +38,7 @@ def run_nc_linf(test_object):
   outs=outs.replace(' ', '-')
   outs=outs.replace(':', '-') ## windows compatibility
   os.system('mkdir -p {0}'.format(outs))
+  nc_results=outs+'nc_report.txt'
 
   layer_functions=get_layer_functions(test_object.dnn)
   print('\n== Got layer functions: {0} ==\n'.format(len(layer_functions)))
@@ -53,6 +54,7 @@ def run_nc_linf(test_object):
   ### configuration phase done
 
   test_cases=[]
+  adversarials=[]
 
   xdata=test_object.raw_data.data
   iseed=np.random.randint(0, len(xdata))
@@ -60,8 +62,13 @@ def run_nc_linf(test_object):
 
   test_cases.append(im)
   update_nc_map(cover_layers, layer_functions, im)
+  covered, not_covered=nc_report(cover_layers)
+  print('\n== neuron coverage: {0}==\n'.format(covered*1.0/(covered+not_covered)))
   y = test_object.dnn.predict_classes(np.array([im]))[0]
   save_an_image(im, 'seed-image', outs)
+  f = open(nc_results, "a")
+  f.write('NC-cover {0} {1} {2} seed: {3}\n'.format(1.0 * covered / (covered + not_covered), len(test_cases), len(adversarials), iseed))
+  f.close()
 
 
 def deepconcolic(test_object):
@@ -78,35 +85,6 @@ def deepconcolic(test_object):
       print('\n for now, let us focus on neuron cover...\n')
       sys.exit(0)
 
-
-  #layer_functions=get_layer_functions(test_object.dnn)
-  #print('\n== Got layer functions: {0} ==\n'.format(len(layer_functions)))
-  #cover_layers=get_cover_layers(test_object.dnn)
-  #print('\n== Got cover layers: {0} ==\n'.format(len(cover_layers)))
-
-  #for c_layer in cover_layers:
-  #  isp=c_layer.layer.input.shape
-  #  osp=c_layer.layer.output.shape
-  #  if c_layer.is_conv:
-  #    ## output 
-  #    for o_i in range(0, osp[3]): # by default, we assume channel last
-  #      for o_j in range(0, osp[1]):
-  #        for o_k in range(0, osp[2]):
-  #          ## input 
-  #          for i_i in range(0, isp[3]): # by default, we assume channel last
-  #            for i_j in range(0, isp[1]):
-  #              for i_k in range(0, isp[2]):
-  #                sscover_lp(c_layer.layer_index, [o_j, o_k, o_i], [i_j, i_k, i_i], test_object, layer_functions)
-  #                #print("SSCover lp: {0}-{1}-{2}".format(c_layer.layer_index, [o_j, o_k, o_i], [i_j, i_k, i_i]))
-
-
-#def cover(test_object):
-#  ## we start from SSC
-#  if (criterion=='SSC'):
-#    sscover(test_object)
-#  else:
-#    print('More to be added...')
-#    return
 
 def main():
   ## for testing purpose we fix the aicover configuration
