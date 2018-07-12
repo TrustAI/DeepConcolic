@@ -20,11 +20,14 @@ def is_dense_layer(layer):
 def is_activation_layer(layer):
   return str(layer).find('activation')>=0 or str(layer).find('Activation')>=0
 
-def get_activation(layer):
-  if str(layer.activation).find('relu')>=0: return 'relu'
-  elif  str(layer.activation).find('linear')>=0: return 'linear'
-  elif  str(layer.activation).find('softmax')>=0: return 'softmax'
-  else: return ''
+def act_in_the_layer(layer):
+  try:
+    act=str(layer.activation)
+    if act.find('relu')>=0: return 'relu'
+    elif act.find('softmax')>=0: return 'softmax'
+    else: return ''
+  except:
+    return ''
 
 def is_maxpooling_layer(layer):
   return str(layer).find('MaxPooling')>=0 
@@ -34,6 +37,13 @@ def is_flatten_layer(layer):
 
 def is_dropout_layer(layer):
   return False ## we do not allow dropout
+
+def get_activation(layer):
+  if str(layer.activation).find('relu')>=0: return 'relu'
+  elif  str(layer.activation).find('linear')>=0: return 'linear'
+  elif  str(layer.activation).find('softmax')>=0: return 'softmax'
+  else: return ''
+
 
 class cover_layert:
   def __init__(self, layer, layer_index, is_conv):
