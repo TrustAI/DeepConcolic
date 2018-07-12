@@ -4,10 +4,12 @@ import sys
 import numpy as np
 
 from utils import *
+from lp_encoding import *
 
 epsilon=1.0/(255)
 
-def base_constraints(dnn):
+
+def create_base_constraints(dnn):
 
   var_names=[]
   var_names_vect=[]
@@ -195,8 +197,8 @@ def base_constraints(dnn):
       continue
     elif is_conv_layer(layer):
       if l==0:
-        the_index+=1
-        continue
+        #the_index+=1
+        pass
       the_index+=1
       isp=var_names[the_index-1].shape
       osp=var_names[the_index].shape
@@ -217,6 +219,7 @@ def base_constraints(dnn):
                 for II in range(0, kernel_size[0]):
                   for JJ in range(0, kernel_size[1]):
                     for KK in range(0, weights.shape[2]):
+                      print (weights.shape)
                       constraint[0].append(var_names[the_index-1][0][J+II][K+JJ][KK])
                       constraint[1].append(float(weights[II][JJ][KK][L]))
                 constraints.append(constraint)
@@ -227,6 +230,68 @@ def base_constraints(dnn):
                 rhs.append(0)
                 constraint_senses.append('E')
                 constraint_names.append('')
+      if act_in_the_layer(layer)=='relu': the_index+=1
+    elif is_dense_layer(layer):
+      the_index+=1
+      isp=var_names[the_index-1].shape
+      osp=var_names[the_index].shape
+      weight_index+=1
+      weights=tot_weights[weight_index]
+      weight_index+=1
+      biases=tot_weights[weight_index]
+      for I in range(0, osp[0]):
+        for J in range(0, osp[1]):
+          print ('dense == ', l, ' == ', I, J)
+          constraint=[[], []]
+          constraint[0].append(var_names[the_index][I][J])
+          constraint[1].append(-1)
+          for II in range(0, isp[1]):
+            print (weights.shape)
+            constraint[0].append(var_names[the_index-1][0][II])
+            constraint[1].append(float(weights[II][J]))
+
+          constraints.append(constraint)
+          rhs.append(-float(biases[J])) 
+          constraint_senses.append('E')
+          constraint_names.append('')
+      if act_in_the_layer(layer)=='relu': the_index+=1
+    elif is_flatten_layer(layer):
+      the_index+=1
+      isp=var_names[the_index-1].shape
+      osp=var_names[the_index].shape
+
+      print (isp, osp)
+
+      tot=isp[1]*isp[2]*isp[3]
+      for I in range(0, tot):
+        print ('flatten, == ', l, ' == ', I)
+        d0=I/(isp[2]*isp[3])
+        d1=(I%(isp[2]*isp[3]))/isp[3]
+        d2=I-d0*(isp[2]*isp[3])-d1*isp[3]
+        constraint=[[], []]
+        constraint[0].append(var_names[the_index][0][I])
+        constraint[1].append(-1)
+        constraint[0].append(var_names[the_index-1][0][d0][d1][d2])
+        constraint[1].append(+1)
+
+        constraints.append(constraint)
+        constraint_senses.append('E')
+        rhs.append(0)
+        constraint_names.append('')
+    elif is_activation_layer(layer):
+      if str(layer).find('relu')<0: continue ## well, we only consider ReLU activation layer
+      the_index+=1
+      continue
+    elif is_maxpooling_layer(layer):
+      the_index+=1
+      isp=var_names[the_index-1].shape
+      osp=var_names[the_index].shape
+      continue
+    else:
+      print ('Unknown layer', layer)
+      sys.exit(0)
+
+  return base_constraintst(objective, lower_bounds, upper_bounds, var_names_vect, constraints, constraint_senses, rhs, constraint_names)
 
 
 def negate(dnn, act_inst, nc_layer, nc_pos):
