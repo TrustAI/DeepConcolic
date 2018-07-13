@@ -13,6 +13,7 @@ from keras import *
 
 from utils import *
 from nc_lp import *
+from lp_encoding import *
 
 def run_nc_linf(test_object):
   print('\n== nc, linf ==\n')
@@ -54,6 +55,8 @@ def run_nc_linf(test_object):
   f.write('NC-cover {0} {1} {2} seed: {3}\n'.format(1.0 * covered / (covered + not_covered), len(test_cases), len(adversarials), iseed))
   f.close()
 
+  base_constraints=create_base_constraints(test_object.dnn)
+
   while True:
     nc_layer, nc_pos, nc_value=get_nc_next(cover_layers)
     #print (nc_layer.layer_index, nc_pos, nc_value/nc_layer.pfactor)
@@ -66,14 +69,19 @@ def run_nc_linf(test_object):
     if nc_layer.is_conv:
       s*=(pos[2])*(pos[3])
 
-    feasible, d, new_im=negate(test_object.dnn, act_inst, nc_layer, nc_pos-s)
+    #print (nc_layer.layer_index)
+    #print (base_constraints.keys())
+    mkey=nc_layer.layer_index
+    if act_in_the_layer(nc_layer.layer) != 'relu':
+      mkey+=1
+    feasible, d, new_im=negate(test_object.dnn, act_inst, nc_layer, nc_pos-s, base_constraints[mkey])
     
-    new_im=xdata[201]
-    feasible=True
+    #new_im=xdata[201]
+    #feasible=True
 
-    test_cases.append(new_im)
     nc_layer.disable_by_pos(pos)
     if feasible:
+      test_cases.append(new_im)
       update_nc_map_via_inst(cover_layers, eval(layer_functions, new_im))
     covered, not_covered=nc_report(cover_layers)
     f = open(nc_results, "a")
