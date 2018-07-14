@@ -83,11 +83,12 @@ class cover_layert:
 
 def get_nc_next(clayers):
   nc_layer, nc_pos, nc_value = None, None, MIN
-  for clayer in clayers:
+  for i in range(0, len(clayers)):
+    clayer=clayers[i]
     pos, v=clayer.get_nc_next()
     v*=clayer.pfactor
     if v > nc_value:
-      nc_layer, nc_pos, nc_value= clayer, pos, v
+      nc_layer, nc_pos, nc_value= i, pos, v
       #print (clayer, pos, v)
   return nc_layer, nc_pos, nc_value
 
@@ -102,6 +103,7 @@ def get_layer_functions(dnn):
 def get_cover_layers(dnn, criterion):
   cover_layers=[]
   for l in range(0, len(dnn.layers)):
+    if l==len(dnn.layers)-1: continue
     layer=dnn.layers[l]
     if is_conv_layer(layer) or is_dense_layer(layer):
       sp=layer.output.shape
@@ -155,17 +157,17 @@ def calculate_pfactors(activations, cover_layers):
     cover_layers[i].pfactor=av/fks[i]
 
 def update_nc_map_via_inst(clayers, activations):
-  for clayer in clayers:
-    act=copy.copy(activations[clayer.layer_index])
+  for i in range(0, len(clayers)):
+    act=copy.copy(activations[clayers[i].layer_index])
     act[act>=0]=0
-    if clayer.nc_map is None: ## not initialized yet
-      clayer.initialize_nc_map()
-      clayer.nc_map=np.logical_and(clayer.nc_map, act)
+    if clayers[i].nc_map is None: ## not initialized yet
+      clayers[i].initialize_nc_map()
+      clayers[i].nc_map=np.logical_and(clayers[i].nc_map, act)
     else:
-      clayer.nc_map=np.logical_and(clayer.nc_map, act)
+      clayers[i].nc_map=np.logical_and(clayers[i].nc_map, act)
     ## update activations after nc_map change
-    clayer.activations.append(act)
-    clayer.update_activations() 
+    clayers[i].activations.append(act)
+    clayers[i].update_activations() 
 
 #def update_nc_map(clayers, layer_functions, im):
 #  activations=eval(layer_functions, im)
@@ -187,9 +189,10 @@ def nc_report(clayers):
   return covered, non_covered
 
 def save_an_image(im, title, di='./'):
-  ## we assume im is normalized
-  img=Image.fromarray(np.uint8(im*255))
-  img.save(di+title+'.png')
+  pass
+  ### we assume im is normalized
+  #img=Image.fromarray(np.uint8(im*255))
+  #img.save(di+title+'.png')
 
 #def show_adversarial_examples(imgs, ys, name):
 #  for i in range(0, 2):

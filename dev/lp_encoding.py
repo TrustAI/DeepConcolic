@@ -326,7 +326,7 @@ def build_conv_constraint(the_index, ll, I, J, K, L, act_inst, var_names, has_in
   #print (var_names[1].shape)
   #print (var_names[2].shape)
   l=ll
-  if not has_input_layer: l=ll-1
+  #if not has_input_layer: l=ll-1
   osp=var_names[the_index].shape
   res=[]
   if act_inst[l][I][J][K][L]>0: ## we know what to do
@@ -422,13 +422,15 @@ def build_dense_constraint(the_index, ll, I, J, act_inst, var_names, has_input_l
   return res
 
 def build_conv_constraint_neg(the_index, ll, I, J, K, L, act_inst, var_names, has_input_layer):
+  if (act_inst[ll][I][J][K][L]>0):
+    print ('activated neuron')
+    sys.exit(0)
   #print (' == build conv constraints == ', the_index, l)
   #print (var_names[the_index].shape, var_names[the_index-1].shape)
   #print (var_names[0].shape)
   #print (var_names[1].shape)
   #print (var_names[2].shape)
   l=ll
-  if not has_input_layer: l=ll-1
   osp=var_names[the_index].shape
   res=[]
   if not(act_inst[l][I][J][K][L]>0): ## we know what to do

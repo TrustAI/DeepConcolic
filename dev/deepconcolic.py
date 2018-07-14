@@ -6,6 +6,7 @@ from datetime import datetime
 import keras
 from keras.models import *
 from keras.datasets import cifar10
+from keras.datasets import mnist
 from keras.applications.vgg16 import VGG16
 from keras.layers import *
 from keras import *
@@ -30,7 +31,7 @@ def run_nc_linf(test_object):
   cover_layers=get_cover_layers(test_object.dnn, 'NC')
   print('\n== Got cover layers: {0} ==\n'.format(len(cover_layers)))
 
-  activations = eval_batch(layer_functions, test_object.raw_data.data[0:10])
+  activations = eval_batch(layer_functions, test_object.raw_data.data[0:10000])
   print(activations[0].shape)
   print(len(activations))
 
@@ -46,7 +47,6 @@ def run_nc_linf(test_object):
   im=xdata[iseed]
 
   test_cases.append(im)
-  #update_nc_map(cover_layers, layer_functions, im)
   update_nc_map_via_inst(cover_layers, eval(layer_functions, im))
   covered, not_covered=nc_report(cover_layers)
   print('\n== neuron coverage: {0}==\n'.format(covered*1.0/(covered+not_covered)))
@@ -60,8 +60,9 @@ def run_nc_linf(test_object):
   base_constraints=create_base_constraints(test_object.dnn)
 
   while True:
-    nc_layer, nc_pos, nc_value=get_nc_next(cover_layers)
+    index_nc_layer, nc_pos, nc_value=get_nc_next(cover_layers)
     #print (nc_layer.layer_index, nc_pos, nc_value/nc_layer.pfactor)
+    nc_layer=cover_layers[index_nc_layer]
     print (np.array(nc_layer.activations).shape)
     shape=np.array(nc_layer.activations).shape
     pos=np.unravel_index(nc_pos, shape)
@@ -74,25 +75,22 @@ def run_nc_linf(test_object):
       s*=int(shape[3])*int(shape[4])
     print ('\n::', nc_pos, pos, nc_pos-s, pos-s)
     print (nc_layer.layer)
-    #sys.exit(0)
 
-    #print (nc_layer.layer_index)
-    #print (base_constraints.keys())
     mkey=nc_layer.layer_index
     if act_in_the_layer(nc_layer.layer) != 'relu':
       mkey+=1
     feasible, d, new_im=negate(test_object.dnn, act_inst, [im], nc_layer, nc_pos-s, base_constraints[mkey])
     
-    #new_im=xdata[201]
-    #feasible=True
-
-    nc_layer.disable_by_pos(pos)
+    cover_layers[index_nc_layer].disable_by_pos(pos)
     if feasible:
+      print ('\nis feasible!!!\n')
       test_cases.append(new_im)
       update_nc_map_via_inst(cover_layers, eval(layer_functions, new_im))
       y1 = test_object.dnn.predict_classes(np.array([im]))[0]
       y2= test_object.dnn.predict_classes(np.array([new_im]))[0]
       if y1 != y2: adversarials.append([im, new_im])
+    else:
+      print ('\nis NOT feasible!!!\n')
     covered, not_covered=nc_report(cover_layers)
     f = open(nc_results, "a")
     f.write('NC-cover {0} {1} {2} \n'.format(1.0 * covered / (covered + not_covered), len(test_cases), len(adversarials)))
@@ -118,14 +116,18 @@ def deepconcolic(test_object):
 def main():
   ## for testing purpose we fix the aicover configuration
   ##
-  dnn=load_model("../saved_models/cifar10_complicated.h5")
+  #dnn=load_model("../saved_models/cifar10_complicated.h5")
+  dnn=load_model("../saved_models/mnist_complicated.h5")
   dnn.summary()
   #dnn=VGG16()
   ##
   criterion='NC'
-  img_rows, img_cols = 32, 32
-  (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-  x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, 3)
+  #img_rows, img_cols = 32, 32
+  img_rows, img_cols = 28, 28
+  ch=1
+  #(x_train, y_train), (x_test, y_test) = cifar10.load_data()
+  (x_train, y_train), (x_test, y_test) = mnist.load_data()
+  x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, ch)
   x_test = x_test.astype('float32')
   x_test /= 255
   raw_data=raw_datat(x_test, y_test)

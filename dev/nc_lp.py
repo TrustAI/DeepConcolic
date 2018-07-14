@@ -198,7 +198,9 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_constraints):
                 rhs.append(0)
                 constraint_senses.append('G')
                 constraint_names.append('')
-                if ((not max_found) and act_inst[l][0][I][J][K] == act_inst[l - 1][0][II][JJ][K]):
+                ll=l
+                #if not has_input_layer: ll=l-1 
+                if ((not max_found) and act_inst[ll][0][I][J][K] == act_inst[ll - 1][0][II][JJ][K]):
                   max_found = True
                   constraint = [[], []]
                   constraint[0].append(var_names[the_index][0][I][J][K])
