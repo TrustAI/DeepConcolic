@@ -25,7 +25,7 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_constraints):
   # distance variable 
   var_names_vect.append('d')
   objective.append(1) ## 1 shall be minimum
-  lower_bounds.append(0) #1.0/255)
+  lower_bounds.append(1.0/255)
   upper_bounds.append(1.0)
 
   ## so, we go directly to convolutional input layer
@@ -230,7 +230,7 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_constraints):
                                      senses=constraint_senses,
                                      rhs=rhs,
                                      names=constraint_names)
-      # print '--before solve----'
+      print ('-- to solve----')
       timeLimit = 60 * 5
       problem.parameters.timelimit.set(60 * 5)
       problem.solve()

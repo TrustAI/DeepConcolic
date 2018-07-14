@@ -1,5 +1,6 @@
 import argparse
 import sys
+import os
 from datetime import datetime
 
 import keras
@@ -41,7 +42,7 @@ def run_nc_linf(test_object):
   adversarials=[]
 
   xdata=test_object.raw_data.data
-  iseed=107 #np.random.randint(0, len(xdata))
+  iseed=np.random.randint(0, len(xdata))
   im=xdata[iseed]
 
   test_cases.append(im)
@@ -62,16 +63,17 @@ def run_nc_linf(test_object):
     nc_layer, nc_pos, nc_value=get_nc_next(cover_layers)
     #print (nc_layer.layer_index, nc_pos, nc_value/nc_layer.pfactor)
     print (np.array(nc_layer.activations).shape)
-    pos=np.unravel_index(nc_pos, np.array(nc_layer.activations).shape)
+    shape=np.array(nc_layer.activations).shape
+    pos=np.unravel_index(nc_pos, shape)
     im=test_cases[pos[0]]
     act_inst=eval(layer_functions, im)
 
 
-    s=pos[0]*(pos[1])
+    s=pos[0]*int(shape[1]*shape[2])
     if nc_layer.is_conv:
-      s*=(pos[2])*(pos[3])
-    #print ('\n::', nc_pos, pos, nc_pos-s, pos-s)
-    #print (nc_layer.layer)
+      s*=int(shape[3])*int(shape[4])
+    print ('\n::', nc_pos, pos, nc_pos-s, pos-s)
+    print (nc_layer.layer)
     #sys.exit(0)
 
     #print (nc_layer.layer_index)
@@ -88,11 +90,14 @@ def run_nc_linf(test_object):
     if feasible:
       test_cases.append(new_im)
       update_nc_map_via_inst(cover_layers, eval(layer_functions, new_im))
+      y1 = test_object.dnn.predict_classes(np.array([im]))[0]
+      y2= test_object.dnn.predict_classes(np.array([new_im]))[0]
+      if y1 != y2: adversarials.append([im, new_im])
     covered, not_covered=nc_report(cover_layers)
     f = open(nc_results, "a")
     f.write('NC-cover {0} {1} {2} \n'.format(1.0 * covered / (covered + not_covered), len(test_cases), len(adversarials)))
     f.close()
-    break
+    #break
 
 
 def deepconcolic(test_object):
