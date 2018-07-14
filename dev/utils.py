@@ -4,6 +4,8 @@ from keras import *
 from keras import backend as K
 import numpy as np
 from PIL import Image
+import copy
+import sys
 
 MIN=-100000
 
@@ -58,15 +60,15 @@ class cover_layert:
   def initialize_nc_map(self):
     sp=self.layer.output.shape
     if self.is_conv:
-      self.cover_map = np.zeros((1, sp[1], sp[2], sp[3]), dtype=bool)
+      self.nc_map = np.ones((1, sp[1], sp[2], sp[3]), dtype=bool)
     else:
-      self.cover_map = np.zeros((1, sp[1]), dtype=bool)
+      self.nc_map = np.ones((1, sp[1]), dtype=bool)
 
   def update_activations(self):
     #self.activations=[np.multiply(act, self.nc_map) for act in self.activations]
-    for act in self.activations:
-      act=np.multiply(act, self.nc_map)
-      act[act>=0]=MIN
+    for i in range(0, len(self.activations)):
+      self.activations[i]=np.multiply(self.activations[i], self.nc_map)
+      self.activations[i][self.activations[i]>=0]=MIN
 
   ## to get the index of the next property to be satisfied
   def get_nc_next(self):
@@ -86,6 +88,7 @@ def get_nc_next(clayers):
     v*=clayer.pfactor
     if v > nc_value:
       nc_layer, nc_pos, nc_value= clayer, pos, v
+      #print (clayer, pos, v)
   return nc_layer, nc_pos, nc_value
 
 def get_layer_functions(dnn):
@@ -153,15 +156,14 @@ def calculate_pfactors(activations, cover_layers):
 
 def update_nc_map_via_inst(clayers, activations):
   for clayer in clayers:
-    act=activations[clayer.layer_index]
+    act=copy.copy(activations[clayer.layer_index])
     act[act>=0]=0
     if clayer.nc_map is None: ## not initialized yet
       clayer.initialize_nc_map()
-      clayer.nc_map=np.logical_or(clayer.nc_map, act)
+      clayer.nc_map=np.logical_and(clayer.nc_map, act)
     else:
       clayer.nc_map=np.logical_and(clayer.nc_map, act)
     ## update activations after nc_map change
-    #act[act>=0]=MIN
     clayer.activations.append(act)
     clayer.update_activations() 
 

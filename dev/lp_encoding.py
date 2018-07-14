@@ -10,6 +10,7 @@ epsilon=1.0/(255)
 
 class base_constraintst:
   def __init__(self, objective, lower_bounds, upper_bounds, var_names_vect, var_names, constraints, constraint_senses, rhs, constraint_names):
+    print ('base_constraints', len(objective), len(lower_bounds), len(upper_bounds), len(var_names_vect))
     self.obj=copy.copy(objective)
     self.lb=copy.copy(lower_bounds)
     self.ub=copy.copy(upper_bounds)
@@ -18,7 +19,7 @@ class base_constraintst:
     self.lin_expr=copy.copy(constraints)
     self.senses=copy.copy(constraint_senses)
     self.rhs=copy.copy(rhs)
-    self.names=copy.copy(constraint_names)
+    self.constraint_names=copy.copy(constraint_names)
 
 def create_base_constraints(dnn):
 
@@ -71,9 +72,10 @@ def create_base_constraints(dnn):
                 upper_bounds.append(cplex.infinity)
                 var_names[the_index][I][J][K][L]=var_name
                 var_names_vect.append(var_name)
+
       ##
       the_index+=1
-      osp=layer.input.shape ## the output at this layer
+      osp=layer.output.shape ## the output at this layer
       var_names.append(np.empty((1, osp[1], osp[2], osp[3]), dtype="S40"))
       for I in range(0, 1):
         for J in range(0, osp[1]):
@@ -88,7 +90,7 @@ def create_base_constraints(dnn):
       if act_in_the_layer(layer)=='relu':
         ##
         the_index+=1
-        osp=layer.input.shape ## the output at this layer
+        osp=layer.output.shape ## the output at this layer
         var_names.append(np.empty((1, osp[1], osp[2], osp[3]), dtype="S40"))
         for I in range(0, 1):
           for J in range(0, osp[1]):
@@ -221,8 +223,8 @@ def create_base_constraints(dnn):
       weights=tot_weights[weight_index]
       weight_index+=1
       biases=tot_weights[weight_index]
-      print ('the_index', the_index)
-      print (osp)
+      #print ('the_index', the_index)
+      #print (osp)
       for I in range(0, osp[0]):
         for J in range(0, osp[1]):
           for K in range(0, osp[2]):
@@ -317,7 +319,14 @@ def create_base_constraints(dnn):
   return base_constraints_dict
 
 
-def build_conv_constraint(the_index, l, I, J, K, L, act_inst, var_names):
+def build_conv_constraint(the_index, ll, I, J, K, L, act_inst, var_names, has_input_layer):
+  #print (' == build conv constraints == ', the_index, l)
+  #print (var_names[the_index].shape, var_names[the_index-1].shape)
+  #print (var_names[0].shape)
+  #print (var_names[1].shape)
+  #print (var_names[2].shape)
+  l=ll
+  if not has_input_layer: l=ll-1
   osp=var_names[the_index].shape
   res=[]
   if act_inst[l][I][J][K][L]>0: ## we know what to do
@@ -362,9 +371,12 @@ def build_conv_constraint(the_index, l, I, J, K, L, act_inst, var_names):
     res.append([constraint, 0, 'L', ''])
   return res
 
-def build_dense_constraint(the_index, l, I, J, act_inst, var_names):
+def build_dense_constraint(the_index, ll, I, J, act_inst, var_names, has_input_layer):
   osp=var_names[the_index].shape
   res=[]
+
+  l=ll
+  if not has_input_layer: l=ll-1
 
   if act_inst[l][I][J]>0: ## do something
     ## C1:
@@ -373,7 +385,109 @@ def build_dense_constraint(the_index, l, I, J, act_inst, var_names):
     constraint[1].append(1)
     constraint[0].append(var_names[the_index-1][I][J])
     constraint[1].append(-1)
-    constraints.append(constraint)
+    #constraints.append(constraint)
+    #rhs.append(0)
+    #constraint_senses.append('E')
+    #constraint_names.append('')
+    res.append([constraint, 0, 'E', ''])
+    ## C2: >=0
+    constraint = [[], []]
+    constraint[0].append(var_names[the_index-1][I][J])
+    constraint[1].append(1)
+    #constraints.append(constraint)
+    #rhs.append(0)
+    #constraint_senses.append('G')
+    #constraint_names.append('')
+    res.append([constraint, 0, 'G', ''])
+  else:
+    ## C1:
+    constraint = [[], []]
+    constraint[0].append(var_names[the_index][I][J])
+    constraint[1].append(1)
+    #constraints.append(constraint)
+    #rhs.append(0)
+    #constraint_senses.append('E')
+    #constraint_names.append('')
+    res.append([constraint, 0, 'E', ''])
+    ## C2: <=0
+    constraint = [[], []]
+    constraint[0].append(var_names[the_index-1][I][J])
+    constraint[1].append(1)
+    #constraints.append(constraint)
+    #rhs.append(0)
+    #constraint_senses.append('L')
+    #constraint_names.append('')
+    res.append([constraint, 0, 'L', ''])
+
+  return res
+
+def build_conv_constraint_neg(the_index, ll, I, J, K, L, act_inst, var_names, has_input_layer):
+  #print (' == build conv constraints == ', the_index, l)
+  #print (var_names[the_index].shape, var_names[the_index-1].shape)
+  #print (var_names[0].shape)
+  #print (var_names[1].shape)
+  #print (var_names[2].shape)
+  l=ll
+  if not has_input_layer: l=ll-1
+  osp=var_names[the_index].shape
+  res=[]
+  if not(act_inst[l][I][J][K][L]>0): ## we know what to do
+    ## C1:
+    constraint = [[], []]
+    constraint[0].append(var_names[the_index][I][J][K][L])
+    constraint[1].append(1)
+    constraint[0].append(var_names[the_index-1][I][J][K][L])
+    constraint[1].append(-1)
+    res.append([constraint, 0, 'E', ''])
+    #constraints.append(constraint)
+    #rhs.append(0)
+    #constraint_senses.append('E')
+    #constraint_names.append('')
+    ## C2: >=0
+    constraint = [[], []]
+    constraint[0].append(var_names[the_index-1][I][J][K][L])
+    constraint[1].append(1)
+    res.append([constraint, 0, 'G', ''])
+    #constraints.append(constraint)
+    #rhs.append(0)
+    #constraint_senses.append('G')
+    #constraint_names.append('')
+  else:
+    ## C1:
+    constraint = [[], []]
+    constraint[0].append(var_names[the_index][I][J][K][L])
+    constraint[1].append(1)
+    #constraints.append(constraint)
+    #rhs.append(0)
+    #constraint_senses.append('E')
+    #constraint_names.append('')
+    res.append([constraint, 0, 'E', ''])
+    ## C2: <=0
+    constraint = [[], []]
+    constraint[0].append(var_names[the_index-1][I][J][K][L])
+    constraint[1].append(1)
+    #constraints.append(constraint)
+    #rhs.append(0)
+    #constraint_senses.append('L')
+    #constraint_names.append('')
+    res.append([constraint, 0, 'L', ''])
+  return res
+
+def build_dense_constraint_neg(the_index, ll, I, J, act_inst, var_names, has_input_layer):
+  osp=var_names[the_index].shape
+  res=[]
+
+  l=ll
+  if not has_input_layer: l=ll-1
+
+  if not (act_inst[l][I][J]>0): ## do something
+    ## C1:
+    constraint = [[], []]
+    constraint[0].append(var_names[the_index][I][J])
+    constraint[1].append(1)
+    constraint[0].append(var_names[the_index-1][I][J])
+    constraint[1].append(-1)
+    #constraints.append(constraint)
     #rhs.append(0)
     #constraint_senses.append('E')
     #constraint_names.append('')

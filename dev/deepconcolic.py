@@ -41,7 +41,7 @@ def run_nc_linf(test_object):
   adversarials=[]
 
   xdata=test_object.raw_data.data
-  iseed=100 #np.random.randint(0, len(xdata))
+  iseed=107 #np.random.randint(0, len(xdata))
   im=xdata[iseed]
 
   test_cases.append(im)
@@ -55,6 +55,7 @@ def run_nc_linf(test_object):
   f.write('NC-cover {0} {1} {2} seed: {3}\n'.format(1.0 * covered / (covered + not_covered), len(test_cases), len(adversarials), iseed))
   f.close()
 
+
   base_constraints=create_base_constraints(test_object.dnn)
 
   while True:
@@ -65,16 +66,20 @@ def run_nc_linf(test_object):
     im=test_cases[pos[0]]
     act_inst=eval(layer_functions, im)
 
+
     s=pos[0]*(pos[1])
     if nc_layer.is_conv:
       s*=(pos[2])*(pos[3])
+    #print ('\n::', nc_pos, pos, nc_pos-s, pos-s)
+    #print (nc_layer.layer)
+    #sys.exit(0)
 
     #print (nc_layer.layer_index)
     #print (base_constraints.keys())
     mkey=nc_layer.layer_index
     if act_in_the_layer(nc_layer.layer) != 'relu':
       mkey+=1
-    feasible, d, new_im=negate(test_object.dnn, act_inst, nc_layer, nc_pos-s, base_constraints[mkey])
+    feasible, d, new_im=negate(test_object.dnn, act_inst, [im], nc_layer, nc_pos-s, base_constraints[mkey])
     
     #new_im=xdata[201]
     #feasible=True
