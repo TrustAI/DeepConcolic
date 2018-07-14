@@ -6,7 +6,7 @@ from utils import *
 
 import copy
 
-epsilon=1.0/(255)
+epsilon=0.00001 #1.0/(255)
 
 class base_constraintst:
   def __init__(self, objective, lower_bounds, upper_bounds, var_names_vect, var_names, constraints, constraint_senses, rhs, constraint_names):
@@ -345,7 +345,7 @@ def build_conv_constraint(the_index, ll, I, J, K, L, act_inst, var_names, has_in
     constraint = [[], []]
     constraint[0].append(var_names[the_index-1][I][J][K][L])
     constraint[1].append(1)
-    res.append([constraint, 0, 'G', ''])
+    res.append([constraint, epsilon, 'G', ''])
     #constraints.append(constraint)
     #rhs.append(0)
     #constraint_senses.append('G')
@@ -368,7 +368,7 @@ def build_conv_constraint(the_index, ll, I, J, K, L, act_inst, var_names, has_in
     #rhs.append(0)
     #constraint_senses.append('L')
     #constraint_names.append('')
-    res.append([constraint, 0, 'L', ''])
+    res.append([constraint, -epsilon, 'L', ''])
   return res
 
 def build_dense_constraint(the_index, ll, I, J, act_inst, var_names, has_input_layer):
@@ -398,7 +398,7 @@ def build_dense_constraint(the_index, ll, I, J, act_inst, var_names, has_input_l
     #rhs.append(0)
     #constraint_senses.append('G')
     #constraint_names.append('')
-    res.append([constraint, 0, 'G', ''])
+    res.append([constraint, epsilon, 'G', ''])
   else:
     ## C1:
     constraint = [[], []]
@@ -417,7 +417,7 @@ def build_dense_constraint(the_index, ll, I, J, act_inst, var_names, has_input_l
     #rhs.append(0)
     #constraint_senses.append('L')
     #constraint_names.append('')
-    res.append([constraint, 0, 'L', ''])
+    res.append([constraint, -epsilon, 'L', ''])
 
   return res
 
@@ -449,7 +449,7 @@ def build_conv_constraint_neg(the_index, ll, I, J, K, L, act_inst, var_names, ha
     constraint = [[], []]
     constraint[0].append(var_names[the_index-1][I][J][K][L])
     constraint[1].append(1)
-    res.append([constraint, 0, 'G', ''])
+    res.append([constraint, epsilon, 'G', ''])
     #constraints.append(constraint)
     #rhs.append(0)
     #constraint_senses.append('G')
@@ -472,7 +472,7 @@ def build_conv_constraint_neg(the_index, ll, I, J, K, L, act_inst, var_names, ha
     #rhs.append(0)
     #constraint_senses.append('L')
     #constraint_names.append('')
-    res.append([constraint, 0, 'L', ''])
+    res.append([constraint, -epsilon, 'L', ''])
   return res
 
 def build_dense_constraint_neg(the_index, ll, I, J, act_inst, var_names, has_input_layer):
@@ -502,7 +502,7 @@ def build_dense_constraint_neg(the_index, ll, I, J, act_inst, var_names, has_inp
     #rhs.append(0)
     #constraint_senses.append('G')
     #constraint_names.append('')
-    res.append([constraint, 0, 'G', ''])
+    res.append([constraint, epsilon, 'G', ''])
   else:
     ## C1:
     constraint = [[], []]
@@ -521,7 +521,7 @@ def build_dense_constraint_neg(the_index, ll, I, J, act_inst, var_names, has_inp
     #rhs.append(0)
     #constraint_senses.append('L')
     #constraint_names.append('')
-    res.append([constraint, 0, 'L', ''])
+    res.append([constraint, -epsilon, 'L', ''])
 
   return res
 

@@ -158,6 +158,7 @@ def calculate_pfactors(activations, cover_layers):
 
 def update_nc_map_via_inst(clayers, activations):
   for i in range(0, len(clayers)):
+    ## to get the act of layer 'i'
     act=copy.copy(activations[clayers[i].layer_index])
     act[act>=0]=0
     if clayers[i].nc_map is None: ## not initialized yet
@@ -167,11 +168,10 @@ def update_nc_map_via_inst(clayers, activations):
       clayers[i].nc_map=np.logical_and(clayers[i].nc_map, act)
     ## update activations after nc_map change
     clayers[i].activations.append(act)
-    clayers[i].update_activations() 
-
-#def update_nc_map(clayers, layer_functions, im):
-#  activations=eval(layer_functions, im)
-#  update_nc_map_via_inst(clayers, activations)
+    ## clayers[i].update_activations() 
+    for j in range(0, len(clayers[i].activations)):
+      clayers[i].activations[j]=np.multiply(clayers[i].activations[j], clayers[i].nc_map)
+      clayers[i].activations[j][clayers[i].activations[j]>=0]=MIN
 
 def nc_report(clayers):
   covered = 0

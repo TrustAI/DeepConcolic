@@ -73,14 +73,15 @@ def run_nc_linf(test_object):
     s=pos[0]*int(shape[1]*shape[2])
     if nc_layer.is_conv:
       s*=int(shape[3])*int(shape[4])
-    print ('\n::', nc_pos, pos, nc_pos-s, pos-s)
-    print (nc_layer.layer)
+    print ('\n::', nc_pos, pos, nc_pos-s)
+    print (nc_layer.layer, nc_layer.layer_index)
+    print ('the max v', nc_value)
 
     mkey=nc_layer.layer_index
     if act_in_the_layer(nc_layer.layer) != 'relu':
       mkey+=1
     feasible, d, new_im=negate(test_object.dnn, act_inst, [im], nc_layer, nc_pos-s, base_constraints[mkey])
-    
+
     cover_layers[index_nc_layer].disable_by_pos(pos)
     if feasible:
       print ('\nis feasible!!!\n')
@@ -89,6 +90,11 @@ def run_nc_linf(test_object):
       y1 = test_object.dnn.predict_classes(np.array([im]))[0]
       y2= test_object.dnn.predict_classes(np.array([new_im]))[0]
       if y1 != y2: adversarials.append([im, new_im])
+      old_acts=eval(layer_functions, im)
+      new_acts=eval(layer_functions, new_im)
+      if nc_layer.is_conv:
+        print ('\n should be < 0', old_acts[nc_layer.layer_index][pos[1]][pos[2]][pos[3]][pos[4]], '\n')
+        print ('\n should be > 0', new_acts[nc_layer.layer_index][pos[1]][pos[2]][pos[3]][pos[4]], '\n')
     else:
       print ('\nis NOT feasible!!!\n')
     covered, not_covered=nc_report(cover_layers)
