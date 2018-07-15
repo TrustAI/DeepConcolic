@@ -6,7 +6,7 @@ Concolic testing alternates between CONCrete program execution and symbOLIC anal
 ![alt text](ASE-experiments/PaperData/Work_Flow.png)
 
 # Sample Results
-![Adversarial examples by DeepConcolic](ASE-experiments/PaperData/Adversarial_Examples-b.png)
+![alt text](ASE-experiments/PaperData/Adversarial_Examples-b.png)
 ![alt text](PaperData/Concolic_Testing_Results.png)
 
 # Run
