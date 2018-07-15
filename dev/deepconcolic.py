@@ -18,23 +18,25 @@ from utils import *
 from nc_lp import *
 from lp_encoding import *
 
-def run_nc_linf(test_object):
+def run_nc_linf(test_object, outs):
   print('\n== nc, linf ==\n')
-  ## DIR to store outputs
-  outs = "concolic-nc-linf" + str(datetime.now()).replace(' ', '-') + '/'
-  outs=outs.replace(' ', '-')
-  outs=outs.replace(':', '-') ## windows compatibility
-  os.system('mkdir -p {0}'.format(outs))
-  nc_results=outs+'nc_report.txt'
+  if not os.path.exists(outs):
+    os.system('mkdir -p {0}'.format(outs))
+  if not outs.endswith('/'):
+    outs+='/'
+  nc_results=outs+'nc_report-{0}.txt'.format(str(datetime.now()).replace(' ', '-'))
+  nc_results=nc_results.replace(':', '-')
 
   layer_functions=get_layer_functions(test_object.dnn)
   print('\n== Got layer functions: {0} ==\n'.format(len(layer_functions)))
   cover_layers=get_cover_layers(test_object.dnn, 'NC')
   print('\n== Got cover layers: {0} ==\n'.format(len(cover_layers)))
 
-  activations = eval_batch(layer_functions, test_object.raw_data.data[0:10000])
-  print(activations[0].shape)
-  print(len(activations))
+  batch=10000
+  if len(test_object.raw_data.data)<batch: batch=len(test_object.raw_data.data)
+  activations = eval_batch(layer_functions, test_object.raw_data.data[0:batch])
+  #print(activations[0].shape)
+  #print(len(activations))
 
   calculate_pfactors(activations, cover_layers)
 
@@ -105,11 +107,11 @@ def run_nc_linf(test_object):
     #break
 
 
-def deepconcolic(test_object):
+def deepconcolic(test_object, outs):
   print('\n== Start DeepConcolic testing ==\n')
-  if test_object.criterion=='NC': ## neuron cover
+  if test_object.criterion=='nc': ## neuron cover
     if test_object.norm=='linf':
-      run_nc_linf(test_object)
+      run_nc_linf(test_object, outs)
     elif test_object.norm=='l0':
       pass #run_nc_l0(test_object)
     else:
@@ -121,25 +123,7 @@ def deepconcolic(test_object):
 
 
 def main():
-  ## for testing purpose we fix the aicover configuration
-  ##
-  #dnn=load_model("../saved_models/cifar10_complicated.h5")
-  #dnn=load_model("../saved_models/mnist_complicated.h5")
-  #dnn.summary()
-  ##dnn=VGG16()
-  ###
-  #criterion='NC'
-  ##img_rows, img_cols = 32, 32
-  #img_rows, img_cols = 28, 28
-  #ch=1
-  ##(x_train, y_train), (x_test, y_test) = cifar10.load_data()
-  #(x_train, y_train), (x_test, y_test) = mnist.load_data()
-  #x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, ch)
-  #x_test = x_test.astype('float32')
-  #x_test /= 255
-  #raw_data=raw_datat(x_test, y_test)
 
-  #deepconcolic(test_objectt(dnn, raw_data, criterion, "linf"))
 
   parser=argparse.ArgumentParser(description='The concolic testing for neural networks' )
   parser.add_argument(
@@ -148,13 +132,19 @@ def main():
                     help="the input test data directory", metavar="DIR")
   parser.add_argument("--outputs", dest="outputs", default="-1",
                     help="the outputput test data directory", metavar="DIR")
-  parser.add_argument("--norm", dest="norm", default="linf",
-                    help="the norm metric", metavar="DIR")
   parser.add_argument("--criterion", dest="criterion", default="nc",
-                    help="the norm metric", metavar="DIR")
+                    help="the test criterion", metavar="")
   parser.add_argument("--mnist-dataset", dest="mnist", help="MNIST dataset", action="store_true")
   parser.add_argument("--cifar10-dataset", dest="cifar10", help="CIFAR10 dataset", action="store_true")
   parser.add_argument("--vgg16-model", dest='vgg16', help="vgg16 model", action="store_true")
+  parser.add_argument("--norm", dest="norm", default="linf",
+                    help="the norm metric", metavar="")
+  parser.add_argument("--input-rows", dest="img_rows", default="224",
+                    help="input rows", metavar="")
+  parser.add_argument("--input-cols", dest="img_cols", default="224",
+                    help="input cols", metavar="")
+  parser.add_argument("--input-channels", dest="img_channels", default="3",
+                    help="input channels", metavar="")
 
   args=parser.parse_args()
 
@@ -173,8 +163,9 @@ def main():
   norm=args.norm
 
   raw_data=None
+  img_rows, img_cols, img_channels = int(args.img_rows), int(args.img_cols), int(args.img_channels)
   if args.inputs!='-1':
-    img_rows, img_cols, ch = 224, 224, 3
+    
     xs=[]
     for f in os.listdir(args.inputs):
       print (f)
@@ -184,21 +175,21 @@ def main():
     print (len(xs))
     x_test=np.asarray(xs)
     print x_test.shape, "------"
-    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, ch)
+    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
     x_test = x_test.astype('float32')
     x_test /= 255
     raw_data=raw_datat(x_test, [])
   elif args.mnist:
-    img_rows, img_cols, ch = 28, 28, 1
+    img_rows, img_cols, img_channels = 28, 28, 1
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
-    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, ch)
+    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
     x_test = x_test.astype('float32')
     x_test /= 255
     raw_data=raw_datat(x_test, y_test)
   elif args.cifar10:
-    img_rows, img_cols, ch = 32, 32, 3
+    img_rows, img_cols, img_channels = 32, 32, 3
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, ch)
+    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
     x_test = x_test.astype('float32')
     x_test /= 255
     raw_data=raw_datat(x_test, y_test)
@@ -213,6 +204,8 @@ def main():
   else:
     print (' \n == Please specify the output directory == \n')
     sys.exit(0)
+
+  deepconcolic(test_objectt(dnn, raw_data, criterion, norm), outs)
 
 if __name__=="__main__":
   main()
