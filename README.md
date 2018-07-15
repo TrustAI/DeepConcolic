@@ -36,6 +36,17 @@ optional arguments:
 
 ```
 
+To run an MNIST model
+
+```
+python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --mnist-data --outputs outs/
+```
+
+To run an CIFAR10 model
+
+```
+python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --cifar10-data --outputs outs/
+```
 
 # Dependencies
 We suggest create an environment using `conda`

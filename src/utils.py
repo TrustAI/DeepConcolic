@@ -1,4 +1,3 @@
-
 #import matplotlib.pyplot as plt
 from keras import *
 from keras import backend as K
@@ -6,6 +5,8 @@ import numpy as np
 from PIL import Image
 import copy
 import sys
+import cv2
+
 
 MIN=-100000
 
@@ -195,9 +196,13 @@ def nc_report(clayers):
 
 def save_an_image(im, title, di='./'):
   pass
-  ### we assume im is normalized
+  # we assume im is normalized
   #img=Image.fromarray(np.uint8(im*255))
   #img.save(di+title+'.png')
+  #matplotlib.pyplot.imsave(di+title+'.png', im)
+  #plt.show(im*255)
+  #plt.savefig(di+title+'.png')
+  cv2.imwrite((di+title+'.png'), im*255)
 
 #def show_adversarial_examples(imgs, ys, name):
 #  for i in range(0, 2):
