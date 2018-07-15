@@ -1,4 +1,0 @@
-text=open("/Users/syc/2018/githubs/Trusts/DeepConcolic/dev/imagenet/synset.txt")
-lines=readlines(text)
-
-from imageurl in lines:
