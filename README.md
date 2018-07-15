@@ -1,34 +1,41 @@
 # DeepConcolic (Concolic Testing for Deep Neural Networks)
 
-Youcheng Sun, Min Wu, Wenjie Ruan, Xiaowei Huang, Marta Kwiatkowska, Daniel Kroening.
-
-arXiv:1805.00089 https://arxiv.org/abs/1805.00089
-
-# Abstract
 Concolic testing alternates between CONCrete program execution and symbOLIC analysis to explore the execution paths of a software program and to increase code coverage. In this paper, we develop the first concolic testing approach for Deep Neural Networks (DNNs). More specifically, we utilise quantified linear arithmetic over rationals to express test requirements that have been studied in the literature, and then develop a coherent method to perform concolic testing with the aim of better coverage. Our experimental results show the effectiveness of the concolic testing approach in both achieving high coverage and finding adversarial examples.
 
 # Work Flow
-![alt text](PaperData/Work_Flow.png)
+![alt text](ASE-experiments/PaperData/Work_Flow.png)
 
 # Sample Results
-![alt text](PaperData/Neuron_Coverage.png)
-![alt text](PaperData/Adversarial_Examples.png)
+![Adversarial examples by DeepConcolic](ASE-experiments/PaperData/Adversarial_Examples-b.png)
 ![alt text](PaperData/Concolic_Testing_Results.png)
-![alt text](PaperData/Distance_Comparison.png)
-![alt text](PaperData/Lipschitz_Constant_Coverage.png)
 
 # Run
-Two examples:
 
-L-infinity norm/MNIST:
 ```
-python MNIST_nc.py ../../saved_models/mnist_complicated.h5
+usage: deepconcolic.py [-h] [--model MODEL] [--inputs DIR] [--outputs DIR]
+                       [--criterion nc, bc, ssc...] [--mnist-dataset]
+                       [--cifar10-dataset] [--vgg16-model] [--norm linf, l0]
+                       [--input-rows] [--input-cols] [--input-channels]
+
+The concolic testing for neural networks
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --model MODEL         The input neural network model (.h5)
+  --inputs DIR          the input test data directory
+  --outputs DIR         the outputput test data directory
+  --criterion nc, bc, ssc...
+                        the test criterion
+  --mnist-dataset       MNIST dataset
+  --cifar10-dataset     CIFAR10 dataset
+  --vgg16-model         vgg16 model
+  --norm linf, l0       the norm metric
+  --input-rows          input rows
+  --input-cols          input cols
+  --input-channels      input channels
+
 ```
 
-L0 norm/CIFAR10:
-```
-python CIFAR10_nc.py ../../saved_models/cifar10_complicated.h5
-```
 
 # Dependencies
 We suggest create an environment using `conda`
@@ -53,14 +60,3 @@ archivePrefix = "arXiv",
    adsurl = {http://adsabs.harvard.edu/abs/2018arXiv180500089S}
 }
 ```
-
-
-# Remark
-This tool is under active development and maintenance, please feel free to contact us about any problem encountered.
-
-Best wishes,
-
-youcheng.sun@cs.ox.ac.uk
-
-min.wu@cs.ox.ac.uk
-
