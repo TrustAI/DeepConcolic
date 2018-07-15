@@ -6,7 +6,7 @@ from utils import *
 
 import copy
 
-epsilon=0.00001 #1.0/(255)
+epsilon=0.001 #1.0/(255)
 
 class base_constraintst:
   def __init__(self, objective, lower_bounds, upper_bounds, var_names_vect, var_names, constraints, constraint_senses, rhs, constraint_names):

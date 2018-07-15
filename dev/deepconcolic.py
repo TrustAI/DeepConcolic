@@ -8,6 +8,7 @@ from keras.models import *
 from keras.datasets import cifar10
 from keras.datasets import mnist
 from keras.applications.vgg16 import VGG16
+from keras.preprocessing.image import load_img
 from keras.layers import *
 from keras import *
 
@@ -123,22 +124,95 @@ def main():
   ## for testing purpose we fix the aicover configuration
   ##
   #dnn=load_model("../saved_models/cifar10_complicated.h5")
-  dnn=load_model("../saved_models/mnist_complicated.h5")
-  dnn.summary()
-  #dnn=VGG16()
-  ##
-  criterion='NC'
-  #img_rows, img_cols = 32, 32
-  img_rows, img_cols = 28, 28
-  ch=1
-  #(x_train, y_train), (x_test, y_test) = cifar10.load_data()
-  (x_train, y_train), (x_test, y_test) = mnist.load_data()
-  x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, ch)
-  x_test = x_test.astype('float32')
-  x_test /= 255
-  raw_data=raw_datat(x_test, y_test)
+  #dnn=load_model("../saved_models/mnist_complicated.h5")
+  #dnn.summary()
+  ##dnn=VGG16()
+  ###
+  #criterion='NC'
+  ##img_rows, img_cols = 32, 32
+  #img_rows, img_cols = 28, 28
+  #ch=1
+  ##(x_train, y_train), (x_test, y_test) = cifar10.load_data()
+  #(x_train, y_train), (x_test, y_test) = mnist.load_data()
+  #x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, ch)
+  #x_test = x_test.astype('float32')
+  #x_test /= 255
+  #raw_data=raw_datat(x_test, y_test)
 
-  deepconcolic(test_objectt(dnn, raw_data, criterion, "linf"))
+  #deepconcolic(test_objectt(dnn, raw_data, criterion, "linf"))
+
+  parser=argparse.ArgumentParser(description='The concolic testing for neural networks' )
+  parser.add_argument(
+    '--model', dest='model', default='-1', help='The input neural network model (.h5)')
+  parser.add_argument("--inputs", dest="inputs", default="-1",
+                    help="the input test data directory", metavar="DIR")
+  parser.add_argument("--outputs", dest="outputs", default="-1",
+                    help="the outputput test data directory", metavar="DIR")
+  parser.add_argument("--norm", dest="norm", default="linf",
+                    help="the norm metric", metavar="DIR")
+  parser.add_argument("--criterion", dest="criterion", default="nc",
+                    help="the norm metric", metavar="DIR")
+  parser.add_argument("--mnist-dataset", dest="mnist", help="MNIST dataset", action="store_true")
+  parser.add_argument("--cifar10-dataset", dest="cifar10", help="CIFAR10 dataset", action="store_true")
+  parser.add_argument("--vgg16-model", dest='vgg16', help="vgg16 model", action="store_true")
+
+  args=parser.parse_args()
+
+  dnn=None
+  if args.model!='-1':
+    dnn=load_model(args.model)
+    dnn.summary()
+  elif args.vgg16:
+    dnn=VGG16()
+    dnn.summary()
+  else:
+    print (' \n == Please specify the input neural network == \n')
+    sys.exit(0)
+
+  criterion=args.criterion
+  norm=args.norm
+
+  raw_data=None
+  if args.inputs!='-1':
+    img_rows, img_cols, ch = 224, 224, 3
+    xs=[]
+    for f in os.listdir(args.inputs):
+      print (f)
+      if f.endswith(".jpg") or f.endswith(".png"): 
+        image = load_img(os.path.join(args.inputs,f), target_size=(img_rows, img_cols))
+      xs.append(np.asarray(image))
+    print (len(xs))
+    x_test=np.asarray(xs)
+    print x_test.shape, "------"
+    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, ch)
+    x_test = x_test.astype('float32')
+    x_test /= 255
+    raw_data=raw_datat(x_test, [])
+  elif args.mnist:
+    img_rows, img_cols, ch = 28, 28, 1
+    (x_train, y_train), (x_test, y_test) = mnist.load_data()
+    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, ch)
+    x_test = x_test.astype('float32')
+    x_test /= 255
+    raw_data=raw_datat(x_test, y_test)
+  elif args.cifar10:
+    img_rows, img_cols, ch = 32, 32, 3
+    (x_train, y_train), (x_test, y_test) = cifar10.load_data()
+    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, ch)
+    x_test = x_test.astype('float32')
+    x_test /= 255
+    raw_data=raw_datat(x_test, y_test)
+  else:
+    print (' \n == Please input dataset == \n')
+    sys.exit(0)
+
+
+  outs=None
+  if args.outputs!='-1':
+    outs=args.outputs
+  else:
+    print (' \n == Please specify the output directory == \n')
+    sys.exit(0)
 
 if __name__=="__main__":
   main()
