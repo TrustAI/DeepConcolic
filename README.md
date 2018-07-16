@@ -36,6 +36,12 @@ optional arguments:
 
 ```
 
+The neural network model under tested is specified by ``--model`` and a set of raw test data should be given
+by using ``--inputs``. Some popular datasets like MNIST and CIFAR10 can be directly specified by using
+``--mnist-dataset`` and ``--cifar10-dataset`` directly. ``--criterion`` is used to choose the coverage 
+criterion and ``--norm`` helps select the norm metric to measure the distance between inputs. Some examples
+to run DeepConcolic are in the following.
+
 To run an MNIST model
 
 ```
