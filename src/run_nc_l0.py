@@ -16,5 +16,6 @@ from nc_lp import *
 from lp_encoding import *
 
 def run_nc_l0(test_object, outs):
-  print ('\n == Sorry, the support is coming soon ==\n')
-  return
+  print ('\n == is coming soon... ==\n')
+  sys.exit(0)
+  nc_results, layer_functions, cover_layers, activations, test_cases, adversarials=nc_setup(test_object, outs)
