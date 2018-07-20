@@ -31,7 +31,7 @@ def run_nc_l0(test_object, outs):
     if nc_layer.is_conv:
       s*=int(shape[3])*int(shape[4])
 
-    feasible, d, new_im = l0_negate(test_object.dnn, act_inst, [im], nc_layer, nc_pos-s)
+    feasible, d, new_im = l0_negate(test_object.dnn, layer_functions, [im], nc_layer, nc_pos-s)
 
     cover_layers[index_nc_layer].disable_by_pos(pos)
     if feasible:

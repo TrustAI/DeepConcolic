@@ -195,13 +195,14 @@ def nc_report(clayers):
   return covered, non_covered
 
 def save_an_image(im, title, di='./'):
-  pass
   # we assume im is normalized
   #img=Image.fromarray(np.uint8(im*255))
   #img.save(di+title+'.png')
   #matplotlib.pyplot.imsave(di+title+'.png', im)
   #plt.show(im*255)
   #plt.savefig(di+title+'.png')
+  if not di.endswith('/'):
+    di+='/'
   cv2.imwrite((di+title+'.png'), im*255)
 
 #def show_adversarial_examples(imgs, ys, name):

@@ -28,7 +28,7 @@ def nc_setup(test_object, outs):
   cover_layers=get_cover_layers(test_object.dnn, 'NC')
   print('\n== Got cover layers: {0} ==\n'.format(len(cover_layers)))
 
-  batch=10000
+  batch=1#0000
   if len(test_object.raw_data.data)<batch: batch=len(test_object.raw_data.data)
   activations = eval_batch(layer_functions, test_object.raw_data.data[0:batch])
 
