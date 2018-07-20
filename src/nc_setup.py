@@ -41,7 +41,7 @@ def nc_setup(test_object, outs):
 
   xdata=test_object.raw_data.data
   iseed=np.random.randint(0, len(xdata))
-  im=xdata[0]
+  im=xdata[iseed]
 
   test_cases.append(im)
   update_nc_map_via_inst(cover_layers, eval(layer_functions, im))

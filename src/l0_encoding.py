@@ -7,15 +7,20 @@ def sort_pixels(dnn, layer_functions, image, nc_layer, pos, gran=2):
   image_batch = np.kron(np.ones((gran, 1, 1, 1)), image)
   images=[]
   (row, col, chl) = image.shape
-  for i in range(0, row):
-    for j in range(0, col):
+  dim_row, dim_col=row, col
+  if row>DIM: dim_row=DIM
+  if col>DIM: dim_col=DIM
+  selected_rows=np.random.choice(row, dim_row)
+  selected_cols=np.random.choice(col, dim_col)
+  for i in selected_rows:
+    for j in selected_cols:
       new_image_batch = image_batch.copy()
       for g in range(0, gran):
          new_image_batch[g, i, j, :] = sort_list[g]
       images.append(new_image_batch)
   images=np.asarray(images)
   
-  images = images.reshape(row * col * gran, row, col, chl)
+  images = images.reshape(dim_row * dim_col * gran, row, col, chl)
 
   activations = eval_batch(layer_functions, images)
 
@@ -32,7 +37,7 @@ def sort_pixels(dnn, layer_functions, image, nc_layer, pos, gran=2):
   min_values = np.amax(target_change, axis=0)
   min_idx_values = min_indices.astype('float32') / (gran - 1)
 
-  [x, y] = np.meshgrid(np.arange(row), np.arange(col))
+  [x, y] = np.meshgrid(np.arange(dim_row), np.arange(dim_col))
   x = x.flatten('F')  # to flatten in column-major order
   y = y.flatten('F')  # to flatten in column-major order
 
@@ -42,6 +47,9 @@ def sort_pixels(dnn, layer_functions, image, nc_layer, pos, gran=2):
                                      np.split(min_idx_values, len(min_idx_values))))
   sorted_map = target_list[(target_list[:, 2]).argsort()]
   sorted_map = np.flip(sorted_map, 0)
+  for i in range(0, len(sorted_map)):
+    sorted_map[i][0]=selected_rows[int(sorted_map[i][0])]
+    sorted_map[i][1]=selected_cols[int(sorted_map[i][1])]
 
   return sorted_map
 

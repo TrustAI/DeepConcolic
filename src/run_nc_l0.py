@@ -16,7 +16,6 @@ from nc_setup import *
 from nc_l0 import *
 
 def run_nc_l0(test_object, outs):
-  print ('\n == is coming soon... ==\n')
   nc_results, layer_functions, cover_layers, activations, test_cases, adversarials=nc_setup(test_object, outs)
 
   while True:

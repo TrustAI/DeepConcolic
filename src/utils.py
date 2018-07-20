@@ -9,6 +9,7 @@ import cv2
 
 
 MIN=-100000
+DIM=50
 
 ## some DNN model has an explicit input layer
 def is_input_layer(layer):
