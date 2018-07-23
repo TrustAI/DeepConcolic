@@ -12,8 +12,6 @@ To be appear in The 33rd IEEE/ACM International Conference on Automated Software
 
 The long version can be found in https://arxiv.org/abs/1805.00089
 
-Email: wenjie.ruan@cs.ox.ac.uk
-
 # Sample Results
 
 ![alt text](Capture.PNG)
@@ -31,7 +29,7 @@ Parallel Computing Toolbox
 
 # Run
 
-Please directly run script "main_LipschitzTesting.m".
+Please directly run script "main_LipschitzTesting.m". 
 
 
 # Citation
@@ -51,5 +49,6 @@ or
 	Title = {Concolic Testing for Deep Neural Networks},
 	Year = {2018}}
 ```
-
+# Contact
+If there is any question regarding this section, please contact Dr. Wenjie Ruan (wenjie.ruan@cs.ox.ac.uk).
 
