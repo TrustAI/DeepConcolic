@@ -29,9 +29,12 @@ def nc_setup(test_object, outs):
   cover_layers=get_cover_layers(test_object.dnn, 'NC')
   print('\n== Got cover layers: {0} ==\n'.format(len(cover_layers)))
 
-  batch=10000
-  if len(test_object.raw_data.data)<batch: batch=len(test_object.raw_data.data)
-  activations = eval_batch(layer_functions, test_object.raw_data.data[0:batch])
+  tot_size=10000
+  if len(test_object.raw_data.data)<tot_size: tot_size=len(test_object.raw_data.data)
+  activations=[]
+  batches=np.array_split(test_object.raw_data.data[0:tot_size], tot_size/1000 + 1)
+  for batch in batches:
+    activations.extend(eval_batch(layer_functions, batch))
 
   calculate_pfactors(activations, cover_layers)
 
