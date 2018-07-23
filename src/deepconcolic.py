@@ -86,9 +86,7 @@ def main():
       if f.endswith(".jpg") or f.endswith(".png"): 
         image = load_img(os.path.join(args.inputs,f), target_size=(img_rows, img_cols))
       xs.append(np.asarray(image))
-    print (len(xs))
     x_test=np.asarray(xs)
-    print x_test.shape, "------"
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
     x_test = x_test.astype('float32')
     x_test /= 255
