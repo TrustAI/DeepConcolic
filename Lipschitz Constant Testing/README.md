@@ -29,7 +29,7 @@ Parallel Computing Toolbox
 
 # Run
 
-Please directly run script "main_LipschitzTesting.m". 
+Please first download a trained deep neural network model and MNIST dataset "DNN7.mat" in https://www.dropbox.com/s/8vat7xdjqzc1llx/DNN7.mat?dl=0 and then directly run script "main_LipschitzTesting.m". 
 
 
 # Citation
