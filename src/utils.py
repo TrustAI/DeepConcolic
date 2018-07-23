@@ -66,11 +66,11 @@ class cover_layert:
     else:
       self.nc_map = np.ones((1, sp[1]), dtype=bool)
 
-  def update_activations(self):
-    #self.activations=[np.multiply(act, self.nc_map) for act in self.activations]
-    for i in range(0, len(self.activations)):
-      self.activations[i]=np.multiply(self.activations[i], self.nc_map)
-      self.activations[i][self.activations[i]>=0]=MIN
+  #def update_activations(self):
+  #  #self.activations=[np.multiply(act, self.nc_map) for act in self.activations]
+  #  for i in range(0, len(self.activations)):
+  #    self.activations[i]=np.multiply(self.activations[i], self.nc_map)
+  #    self.activations[i][self.activations[i]>=0]=MIN
 
   ## to get the index of the next property to be satisfied
   def get_nc_next(self):
@@ -166,7 +166,7 @@ def update_nc_map_via_inst(clayers, activations):
     act=copy.copy(activations[clayers[i].layer_index])
     ## TODO
     if act_in_the_layer(clayers[i].layer)=='relu':
-      act[act==0]=-MIN/10
+      act[act==0]=MIN/10
     act[act>=0]=0
     if clayers[i].nc_map is None: ## not initialized yet
       clayers[i].initialize_nc_map()
