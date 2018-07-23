@@ -54,7 +54,7 @@ To run an CIFAR10 model
 python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --cifar10-data --outputs outs/
 ```
 
-## Concolic Testing on Lipschitz Constants for DNNs
+### Concolic Testing on Lipschitz Constants for DNNs
 
 To run Lipschitz Constant Testing, please refer to instructions in folder "Lipschitz Constant Testing".
 
