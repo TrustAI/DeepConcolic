@@ -64,6 +64,7 @@ We suggest create an environment using `conda`
 conda create --name deepconcolic
 source activate deepconcolic
 conda install keras
+conda install opencv 
 ```
 
 # Citation
