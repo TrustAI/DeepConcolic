@@ -255,7 +255,7 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_constraints):
                   new_x[I][J][K] = v
       return True, d, new_x
   except:
-      print 'there is one except'
+      print ('there is one except')
       return False, -1, None
 
   return None, None, None

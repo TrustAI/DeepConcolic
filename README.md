@@ -65,6 +65,7 @@ conda create --name deepconcolic
 source activate deepconcolic
 conda install keras
 conda install opencv 
+conda install pillow
 ```
 
 # Citation
