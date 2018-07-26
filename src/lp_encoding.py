@@ -287,13 +287,13 @@ def create_base_constraints(dnn):
       tot=isp[1]*isp[2]*isp[3]
       for I in range(0, tot):
         #print ('flatten, == ', l, ' == ', I)
-        d0=I/(isp[2]*isp[3])
-        d1=(I%(isp[2]*isp[3]))/isp[3]
-        d2=I-d0*(isp[2]*isp[3])-d1*isp[3]
+        d0=int(I)//(int(isp[2])*int(isp[3]))
+        d1=(int(I)%(int(isp[2])*int(isp[3])))//int(isp[3])
+        d2=int(I)-int(d0)*(int(isp[2])*int(isp[3]))-d1*int(isp[3])
         constraint=[[], []]
         constraint[0].append(var_names[the_index][0][I])
         constraint[1].append(-1)
-        constraint[0].append(var_names[the_index-1][0][d0][d1][d2])
+        constraint[0].append(var_names[the_index-1][0][int(d0)][int(d1)][int(d2)])
         constraint[1].append(+1)
 
         constraints.append(constraint)
