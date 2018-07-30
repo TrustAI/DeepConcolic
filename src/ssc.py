@@ -12,5 +12,7 @@ from keras import *
 
 from utils import *
 
-def get_ssc_next(cover_layers):
-  pass
+def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, dec_pos):
+
+  return -1, False, None, None
+

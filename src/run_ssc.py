@@ -13,6 +13,7 @@ from keras.layers import *
 from keras import *
 from utils import *
 from nc_setup import *
+from ssc import *
 
 def run_ssc(test_object, outs):
   print ('To run ssc\n')
@@ -25,18 +26,18 @@ def run_ssc(test_object, outs):
     print ('== to cover (dec_layer_index, dec_pos)', dec_layer_index, dec_pos)
 
     ###
-    #cond_layer=cover_layers[cond_layer_index]
-    #dec_layer=cover_layers[dec_layer_index]
-    #cond_pos_=np.unravel(cond_pos, (cond_layer.activations[0]).shape)
-    #dec_pos_=np.unravel(dec_pos, (dec_layer.activations[0]).shape)
+    cond_layer=cover_layers[dec_layer_index-1]
+    dec_layer=cover_layers[dec_layer_index]
+    cond_cover=np.ones(cond_layer.ssc_map.shape, dtype=bool)
     ###
 
-    #feasible, d, new_im, old_image=ssc_search(test_object, layer_functions, cond_layer, cond_pos_, dec_layer, dec_pos_)
+    print (cond_cover.size)
+    for cond_pos in range(0, cond_cover.size):
+      print ('cond_pos: ', cond_pos)
+      feasible, d, new_image, old_image=ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, dec_pos)
 
-    #if feasible:
-    #  test_cases.append((new_image, old_image))
-    #else:
-    #  print ("not feasible")
+      if feasible:
+        test_cases.append((new_image, old_image))
+      else:
+        print ("not feasible")
 
-    #print ('let us finish the SSC run here...')
-    #break
