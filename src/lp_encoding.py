@@ -191,11 +191,6 @@ def create_base_constraints(dnn):
   rhs=[]
   constraint_senses=[]
   constraint_names=[]
-  #for I in range(0, var_names[0].shape[0]):
-  #  for J in range(0, var_names[0].shape[1]):
-  #    for K in range(0, var_names[0].shape[2]):
-  #      for L in range(0, var_names[0].shape[3]):
-  #        pass  ## we do not need it in the base...
 
   ## now, it comes the encoding of constraints
   weight_index=-1

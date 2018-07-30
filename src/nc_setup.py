@@ -62,4 +62,7 @@ def nc_setup(test_object, outs):
   f.write('NC-cover: {0} #test cases: {1} #adversarial examples: {2}\n'.format(1.0 * covered / (covered + not_covered), len(test_cases), len(adversarials)))
   f.close()
 
+  for i in range(0, len(cover_layers)):
+    cover_layers[i].initialize_ssc_map()
+
   return nc_results, layer_functions, cover_layers, activations, test_cases, adversarials

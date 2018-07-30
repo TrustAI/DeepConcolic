@@ -12,13 +12,12 @@ from keras.preprocessing.image import load_img
 from keras.layers import *
 from keras import *
 
-
-
 from utils import *
 from nc_lp import *
 from lp_encoding import *
 from run_nc_linf import run_nc_linf
 from run_nc_l0 import run_nc_l0
+from run_ssc import run_ssc
 
 
 def deepconcolic(test_object, outs):
@@ -31,13 +30,14 @@ def deepconcolic(test_object, outs):
     else:
       print('\n not supported norm...\n')
       sys.exit(0)
+  elif test_object.criterion=='ssc': ## neuron cover
+    run_ssc(test_object, outs)
   else:
       print('\n for now, let us focus on neuron cover...\n')
       sys.exit(0)
 
 
 def main():
-
 
   parser=argparse.ArgumentParser(description='The concolic testing for neural networks' )
   parser.add_argument(

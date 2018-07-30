@@ -58,6 +58,7 @@ class cover_layert:
     self.pfactor=1.0 ## the proportional factor
     self.actiavtions=[] ## so, we need to store neuron activations?
     self.nc_map=None ## to count the coverage
+    self.ssc_map=None ## 
 
   def initialize_nc_map(self):
     sp=self.layer.output.shape
@@ -66,11 +67,12 @@ class cover_layert:
     else:
       self.nc_map = np.ones((1, sp[1]), dtype=bool)
 
-  #def update_activations(self):
-  #  #self.activations=[np.multiply(act, self.nc_map) for act in self.activations]
-  #  for i in range(0, len(self.activations)):
-  #    self.activations[i]=np.multiply(self.activations[i], self.nc_map)
-  #    self.activations[i][self.activations[i]>=0]=MIN
+  def initialize_ssc_map(self):
+    sp=self.layer.output.shape
+    if self.is_conv:
+      self.ssc_map = np.ones((1, sp[1], sp[2], sp[3]), dtype=bool)
+    else:
+      self.ssc_map = np.ones((1, sp[1]), dtype=bool)
 
   ## to get the index of the next property to be satisfied
   def get_nc_next(self):
@@ -206,10 +208,16 @@ def save_an_image(im, title, di='./'):
     di+='/'
   cv2.imwrite((di+title+'.png'), im*255)
 
-#def show_adversarial_examples(imgs, ys, name):
-#  for i in range(0, 2):
-#    plt.subplot(1, 2, 1+i)
-#    print 'imgs[i].shape is ', imgs[i].shape
-#    plt.imshow(imgs[i].reshape([28,28]), cmap=plt.get_cmap('gray'))
-#    plt.title("label: "+str(ys[i]))
-#    plt.savefig(name, bbox_inches='tight')
+def get_ssc_next(clayers):
+  while True:
+    dec_layer_index=np.random.randint(0, len(clayers))
+    sp=clayers[dec_layer_index].ssc_map.shape
+    tot_s=1
+    for s in sp:
+      tot_s*=s
+    dec_pos=np.random.randint(0, tot_s)
+    if not clayers[dec_layer_index].ssc_map.item(dec_pos): 
+      continue
+    else: 
+      clayers[dec_layer_index].ssc_map.itemset(dec_pos, False) 
+    return dec_layer_index, dec_pos
