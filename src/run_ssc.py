@@ -31,9 +31,7 @@ def run_ssc(test_object, outs):
     cond_cover=np.ones(cond_layer.ssc_map.shape, dtype=bool)
     ###
 
-    print (cond_cover.size)
     for cond_pos in range(0, cond_cover.size):
-      print ('cond_pos: ', cond_pos)
       feasible, d, new_image, old_image=ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, dec_pos)
 
       if feasible:
