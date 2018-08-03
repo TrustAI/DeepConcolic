@@ -30,7 +30,6 @@ def nc_setup(test_object, outs):
   print('\n== Got cover layers: {0} ==\n'.format(len(cover_layers)))
 
   tot_size=len(test_object.raw_data.data)
-  ##if len(test_object.raw_data.data)<tot_size: tot_size=len(test_object.raw_data.data)
   activations=None
   batches=np.array_split(test_object.raw_data.data[0:tot_size], tot_size//1000 + 1)
   for i in range(0, len(batches)):

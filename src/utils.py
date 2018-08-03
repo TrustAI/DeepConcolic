@@ -210,7 +210,7 @@ def save_an_image(im, title, di='./'):
 
 def get_ssc_next(clayers):
   while True:
-    dec_layer_index=np.random.randint(0, len(clayers))
+    dec_layer_index=np.random.randint(1, len(clayers))
     sp=clayers[dec_layer_index].ssc_map.shape
     tot_s=1
     for s in sp:

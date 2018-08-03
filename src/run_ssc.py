@@ -15,10 +15,28 @@ from utils import *
 from nc_setup import *
 from ssc import *
 
+try:
+  from art.attacks.fast_gradient import FastGradientMethod
+  from art.classifiers import KerasClassifier
+except:
+  from attacks import *
+
+
 def run_ssc(test_object, outs):
   print ('To run ssc\n')
   
   f_results, layer_functions, cover_layers, activations, test_cases, adversarials=nc_setup(test_object, outs)
+  ## setup phase follow-ups
+  classifier=KerasClassifier((MIN, -MIN), model=test_object.dnn)
+  adv_crafter = FastGradientMethod(classifier)
+  adv_data=adv_crafter.generate(x=test_object.raw_data.data, eps=0.3)
+  adv_activations=eval_batch(layer_functions, adv_data)
+  #
+  for i in range(0, len(activations)):
+    activations[i][activations[i]<=0]=0
+    activations[i]=activations[i].astype(bool)
+    adv_activations[i][adv_activations[i]<=0]=0
+    adv_activations[i]=adv_activations[i].astype(bool)
 
   while True:
     dec_layer_index, dec_pos=get_ssc_next(cover_layers)
@@ -32,7 +50,7 @@ def run_ssc(test_object, outs):
     ###
 
     for cond_pos in range(0, cond_cover.size):
-      feasible, d, new_image, old_image=ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, dec_pos)
+      feasible, d, new_image, old_image=ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, dec_pos, activations, adv_activations)
 
       if feasible:
         test_cases.append((new_image, old_image))
