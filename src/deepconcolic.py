@@ -1,6 +1,7 @@
 import argparse
 import sys
 import os
+import cv2
 from datetime import datetime
 
 import keras
@@ -86,14 +87,18 @@ def main():
       for name in files:
         fname=(os.path.join(path, name))
         if fname.endswith('.jpg') or fname.endswith('.png'):
-          image = load_img(fname, target_size=(img_rows, img_cols))
-          xs.append(np.asarray(image))
+          image = cv2.imread(fname)
+          image = cv2.resize(image, (img_rows, img_cols))
+          xs.append((image))
     print ('Total data loaded: ', len(xs))
     x_test=np.asarray(xs)
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
     x_test = x_test.astype('float32')
     x_test /= 255
     raw_data=raw_datat(x_test, [])
+    print ('==', x_test.shape)
+    save_an_image(x_test[0], 'tmp', 'data/')
+    sys.exit(0)
   elif args.mnist:
     img_rows, img_cols, img_channels = 28, 28, 1
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
