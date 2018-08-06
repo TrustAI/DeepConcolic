@@ -30,9 +30,11 @@ def run_ssc(test_object, outs):
   classifier=KerasClassifier((MIN, -MIN), model=test_object.dnn)
   adv_crafter = FastGradientMethod(classifier)
   adv_data=adv_crafter.generate(x=test_object.raw_data.data, eps=0.3)
-  adv_activations=eval_batch(layer_functions, adv_data)
+  print (adv_data.shape)
+  adv_activations=eval_batch(layer_functions, adv_data, is_input_layer(test_object.dnn.layers[0]))
   #
   for i in range(0, len(activations)):
+    if activations[i]==[]: continue
     activations[i][activations[i]<=0]=0
     activations[i]=activations[i].astype(bool)
     adv_activations[i][adv_activations[i]<=0]=0

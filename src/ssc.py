@@ -50,7 +50,7 @@ def local_search(dnn, local_input, ssc_pair):
   
   while e_max-e_min>=EPSILON:
     x_adv_vect=adv_crafter.generate(x=np.array([local_input]), eps=e_max)
-    adv_acts=eval_batch(ssc_pair.layer_functions, x_adv_vect)
+    adv_acts=eval_batch(ssc_pair.layer_functions, x_adv_vect, dnn.layers[0])
     adv_cond_flags=adv_acts[ssc_pair.cond_layer.layer_index][0]
     adv_cond_flags[adv_cond_flags<=0]=0
     adv_cond_flags=adv_cond_flags.astype(bool)

@@ -34,7 +34,7 @@ def nc_setup(test_object, outs):
   batches=np.array_split(test_object.raw_data.data[0:tot_size], tot_size//1000 + 1)
   for i in range(0, len(batches)):
     batch=batches[i]
-    sub_acts=eval_batch(layer_functions, batch)
+    sub_acts=eval_batch(layer_functions, batch, is_input_layer(test_object.dnn.layers[0]))
     if i==0:
       activations=sub_acts
     else:
@@ -53,7 +53,7 @@ def nc_setup(test_object, outs):
   im=xdata[iseed]
 
   test_cases.append(im)
-  update_nc_map_via_inst(cover_layers, eval(layer_functions, im))
+  update_nc_map_via_inst(cover_layers, eval(layer_functions, im, is_input_layer(test_object.dnn.layers[0])))
   covered, not_covered=nc_report(cover_layers)
   #print (covered)
   print('\n== neuron coverage: {0}==\n'.format(covered*1.0/(covered+not_covered)))

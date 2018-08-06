@@ -119,22 +119,38 @@ def get_cover_layers(dnn, criterion):
 
 
 ### given an input image, to evaluate activations
-def eval(layer_functions, im):
+def eval(layer_functions, im, having_input_layer=False):
   activations=[]
   for l in range(0, len(layer_functions)):
-    if l==0:
-      activations.append(layer_functions[l]([[im]])[0])
+    if not having_input_layer:
+      if l==0:
+        activations.append(layer_functions[l]([[im]])[0])
+      else:
+        activations.append(layer_functions[l]([activations[l-1]])[0])
     else:
-      activations.append(layer_functions[l]([activations[l-1]])[0])
+      if l==0:
+        activations.append([]) #activations.append(layer_functions[l]([ims])[0])
+      elif l==1:
+        activations.append(layer_functions[l]([[im]])[0])
+      else:
+        activations.append(layer_functions[l]([activations[l-1]])[0])
   return activations
 
-def eval_batch(layer_functions, ims):
+def eval_batch(layer_functions, ims, having_input_layer=False):
   activations=[]
   for l in range(0, len(layer_functions)):
-    if l==0:
-      activations.append(layer_functions[l]([ims])[0])
+    if not having_input_layer:
+      if l==0:
+        activations.append(layer_functions[l]([ims])[0])
+      else:
+        activations.append(layer_functions[l]([activations[l-1]])[0])
     else:
-      activations.append(layer_functions[l]([activations[l-1]])[0])
+      if l==0:
+        activations.append([]) #activations.append(layer_functions[l]([ims])[0])
+      elif l==1:
+        activations.append(layer_functions[l]([ims])[0])
+      else:
+        activations.append(layer_functions[l]([activations[l-1]])[0])
   return activations
 
 class raw_datat:

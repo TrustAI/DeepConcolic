@@ -90,6 +90,7 @@ def main():
           image = cv2.imread(fname)
           image = cv2.resize(image, (img_rows, img_cols))
           xs.append((image))
+          if len(xs) >= 1000: break
     print ('Total data loaded: ', len(xs))
     x_test=np.asarray(xs)
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
@@ -106,6 +107,7 @@ def main():
   elif args.cifar10:
     img_rows, img_cols, img_channels = 32, 32, 3
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
+    x_test=x_test[0:3000]
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
     x_test = x_test.astype('float32')
     x_test /= 255
@@ -113,7 +115,6 @@ def main():
   else:
     print (' \n == Please input dataset == \n')
     sys.exit(0)
-
 
   outs=None
   if args.outputs!='-1':
