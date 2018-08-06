@@ -81,11 +81,14 @@ def main():
   if args.inputs!='-1':
     
     xs=[]
-    for f in os.listdir(args.inputs):
-      print (f)
-      if f.endswith(".jpg") or f.endswith(".png"): 
-        image = load_img(os.path.join(args.inputs,f), target_size=(img_rows, img_cols))
-      xs.append(np.asarray(image))
+    print ('To load input data...')
+    for path, subdirs, files in os.walk(args.inputs):
+      for name in files:
+        fname=(os.path.join(path, name))
+        if fname.endswith('.jpg') or fname.endswith('.png'):
+          image = load_img(fname, target_size=(img_rows, img_cols))
+          xs.append(np.asarray(image))
+    print ('Total data loaded: ', len(xs))
     x_test=np.asarray(xs)
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
     x_test = x_test.astype('float32')

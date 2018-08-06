@@ -115,5 +115,6 @@ def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
     
   print ('final d: ', d_min)  
   sys.exit(0)
-  return -1, False, None, None
+  d_norm=None
+  return d_min>-1, d_norm, new_x, x
 
