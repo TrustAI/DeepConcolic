@@ -96,9 +96,6 @@ def main():
     x_test = x_test.astype('float32')
     x_test /= 255
     raw_data=raw_datat(x_test, [])
-    print ('==', x_test.shape)
-    save_an_image(x_test[0], 'tmp', 'data/')
-    sys.exit(0)
   elif args.mnist:
     img_rows, img_cols, img_channels = 28, 28, 1
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
