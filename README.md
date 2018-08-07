@@ -59,7 +59,7 @@ python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --cifar10-
 To run Lipschitz Constant Testing, please refer to instructions in folder "Lipschitz Constant Testing".
 
 # Dependencies
-We suggest create an environment using `conda`
+We suggest create an environment using `conda`, `tensorflow>=1.5.0`
 ```
 conda create --name deepconcolic
 source activate deepconcolic
