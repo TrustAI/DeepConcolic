@@ -132,5 +132,5 @@ def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
     d_norm=np.abs(new_x-x)
     return d_min, np.max(d_norm), new_x, x
   else:
-    return -1, None, None, None
+    return d_min, None, None, None
 
