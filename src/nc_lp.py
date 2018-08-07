@@ -1,5 +1,8 @@
+try:
+  import cplex
+except:
+  from solver import *
 
-import cplex
 import sys
 import numpy as np
 
