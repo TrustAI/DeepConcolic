@@ -111,9 +111,9 @@ def run_ssc(test_object, outs):
     #      continue
 
     #print ('cond, dec neuron pair: ', cond_layer.layer, dec_layer.layer, cond_pos, dec_pos)
-    print ('cond, dec neuron pair: ', (cond_pos, cond_pos_unravel), (dec_pos, dec_pos_unravel))
-    print ('cond, dec layer index: ', cond_layer.layer_index, dec_layer.layer_index)
-    print ('dec_layer_index: ', dec_layer_index)
+    #print ('cond, dec neuron pair: ', (cond_pos, cond_pos_unravel), (dec_pos, dec_pos_unravel))
+    #print ('cond, dec layer index: ', cond_layer.layer_index, dec_layer.layer_index)
+    #print ('dec_layer_index: ', dec_layer_index)
 
     count+=1
 
