@@ -63,7 +63,7 @@ def local_search(dnn, local_input, ssc_pair, adv_crafter0):
 
     found=False
     if ssc_pair.dec_flag != adv_dec_flag:
-      if adv_cond_flags.item(ssc_pair.cond_pos)!=ssc_pair.cond_flags.item(ssc_pair.cond_pos):
+      #if adv_cond_flags.item(ssc_pair.cond_pos)!=ssc_pair.cond_flags.item(ssc_pair.cond_pos):
         d=np.count_nonzero(np.logical_xor(adv_cond_flags, ssc_pair.cond_flags))
         if d<=d_min and d>0: 
           found=True

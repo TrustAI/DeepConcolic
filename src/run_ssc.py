@@ -80,34 +80,35 @@ def run_ssc(test_object, outs):
         continue
         
 
-    found_a_valid_cond=False
-    cond_pos=None
-    cond_pos_unravel=None
-    while not found_a_valid_cond:
-      found_a_valid_cond=True
-      cond_pos=np.random.randint(0, cond_cover.size)
-      osp=cond_layer.ssc_map.shape
-      cond_pos_unravel=np.unravel_index(cond_pos, osp)
-      if is_conv_layer(cond_layer.layer) and cond_layer.layer_index>0:  # to check if cond_pos is a padding
-        Weights=cond_layer.layer.get_weights()
-        weights=Weights[0]
-        biases=Weights[1]
-        #osp=cond_layer.ssc_map.shape
-        #cond_pos_unravel=np.unravel_index(cond_pos, osp)
-        I=0
-        J=cond_pos_unravel[1]
-        K=cond_pos_unravel[2]
-        L=cond_pos_unravel[3]
-        kernel_size=cond_layer.layer.kernel_size
-        try: 
-          for II in range(0, kernel_size[0]):
-            for JJ in range(0, kernel_size[1]):
-              for KK in range(0, weights.shape[2]):
-                try_tmp=cover_layers[dec_layer_index-2].ssc_map[0][J+II][K+JJ][KK]
-        except: 
-          print ('cond neuron is a padding')
-          found_a_valid_cond=False
-          continue
+    cond_pos=np.random.randint(0, cond_cover.size)
+    #found_a_valid_cond=False
+    #cond_pos=None
+    #cond_pos_unravel=None
+    #while not found_a_valid_cond:
+    #  found_a_valid_cond=True
+    #  cond_pos=np.random.randint(0, cond_cover.size)
+    #  osp=cond_layer.ssc_map.shape
+    #  cond_pos_unravel=np.unravel_index(cond_pos, osp)
+    #  if is_conv_layer(cond_layer.layer) and cond_layer.layer_index>0:  # to check if cond_pos is a padding
+    #    Weights=cond_layer.layer.get_weights()
+    #    weights=Weights[0]
+    #    biases=Weights[1]
+    #    #osp=cond_layer.ssc_map.shape
+    #    #cond_pos_unravel=np.unravel_index(cond_pos, osp)
+    #    I=0
+    #    J=cond_pos_unravel[1]
+    #    K=cond_pos_unravel[2]
+    #    L=cond_pos_unravel[3]
+    #    kernel_size=cond_layer.layer.kernel_size
+    #    try: 
+    #      for II in range(0, kernel_size[0]):
+    #        for JJ in range(0, kernel_size[1]):
+    #          for KK in range(0, weights.shape[2]):
+    #            try_tmp=cover_layers[dec_layer_index-2].ssc_map[0][J+II][K+JJ][KK]
+    #    except: 
+    #      print ('cond neuron is a padding')
+    #      found_a_valid_cond=False
+    #      continue
 
     #print ('cond, dec neuron pair: ', cond_layer.layer, dec_layer.layer, cond_pos, dec_pos)
     print ('cond, dec neuron pair: ', (cond_pos, cond_pos_unravel), (dec_pos, dec_pos_unravel))
