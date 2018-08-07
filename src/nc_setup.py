@@ -71,3 +71,22 @@ def nc_setup(test_object, outs):
     cover_layers[i].initialize_ssc_map()
 
   return nc_results, layer_functions, cover_layers, activations, test_cases, adversarials
+
+def ssc_setup(test_object, outs):
+  print('\n== {0}, {1} ==\n'.format(test_object.criterion, test_object.norm))
+  if not os.path.exists(outs):
+    os.system('mkdir -p {0}'.format(outs))
+  if not outs.endswith('/'):
+    outs+='/'
+  nc_results=outs+'ssc_{0}_report-{1}.txt'.format(test_object.norm, str(datetime.now()).replace(' ', '-'))
+  nc_results=nc_results.replace(':', '-')
+
+  layer_functions=get_layer_functions(test_object.dnn)
+  print('\n== Got layer functions: {0} ==\n'.format(len(layer_functions)))
+  cover_layers=get_cover_layers(test_object.dnn, 'SSC')
+  print('\n== Got cover layers: {0} ==\n'.format(len(cover_layers)))
+
+  for i in range(0, len(cover_layers)):
+    cover_layers[i].initialize_ssc_map()
+
+  return nc_results, layer_functions, cover_layers

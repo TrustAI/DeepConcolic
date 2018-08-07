@@ -10,6 +10,7 @@ import cv2
 
 MIN=-100000
 DIM=50
+ssc_ratio=0.01
 
 ## some DNN model has an explicit input layer
 def is_input_layer(layer):
@@ -109,9 +110,7 @@ def get_cover_layers(dnn, criterion):
   for l in range(0, len(dnn.layers)):
     if l==len(dnn.layers)-1: continue
     layer=dnn.layers[l]
-    print (layer)
     if is_conv_layer(layer) or is_dense_layer(layer):
-      print ('is effective layer')
       sp=layer.output.shape
       clayer=cover_layert(layer, l, is_conv_layer(layer))
       cover_layers.append(clayer)
@@ -234,6 +233,6 @@ def get_ssc_next(clayers):
     dec_pos=np.random.randint(0, tot_s)
     if not clayers[dec_layer_index].ssc_map.item(dec_pos): 
       continue
-    else: 
-      clayers[dec_layer_index].ssc_map.itemset(dec_pos, False) 
+    #else: 
+    #  clayers[dec_layer_index].ssc_map.itemset(dec_pos, False) 
     return dec_layer_index, dec_pos
