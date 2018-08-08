@@ -104,7 +104,7 @@ def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
     if not np.logical_xor(dec1>0, dec2>0): continue
     cond1=(acts[cond_layer.layer_index][0].item(cond_pos))
     cond2=(adv_acts[cond_layer.layer_index][0].item(cond_pos))
-    if not np.logical_xor(cond1>0, cond2>0): continue
+    #if not np.logical_xor(cond1>0, cond2>0): continue
 
     count+=1
 
@@ -124,7 +124,7 @@ def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
       print ('new d: ', d_min, cond_layer.ssc_map.size)
       if d_min==1: break
 
-    #if count>200: break
+    #if count>100: break
     if d_min<=ssc_ratio*cond_layer.ssc_map.size: break
     
   print ('final d: ', d_min, ' count:', count)  
