@@ -92,6 +92,7 @@ def run_ssc(test_object, outs):
 
     top1_adv_flag=False
     top5_adv_flag=False
+    top5b_adv_flag=False
     y1s=[]
     y2s=[]
     
@@ -109,7 +110,12 @@ def run_ssc(test_object, outs):
 
       if y1s[4]!=y2s[4]: top1_adv_flag=True
 
-      if not y1s[4] in y2s: top5_adv_flag=True
+      if not y1s[4] in y2s: top5b_adv_flag=True
+
+      for y1 in y1s:
+        if not y1 in y2s:
+          top5_adv_flag=True
+          break
 
       if top5_adv_flag:
         print ('found an adversarial example')
@@ -123,6 +129,6 @@ def run_ssc(test_object, outs):
 
     print ('f_results: ', f_results)
     f = open(f_results, "a")
-    f.write('{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12}\n'.format(count, len(test_cases), len(adversarials), feasible, top1_adv_flag, top5_adv_flag, d_min, d_norm, l0_d, dec_layer.layer_index, cond_layer.ssc_map.size, y1s, y2s))
+    f.write('{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} {13}\n'.format(count, len(test_cases), len(adversarials), feasible, top1_adv_flag, top5_adv_flag, top5b_adv_flag, d_min, d_norm, l0_d, dec_layer.layer_index, cond_layer.ssc_map.size, y1s, y2s))
     f.close()
 
