@@ -62,9 +62,6 @@ def run_ssc(test_object, outs):
       Weights=dec_layer.layer.get_weights()
       weights=Weights[0]
       biases=Weights[1]
-      #osp=dec_layer.ssc_map.shape
-      #dec_pos_unravel=np.unravel_index(dec_pos, osp)
-      #print (osp, ':', dec_pos, dec_pos_unravel)
       I=0
       J=dec_pos_unravel[1]
       K=dec_pos_unravel[2]
@@ -81,39 +78,9 @@ def run_ssc(test_object, outs):
         
 
     cond_pos=np.random.randint(0, cond_cover.size)
-    #found_a_valid_cond=False
-    #cond_pos=None
-    #cond_pos_unravel=None
-    #while not found_a_valid_cond:
-    #  found_a_valid_cond=True
-    #  cond_pos=np.random.randint(0, cond_cover.size)
-    #  osp=cond_layer.ssc_map.shape
-    #  cond_pos_unravel=np.unravel_index(cond_pos, osp)
-    #  if is_conv_layer(cond_layer.layer) and cond_layer.layer_index>0:  # to check if cond_pos is a padding
-    #    Weights=cond_layer.layer.get_weights()
-    #    weights=Weights[0]
-    #    biases=Weights[1]
-    #    #osp=cond_layer.ssc_map.shape
-    #    #cond_pos_unravel=np.unravel_index(cond_pos, osp)
-    #    I=0
-    #    J=cond_pos_unravel[1]
-    #    K=cond_pos_unravel[2]
-    #    L=cond_pos_unravel[3]
-    #    kernel_size=cond_layer.layer.kernel_size
-    #    try: 
-    #      for II in range(0, kernel_size[0]):
-    #        for JJ in range(0, kernel_size[1]):
-    #          for KK in range(0, weights.shape[2]):
-    #            try_tmp=cover_layers[dec_layer_index-2].ssc_map[0][J+II][K+JJ][KK]
-    #    except: 
-    #      print ('cond neuron is a padding')
-    #      found_a_valid_cond=False
-    #      continue
 
-    #print ('cond, dec neuron pair: ', cond_layer.layer, dec_layer.layer, cond_pos, dec_pos)
-    #print ('cond, dec neuron pair: ', (cond_pos, cond_pos_unravel), (dec_pos, dec_pos_unravel))
-    #print ('cond, dec layer index: ', cond_layer.layer_index, dec_layer.layer_index)
-    #print ('dec_layer_index: ', dec_layer_index)
+    print ('cond, dec layer index: ', cond_layer.layer_index, dec_layer.layer_index)
+    print ('dec_layer_index: ', dec_layer_index)
 
     count+=1
 
@@ -131,15 +98,17 @@ def run_ssc(test_object, outs):
       y2= (np.argmax(test_object.dnn.predict(np.array([old_image]))))
       if y1!=y2:
         print ('found an adversarial example')
-        save_an_image(old_image, '{0}-original.png'.format(len(test_cases)), f_results.split('/')[0])
-        save_an_image(new_image, '{0}-adv.png'.format(len(test_cases)), f_results.split('/')[0])
-        adv_flag=True
         adversarials.append((new_image, old_image))
+        save_an_image(old_image, '{0}-original-{1}.png'.format(len(adversarials), y1), f_results.split('/')[0])
+        save_an_image(new_image, '{0}-adv-{1}.png'.format(len(adversarials), y2), f_results.split('/')[0])
+        diff_image=np.abs(new_image-old_image)
+        save_an_image(new_image, '{0}-diff.png'.format(len(adversarials)), f_results.split('/')[0])
+        adv_flag=True
     else:
       print ("not feasible")
 
     print ('f_results: ', f_results)
     f = open(f_results, "a")
-    f.write('{0} {1} {2} {3} {4} {5} {6}\n'.format(count, len(test_cases), len(adversarials), feasible, adv_flag, d_min, d_norm))
+    f.write('{0} {1} {2} {3} {4} {5} {6} {7} {8}\n'.format(count, len(test_cases), len(adversarials), feasible, adv_flag, d_min, d_norm, dec_layer.layer_index, cond_layer.ssc_map.size))
     f.close()
 

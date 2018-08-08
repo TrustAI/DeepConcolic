@@ -22,7 +22,7 @@ except:
 
 RP_SIZE=50 ## the top 50 pairs
 NNUM=1000000000
-EPSILON=sys.float_info.epsilon #0.000000000000001
+EPSILON=sys.float_info.epsilon*10 #0.000000000000001
 EPS_MAX=0.3
 
 class ssc_pairt:
@@ -36,11 +36,8 @@ class ssc_pairt:
     self.dec_layer=dec_layer
     self.dec_pos=dec_pos
 
-def local_search(dnn, local_input, ssc_pair, adv_crafter0):
+def local_search(dnn, local_input, ssc_pair, adv_crafter):
   
-  classifier=KerasClassifier((MIN, -MIN), model=dnn)
-  adv_crafter = FastGradientMethod(classifier)
-
   d_min=NNUM
   
   e_max=0.3
@@ -48,8 +45,9 @@ def local_search(dnn, local_input, ssc_pair, adv_crafter0):
   e_min=0.0
 
   x_ret=None
-  
+  not_changed=0
   while e_max-e_min>=EPSILON:
+    #print ('                     === in while')
     x_adv_vect=adv_crafter.generate(x=np.array([local_input]), eps=e_max)
     adv_acts=eval_batch(ssc_pair.layer_functions, x_adv_vect, is_input_layer(dnn.layers[0]))
     adv_cond_flags=adv_acts[ssc_pair.cond_layer.layer_index][0]
@@ -73,11 +71,15 @@ def local_search(dnn, local_input, ssc_pair, adv_crafter0):
       old_e_max=e_max
       e_max=(e_max+e_min)/2
       x_ret=x_adv_vect[0]
+      not_changed=0
     else:
       e_min=e_max
       e_max=(old_e_max+e_max)/2
+      not_changed+=1
 
     if d_min==1: break
+    if d_min<=ssc_ratio*ssc_pair.cond_layer.ssc_map.size: break
+    #if not_changed>5: break
 
   return d_min, x_ret
 
@@ -104,11 +106,9 @@ def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
     if not np.logical_xor(dec1>0, dec2>0): continue
     cond1=(acts[cond_layer.layer_index][0].item(cond_pos))
     cond2=(adv_acts[cond_layer.layer_index][0].item(cond_pos))
-    #if not np.logical_xor(cond1>0, cond2>0): continue
 
     count+=1
 
-    #print ('found one potenrial cond, dec pair')
 
     cond_flags=acts[cond_layer.layer_index][0]
     cond_flags[cond_flags<=0]=0
