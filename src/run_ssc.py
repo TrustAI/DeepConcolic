@@ -88,24 +88,34 @@ def run_ssc(test_object, outs):
 
     print ('d_min is', d_min, 'd_norm is', d_norm)
 
-    feasible=(d_min<=ssc_ratio*cond_layer.ssc_map.size)
+    feasible=(d_min<=ssc_ratio*cond_layer.ssc_map.size or d_min==1)
 
-    adv_flag=False
+    top1_adv_flag=False
+    top5_adv_flag=False
+    y1s=[]
+    y2s=[]
+    
+    l0_d=None
 
-    if feasible:
+    if d_norm is not None: #feasible:
       test_cases.append((new_image, old_image))
-      y1 =(np.argmax(test_object.dnn.predict(np.array([new_image]))))
-      y2= (np.argmax(test_object.dnn.predict(np.array([old_image]))))
-      if y1!=y2:
+      new_image=new_image.astype('uint8')
+      old_image=old_image.astype('uint8')
+      diff_image=np.abs(new_image-old_image)
+      l0_d=np.count_nonzero(diff_image)/(224*224*3*1.0)
+      y1s=(np.argsort(test_object.dnn.predict(np.array([new_image]))))[0][-5:]
+      y2s=(np.argsort(test_object.dnn.predict(np.array([old_image]))))[0][-5:]
+
+
+      if y1s[4]!=y2s[4]: top1_adv_flag=True
+
+      if not y1s[4] in y2s: top5_adv_flag=True
+
+      if top5_adv_flag:
         print ('found an adversarial example')
         adversarials.append((new_image, old_image))
-        save_an_image(new_image, '{0}-adv-{1}.png'.format(len(adversarials), y1), f_results.split('/')[0])
-        save_an_image(old_image, '{0}-original-{1}.png'.format(len(adversarials), y2), f_results.split('/')[0])
-        new_image=new_image*255
-        old_image=old_image*255
-        new_image=new_image.astype('uint8')
-        old_image=old_image.astype('uint8')
-        diff_image=np.abs(new_image-old_image)
+        save_an_image(new_image/255.0, '{0}-adv-{1}.png'.format(len(adversarials), y1s[4]), f_results.split('/')[0])
+        save_an_image(old_image/255.0, '{0}-original-{1}.png'.format(len(adversarials), y2s[4]), f_results.split('/')[0])
         save_an_image(diff_image/255.0, '{0}-diff.png'.format(len(adversarials)), f_results.split('/')[0])
         adv_flag=True
     else:
@@ -113,6 +123,6 @@ def run_ssc(test_object, outs):
 
     print ('f_results: ', f_results)
     f = open(f_results, "a")
-    f.write('{0} {1} {2} {3} {4} {5} {6} {7} {8}\n'.format(count, len(test_cases), len(adversarials), feasible, adv_flag, d_min, d_norm, dec_layer.layer_index, cond_layer.ssc_map.size))
+    f.write('{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12}\n'.format(count, len(test_cases), len(adversarials), feasible, top1_adv_flag, top5_adv_flag, d_min, d_norm, l0_d, dec_layer.layer_index, cond_layer.ssc_map.size, y1s, y2s))
     f.close()
 
