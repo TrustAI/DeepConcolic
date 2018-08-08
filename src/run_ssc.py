@@ -95,6 +95,9 @@ def run_ssc(test_object, outs):
     top5b_adv_flag=False
     y1s=[]
     y2s=[]
+    y1_flag=False
+    y2_flag=False
+    labels=[555, 920]	
     
     l0_d=None
 
@@ -112,10 +115,11 @@ def run_ssc(test_object, outs):
 
       if not y1s[4] in y2s: top5b_adv_flag=True
 
-      for y1 in y1s:
-        if not y1 in y2s:
-          top5_adv_flag=True
-          break
+      for label in labels:
+        if label in y1s: y1_flag=True
+        if label in y2s: y2_flag=True
+
+      if y1_flag!=y2_flag: top5_adv_flag=True
 
       if top5_adv_flag:
         print ('found an adversarial example')
