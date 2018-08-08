@@ -101,8 +101,12 @@ def run_ssc(test_object, outs):
         adversarials.append((new_image, old_image))
         save_an_image(new_image, '{0}-adv-{1}.png'.format(len(adversarials), y1), f_results.split('/')[0])
         save_an_image(old_image, '{0}-original-{1}.png'.format(len(adversarials), y2), f_results.split('/')[0])
+        new_image=new_image*255
+        old_image=old_image*255
+        new_image.astype('uint8')
+        old_image.astype('uint8')
         diff_image=np.abs(new_image-old_image)
-        save_an_image(diff_image, '{0}-diff.png'.format(len(adversarials)), f_results.split('/')[0])
+        save_an_image(diff_image/255.0, '{0}-diff.png'.format(len(adversarials)), f_results.split('/')[0])
         adv_flag=True
     else:
       print ("not feasible")

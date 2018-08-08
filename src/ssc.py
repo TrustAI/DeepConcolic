@@ -36,11 +36,11 @@ class ssc_pairt:
     self.dec_layer=dec_layer
     self.dec_pos=dec_pos
 
-def local_search(dnn, local_input, ssc_pair, adv_crafter):
+def local_search(dnn, local_input, ssc_pair, adv_crafter, e_max_input):
   
   d_min=NNUM
   
-  e_max=0.3
+  e_max=e_max_input #np.random.uniform(0.2, 0.3)
   old_e_max=e_max
   e_min=0.0
 
@@ -98,7 +98,8 @@ def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
   count=0
   for i in indices:
     inp_vect=np.array([data[i]])
-    adv_inp_vect=adv_crafter.generate(x=inp_vect, eps=EPS_MAX)
+    e_max_input=np.random.uniform(EPS_MAX-0.1, EPS_MAX)
+    adv_inp_vect=adv_crafter.generate(x=inp_vect, eps=e_max_input)
     acts=eval_batch(layer_functions, inp_vect, is_input_layer(dnn.layers[0]))
     adv_acts=eval_batch(layer_functions, adv_inp_vect, is_input_layer(dnn.layers[0]))
     dec1=(acts[dec_layer.layer_index][0].item(dec_pos))
@@ -115,7 +116,7 @@ def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
     cond_flags=cond_flags.astype(bool)
     ssc_pair=ssc_pairt(cond_flags, acts[dec_layer.layer_index][0].item(dec_pos)>0, layer_functions, cond_layer, cond_pos, dec_layer, dec_pos)
 
-    diff, x_ret=local_search(test_object.dnn, data[i], ssc_pair, adv_crafter)
+    diff, x_ret=local_search(test_object.dnn, data[i], ssc_pair, adv_crafter, e_max_input)
 
     if diff<d_min:
       d_min=diff
