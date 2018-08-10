@@ -10,7 +10,7 @@ import cv2
 
 MIN=-100000
 DIM=50
-ssc_ratio=0.01 #0.1 #0.05 #0.01
+#ssc_ratio=0.005 #0.1 #0.05 #0.01
 
 ## some DNN model has an explicit input layer
 def is_input_layer(layer):
@@ -166,6 +166,9 @@ class test_objectt:
     self.norm=norm
     self.criterion=criterion
     self.channels_last=True
+    self.cond_ratio=None
+    self.top_classes=None
+    self.inp_ub=None
 
 def calculate_pfactors(activations, cover_layers):
   fks=[]

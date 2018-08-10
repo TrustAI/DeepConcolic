@@ -60,25 +60,35 @@ def main():
                     help="input cols", metavar="")
   parser.add_argument("--input-channels", dest="img_channels", default="3",
                     help="input channels", metavar="")
+  parser.add_argument("--cond-ratio", dest="cond_ratio", default="0.01",
+                    help="experimental", metavar="")
+  parser.add_argument("--top-classes", dest="top_classes", default="1",
+                    help="experimental", metavar="")
 
   args=parser.parse_args()
 
+
+  criterion=args.criterion
+  norm=args.norm
+  cond_ratio=float(args.cond_ratio)
+  top_classes=int(args.top_classes)
+
+  raw_data=None
+  img_rows, img_cols, img_channels = int(args.img_rows), int(args.img_cols), int(args.img_channels)
+
   dnn=None
+  inp_ub=1
   if args.model!='-1':
     dnn=load_model(args.model)
     dnn.summary()
   elif args.vgg16:
     dnn=VGG16()
+    inp_ub=255
     dnn.summary()
   else:
     print (' \n == Please specify the input neural network == \n')
     sys.exit(0)
 
-  criterion=args.criterion
-  norm=args.norm
-
-  raw_data=None
-  img_rows, img_cols, img_channels = int(args.img_rows), int(args.img_cols), int(args.img_channels)
   if args.inputs!='-1':
     
     xs=[]
@@ -89,10 +99,8 @@ def main():
         if fname.endswith('.jpg') or fname.endswith('.png'):
           image = cv2.imread(fname)
           image = cv2.resize(image, (img_rows, img_cols))
-          #image=image.astype('uint8')
           image=image.astype('float')
           xs.append((image))
-          #if len(xs) >= 1000: break
     print ('Total data loaded: ', len(xs))
     x_test=np.asarray(xs)
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
@@ -123,7 +131,11 @@ def main():
     print (' \n == Please specify the output directory == \n')
     sys.exit(0)
 
-  deepconcolic(test_objectt(dnn, raw_data, criterion, norm), outs)
+  test_object=test_objectt(dnn, raw_data, criterion, norm)
+  test_object.cond_ratio=cond_ratio
+  test_object.top_classes=top_classes
+  test_object.inp_ub=inp_ub
+  deepconcolic(test_object, outs)
 
 if __name__=="__main__":
   main()

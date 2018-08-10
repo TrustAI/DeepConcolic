@@ -88,7 +88,7 @@ def run_ssc(test_object, outs):
 
     print ('d_min is', d_min, 'd_norm is', d_norm)
 
-    feasible=(d_min<=ssc_ratio*cond_layer.ssc_map.size or d_min==1)
+    feasible=(d_min<=test_object.cond_ratio*cond_layer.ssc_map.size or d_min==1)
 
     top1_adv_flag=False
     top5_adv_flag=False
@@ -97,23 +97,26 @@ def run_ssc(test_object, outs):
     y2s=[]
     y1_flag=False
     y2_flag=False
-    labels=[555, 920]	
+    labels=[555, 920]
     
     l0_d=None
+    top_classes=test_object.top_classes
+    inp_ub=test_object.inp_ub
 
     if d_norm is not None: #feasible:
       test_cases.append((new_image, old_image))
-      new_image=new_image.astype('uint8')
-      old_image=old_image.astype('uint8')
+      if inp_ub==255: 
+        new_image=new_image.astype('uint8')
+        old_image=old_image.astype('uint8')
       diff_image=np.abs(new_image-old_image)
-      l0_d=np.count_nonzero(diff_image)/(224*224*3*1.0)
-      y1s=(np.argsort(test_object.dnn.predict(np.array([new_image]))))[0][-5:]
-      y2s=(np.argsort(test_object.dnn.predict(np.array([old_image]))))[0][-5:]
+      l0_d=np.count_nonzero(diff_image)/(new_image.size*1.0)
+      y1s=(np.argsort(test_object.dnn.predict(np.array([new_image]))))[0][-top_classes:]
+      y2s=(np.argsort(test_object.dnn.predict(np.array([old_image]))))[0][-top_classes:]
 
 
-      if y1s[4]!=y2s[4]: top1_adv_flag=True
+      if y1s[top_classes-1]!=y2s[top_classes-1]: top1_adv_flag=True
 
-      if not y1s[4] in y2s: top5b_adv_flag=True
+      if not y1s[top_classes-1] in y2s: top5b_adv_flag=True
 
       for label in labels:
         if label in y1s: y1_flag=True
@@ -124,9 +127,9 @@ def run_ssc(test_object, outs):
       if top5_adv_flag:
         print ('found an adversarial example')
         adversarials.append((new_image, old_image))
-        save_an_image(new_image/255.0, '{0}-adv-{1}.png'.format(len(adversarials), y1s[4]), f_results.split('/')[0])
-        save_an_image(old_image/255.0, '{0}-original-{1}.png'.format(len(adversarials), y2s[4]), f_results.split('/')[0])
-        save_an_image(diff_image/255.0, '{0}-diff.png'.format(len(adversarials)), f_results.split('/')[0])
+        save_an_image(new_image/(inp_ub*1.0), '{0}-adv-{1}.png'.format(len(adversarials), y1s[top_classes-1]), f_results.split('/')[0])
+        save_an_image(old_image/(inp_ub*1.0), '{0}-original-{1}.png'.format(len(adversarials), y2s[top_classes-1]), f_results.split('/')[0])
+        save_an_image(diff_image/(inp_ub*1.0), '{0}-diff.png'.format(len(adversarials)), f_results.split('/')[0])
         adv_flag=True
     else:
       print ("not feasible")

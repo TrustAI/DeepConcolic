@@ -36,7 +36,7 @@ class ssc_pairt:
     self.dec_layer=dec_layer
     self.dec_pos=dec_pos
 
-def local_search(dnn, local_input, ssc_pair, adv_crafter, e_max_input):
+def local_search(dnn, local_input, ssc_pair, adv_crafter, e_max_input, ssc_ratio):
   
   d_min=NNUM
   
@@ -79,7 +79,6 @@ def local_search(dnn, local_input, ssc_pair, adv_crafter, e_max_input):
 
     if d_min==1: break
     if d_min<=ssc_ratio*ssc_pair.cond_layer.ssc_map.size: break
-    #if not_changed>5: break
 
   return d_min, x_ret
 
@@ -87,6 +86,7 @@ def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
 
   data=test_object.raw_data.data
   dnn=test_object.dnn
+  ssc_ratio=test_object.cond_ratio
 
   x=None
   new_x=None
@@ -98,7 +98,7 @@ def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
   count=0
   for i in indices:
     inp_vect=np.array([data[i]])
-    e_max_input=np.random.uniform(EPS_MAX-0.1, EPS_MAX)
+    e_max_input=np.random.uniform(EPS_MAX*2/3, EPS_MAX)
     adv_inp_vect=adv_crafter.generate(x=inp_vect, eps=e_max_input)
     acts=eval_batch(layer_functions, inp_vect, is_input_layer(dnn.layers[0]))
     adv_acts=eval_batch(layer_functions, adv_inp_vect, is_input_layer(dnn.layers[0]))
@@ -110,13 +110,12 @@ def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
 
     count+=1
 
-
     cond_flags=acts[cond_layer.layer_index][0]
     cond_flags[cond_flags<=0]=0
     cond_flags=cond_flags.astype(bool)
     ssc_pair=ssc_pairt(cond_flags, acts[dec_layer.layer_index][0].item(dec_pos)>0, layer_functions, cond_layer, cond_pos, dec_layer, dec_pos)
 
-    diff, x_ret=local_search(test_object.dnn, data[i], ssc_pair, adv_crafter, e_max_input)
+    diff, x_ret=local_search(test_object.dnn, data[i], ssc_pair, adv_crafter, e_max_input, ssc_ratio)
 
     if diff<d_min:
       d_min=diff
@@ -125,7 +124,6 @@ def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
       print ('new d: ', d_min, cond_layer.ssc_map.size)
       if d_min==1: break
 
-    #if count>100: break
     if d_min<=ssc_ratio*cond_layer.ssc_map.size: break
     
   print ('final d: ', d_min, ' count:', count)  
