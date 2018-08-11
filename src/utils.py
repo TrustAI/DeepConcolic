@@ -169,6 +169,8 @@ class test_objectt:
     self.cond_ratio=None
     self.top_classes=None
     self.inp_ub=None
+    self.training_data=None
+    self.labels=None
 
 def calculate_pfactors(activations, cover_layers):
   fks=[]

@@ -47,8 +47,12 @@ def main():
                     help="the input test data directory", metavar="DIR")
   parser.add_argument("--outputs", dest="outputs", default="-1",
                     help="the outputput test data directory", metavar="DIR")
+  parser.add_argument("--training-data", dest="training_data", default="-1",
+                    help="the extra training dataset", metavar="DIR")
   parser.add_argument("--criterion", dest="criterion", default="nc",
                     help="the test criterion", metavar="nc, bc, ssc...")
+  parser.add_argument("--labels", dest="labels", default="-1",
+                    help="the default labels", metavar="FILE")
   parser.add_argument("--mnist-dataset", dest="mnist", help="MNIST dataset", action="store_true")
   parser.add_argument("--cifar10-dataset", dest="cifar10", help="CIFAR10 dataset", action="store_true")
   parser.add_argument("--vgg16-model", dest='vgg16', help="vgg16 model", action="store_true")
@@ -131,10 +135,33 @@ def main():
     print (' \n == Please specify the output directory == \n')
     sys.exit(0)
 
+
   test_object=test_objectt(dnn, raw_data, criterion, norm)
   test_object.cond_ratio=cond_ratio
   test_object.top_classes=top_classes
   test_object.inp_ub=inp_ub
+  if args.training_data!='-1':
+    tdata=[]
+    print ('To load the extra training data...')
+    for path, subdirs, files in os.walk(args.training_data):
+      for name in files:
+        fname=(os.path.join(path, name))
+        if fname.endswith('.jpg') or fname.endswith('.png'):
+          image = cv2.imread(fname)
+          image = cv2.resize(image, (img_rows, img_cols))
+          image=image.astype('float')
+          tdata.append((image))
+    print ('The extra training data loaded: ', len(tdata))
+    test_object.training_data=tdata
+
+  if args.labels!='-1':
+    labels=[]
+    lines = [line.rstrip('\n') for line in open(args.labels)]
+    for line in lines:
+      for l in line.split():
+        labels.append(l)
+    test_object.labels=labels
+
   deepconcolic(test_object, outs)
 
 if __name__=="__main__":
