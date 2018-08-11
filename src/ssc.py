@@ -134,11 +134,11 @@ def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
     return d_min, None, None, None
 
 
-def local_v_search(dnn, local_input, ssc_pair, adv_crafter, e_max_input, ssc_ratio):
+def local_v_search(dnn, local_input, ssc_pair, adv_crafter, e_max_input, ssc_ratio, dec_ub):
   
   d_min=NNUM
   
-  e_max=e_max_input #np.random.uniform(0.2, 0.3)
+  e_max=e_max_input 
   old_e_max=e_max
   e_min=0.0
 
@@ -151,18 +151,11 @@ def local_v_search(dnn, local_input, ssc_pair, adv_crafter, e_max_input, ssc_rat
     adv_cond_flags=adv_acts[ssc_pair.cond_layer.layer_index][0]
     adv_cond_flags[adv_cond_flags<=0]=0
     adv_cond_flags=adv_cond_flags.astype(bool)
-    adv_dec_flag=None
-    if adv_acts[ssc_pair.dec_layer.layer_index][0].item(ssc_pair.dec_pos)>0:
-      adv_dec_flag=True
-    else:
-      adv_dec_flag=False
-
     found=False
-    if ssc_pair.dec_flag != adv_dec_flag:
-      #if adv_cond_flags.item(ssc_pair.cond_pos)!=ssc_pair.cond_flags.item(ssc_pair.cond_pos):
-        d=np.count_nonzero(np.logical_xor(adv_cond_flags, ssc_pair.cond_flags))
-        if d<=d_min and d>0: 
-          found=True
+    if adv_acts[ssc_pair.dec_layer.layer_index][0].item(ssc_pair.dec_pos)>dec_ub: 
+      d=np.count_nonzero(np.logical_xor(adv_cond_flags, ssc_pair.cond_flags))
+      if d<=d_min and d>0: 
+        found=True
 
     if found:
       d_min=d
@@ -194,33 +187,40 @@ def svc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
   indices=np.random.choice(len(data), len(data))
 
   count=0
+
   for i in indices:
     inp_vect=np.array([data[i]])
-    e_max_input=np.random.uniform(EPS_MAX*2/3, EPS_MAX)
-    adv_inp_vect=adv_crafter.generate(x=inp_vect, eps=e_max_input)
     acts=eval_batch(layer_functions, inp_vect, is_input_layer(dnn.layers[0]))
-    adv_acts=eval_batch(layer_functions, adv_inp_vect, is_input_layer(dnn.layers[0]))
-    dec1=(acts[dec_layer.layer_index][0].item(dec_pos))
-    dec2=(adv_acts[dec_layer.layer_index][0].item(dec_pos))
-    if not np.logical_xor(dec1>0, dec2>0): continue
     cond1=(acts[cond_layer.layer_index][0].item(cond_pos))
-    cond2=(adv_acts[cond_layer.layer_index][0].item(cond_pos))
+    dec1=(acts[dec_layer.layer_index][0].item(dec_pos))
+    if dec1<=0: continue
+    e_inputs=np.linspace(0, 1, num=19)
+    for e_max_input in e_inputs:
+      adv_inp_vect=adv_crafter.generate(x=inp_vect, eps=e_max_input+EPSILON*10)
+      adv_acts=eval_batch(layer_functions, adv_inp_vect, is_input_layer(dnn.layers[0]))
+      dec2=(adv_acts[dec_layer.layer_index][0].item(dec_pos))
+      #if not np.logical_xor(dec1>0, dec2>0): continue
+      if dec2<=dec_ub: continue
+      print ('****', e_max_input, dec1, dec2, dec_ub, dec2>dec_ub)
+      cond2=(adv_acts[cond_layer.layer_index][0].item(cond_pos))
 
-    count+=1
+      count+=1
 
-    cond_flags=acts[cond_layer.layer_index][0]
-    cond_flags[cond_flags<=0]=0
-    cond_flags=cond_flags.astype(bool)
-    ssc_pair=ssc_pairt(cond_flags, acts[dec_layer.layer_index][0].item(dec_pos)>0, layer_functions, cond_layer, cond_pos, dec_layer, dec_pos)
+      cond_flags=acts[cond_layer.layer_index][0]
+      cond_flags[cond_flags<=0]=0
+      cond_flags=cond_flags.astype(bool)
+      ssc_pair=ssc_pairt(cond_flags, acts[dec_layer.layer_index][0].item(dec_pos)>0, layer_functions, cond_layer, cond_pos, dec_layer, dec_pos)
 
-    diff, x_ret=local_search(test_object.dnn, data[i], ssc_pair, adv_crafter, e_max_input, ssc_ratio)
+      diff, x_ret=local_v_search(test_object.dnn, data[i], ssc_pair, adv_crafter, e_max_input, ssc_ratio, dec_ub)
 
-    if diff<d_min:
-      d_min=diff
-      x=data[i]
-      new_x=x_ret
-      print ('new d: ', d_min, cond_layer.ssc_map.size)
-      if d_min==1: break
+      if diff<d_min:
+        d_min=diff
+        x=data[i]
+        new_x=x_ret
+        print ('new d: ', d_min, cond_layer.ssc_map.size)
+        if d_min==1: break
+
+      if d_min<=ssc_ratio*cond_layer.ssc_map.size: break
 
     if d_min<=ssc_ratio*cond_layer.ssc_map.size: break
     

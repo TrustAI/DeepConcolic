@@ -200,6 +200,7 @@ def run_svc(test_object, outs):
       v=act.item(dec_pos)
       if v>dec_ub: dec_ub=v
 
+    print ('dec_ub: ', dec_ub)
 
     d_min, d_norm, new_image, old_image=svc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, dec_pos, adv_crafter, dec_ub)
 
