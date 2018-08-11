@@ -18,7 +18,7 @@ from nc_lp import *
 from lp_encoding import *
 from run_nc_linf import run_nc_linf
 from run_nc_l0 import run_nc_l0
-from run_ssc import run_ssc
+from run_ssc import *
 
 
 def deepconcolic(test_object, outs):
@@ -31,8 +31,10 @@ def deepconcolic(test_object, outs):
     else:
       print('\n not supported norm...\n')
       sys.exit(0)
-  elif test_object.criterion=='ssc': ## neuron cover
+  elif test_object.criterion=='ssc':
     run_ssc(test_object, outs)
+  elif test_object.criterion=='svc':
+    run_svc(test_object, outs)
   else:
       print('\n for now, let us focus on neuron cover...\n')
       sys.exit(0)

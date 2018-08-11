@@ -55,14 +55,8 @@ def nc_setup(test_object, outs):
   test_cases.append(im)
   update_nc_map_via_inst(cover_layers, eval(layer_functions, im, is_input_layer(test_object.dnn.layers[0])))
   covered, not_covered=nc_report(cover_layers)
-  #print (covered)
   print('\n== neuron coverage: {0}==\n'.format(covered*1.0/(covered+not_covered)))
-  #print (np.argmax(test_object.dnn.predict(np.array([im]))))
-  #return
-  #y = test_object.dnn.predict_classes(np.array([im]))[0]
-  #y=(np.argmax(test_object.dnn.predict(np.array([im]))))
   save_an_image(im, 'seed-image', outs)
-  #return
   f = open(nc_results, "a")
   f.write('NC-cover: {0} #test cases: {1} #adversarial examples: {2}\n'.format(1.0 * covered / (covered + not_covered), len(test_cases), len(adversarials)))
   f.close()
@@ -89,4 +83,17 @@ def ssc_setup(test_object, outs):
   for i in range(0, len(cover_layers)):
     cover_layers[i].initialize_ssc_map()
 
-  return nc_results, layer_functions, cover_layers
+  activations=None
+  if not test_object.training_data is None:
+    tot_size=len(test_object.training_data)
+    batches=np.array_split(test_object.training_data[0:tot_size], tot_size//10 + 1)
+    for i in range(0, len(batches)):
+      batch=batches[i]
+      sub_acts=eval_batch(layer_functions, batch, is_input_layer(test_object.dnn.layers[0]))
+      if i==0:
+        activations=sub_acts
+      else:
+        for j in range(0, len(activations)):
+          activations[j]=np.concatenate((activations[j], sub_acts[j]), axis=0)
+
+  return nc_results, layer_functions, cover_layers, activations
