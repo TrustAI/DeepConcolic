@@ -60,6 +60,7 @@ class cover_layert:
     self.actiavtions=[] ## so, we need to store neuron activations?
     self.nc_map=None ## to count the coverage
     self.ssc_map=None ## 
+    self.ubs=None ## 
 
   def initialize_nc_map(self):
     sp=self.layer.output.shape
@@ -74,6 +75,13 @@ class cover_layert:
       self.ssc_map = np.ones((1, sp[1], sp[2], sp[3]), dtype=bool)
     else:
       self.ssc_map = np.ones((1, sp[1]), dtype=bool)
+
+  def initialize_ubs(self):
+    sp=self.layer.output.shape
+    if self.is_conv:
+      self.ubs=np.zeros((1, sp[1], sp[2], sp[3]), dtype=float)
+    else:
+      self.ubs=np.zeros((1, sp[1]), dtype=float)
 
   ## to get the index of the next property to be satisfied
   def get_nc_next(self):

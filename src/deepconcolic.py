@@ -103,10 +103,12 @@ def main():
       for name in files:
         fname=(os.path.join(path, name))
         if fname.endswith('.jpg') or fname.endswith('.png'):
-          image = cv2.imread(fname)
-          image = cv2.resize(image, (img_rows, img_cols))
-          image=image.astype('float')
-          xs.append((image))
+          try:
+            image = cv2.imread(fname)
+            image = cv2.resize(image, (img_rows, img_cols))
+            image=image.astype('float')
+            xs.append((image))
+          except: pass
     print ('Total data loaded: ', len(xs))
     x_test=np.asarray(xs)
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
@@ -149,10 +151,12 @@ def main():
       for name in files:
         fname=(os.path.join(path, name))
         if fname.endswith('.jpg') or fname.endswith('.png'):
-          image = cv2.imread(fname)
-          image = cv2.resize(image, (img_rows, img_cols))
-          image=image.astype('float')
-          tdata.append((image))
+          try:
+            image = cv2.imread(fname)
+            image = cv2.resize(image, (img_rows, img_cols))
+            image=image.astype('float')
+            tdata.append((image))
+          except: pass
     print ('The extra training data loaded: ', len(tdata))
     test_object.training_data=tdata
 

@@ -195,10 +195,10 @@ def run_svc(test_object, outs):
 
     count+=1
     
-    dec_ub=MIN
-    for act in activations[dec_layer.layer_index]:
-      v=act.item(dec_pos)
-      if v>dec_ub: dec_ub=v
+    dec_ub=dec_layer.ubs.item(dec_pos)+0.001
+    #for act in activations[dec_layer.layer_index]:
+    #  v=act.item(dec_pos)
+    #  if v>dec_ub: dec_ub=v
 
     print ('dec_ub: ', dec_ub)
 
