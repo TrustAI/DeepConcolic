@@ -165,9 +165,8 @@ def main():
     lines = [line.rstrip('\n') for line in open(args.labels)]
     for line in lines:
       for l in line.split():
-        labels.append(l)
+        labels.append(int(l))
     test_object.labels=labels
-
   deepconcolic(test_object, outs)
 
 if __name__=="__main__":

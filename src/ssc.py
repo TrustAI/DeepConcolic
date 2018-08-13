@@ -22,7 +22,7 @@ except:
 
 RP_SIZE=50 ## the top 50 pairs
 NNUM=1000000000
-EPSILON=sys.float_info.epsilon*10 #0.000000000000001
+EPSILON=0.00000000001 #sys.float_info.epsilon*10 #0.000000000000001
 EPS_MAX=0.3
 
 class ssc_pairt:
@@ -145,7 +145,7 @@ def local_v_search(dnn, local_input, ssc_pair, adv_crafter, e_max_input, ssc_rat
   x_ret=None
   not_changed=0
   while e_max-e_min>=EPSILON:
-    #print ('                     === in while')
+    print ('                     === in while', e_max-e_min)
     x_adv_vect=adv_crafter.generate(x=np.array([local_input]), eps=e_max)
     adv_acts=eval_batch(ssc_pair.layer_functions, x_adv_vect, is_input_layer(dnn.layers[0]))
     adv_cond_flags=adv_acts[ssc_pair.cond_layer.layer_index][0]
@@ -209,8 +209,13 @@ def svc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
     trend=0 
     old_dec=dec1
     #while e_max_input<=20 and trend>=-50:
-    while e_max_input<=100 and trend>=-50:
-      e_max_input+=np.random.uniform(0, 0.3) #0.3
+    while e_max_input<=200 and trend>=-50:
+      if e_max_input>10:
+        e_max_input+=np.random.uniform(0, 1) #0.3
+      elif e_max_input>1:
+        e_max_input+=np.random.uniform(0, 0.1) #0.3
+      else:
+        e_max_input+=np.random.uniform(0, 0.05) #0.3
       adv_inp_vect=adv_crafter.generate(x=inp_vect, eps=e_max_input)
       adv_acts=eval_batch(layer_functions, adv_inp_vect, is_input_layer(dnn.layers[0]))
 
@@ -240,7 +245,9 @@ def svc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
 
       ssc_pair=ssc_pairt(cond_flags, acts[dec_layer.layer_index][0].item(dec_pos)>0, layer_functions, cond_layer, cond_pos, dec_layer, dec_pos)
 
-      diff, x_ret=local_v_search(test_object.dnn, data[i], ssc_pair, adv_crafter, e_max_input+EPSILON*10, ssc_ratio, dec_ub)
+      print ('start local v search')
+      diff, x_ret=local_v_search(test_object.dnn, data[i], ssc_pair, adv_crafter, e_max_input, ssc_ratio, dec_ub)
+      print ('after local v search')
 
       if diff<d_min:
         d_min=diff
