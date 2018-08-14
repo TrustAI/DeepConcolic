@@ -221,7 +221,7 @@ def run_svc(test_object, outs):
     top_classes=test_object.top_classes
     inp_ub=test_object.inp_ub
 
-    if d_norm is not None: #feasible:
+    if feasible: #d_norm is not None: #feasible:
       test_cases.append((new_image, old_image))
       if inp_ub==255: 
         new_image=new_image.astype('uint8')
