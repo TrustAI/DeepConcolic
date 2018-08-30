@@ -66,20 +66,35 @@ source activate deepconcolic
 conda install keras
 conda install opencv 
 conda install pillow
+pip install adversarial-robustness-toolbox
 ```
+The linear programming engine uses [CPLEX](https://www.ibm.com/support/knowledgecenter/SSSA5P_12.7.0/ilog.odms.cplex.help/CPLEX/GettingStarted/topics/set_up/setup_overview.html)
 
-# Citation
+# Publications
 
 ```
-@ARTICLE{2018arXiv180500089S,
-   author = {{Sun}, Youcheng and {Wu}, Min and {Ruan}, Wenjie and {Huang}, Xiaowei and {Kwiatkowska}, Marta and 
-	{Kroening}, Daniel},
-    title = "{Concolic Testing for Deep Neural Networks}",
-  journal = {ArXiv e-prints},
-archivePrefix = "arXiv",
-   eprint = {1805.00089},
-     year = 2018,
-    month = apr,
-   adsurl = {http://adsabs.harvard.edu/abs/2018arXiv180500089S}
+@inproceedings{swrhkk2018,
+  AUTHOR    = { Sun, Youcheng
+                and Wu, Min
+                and Ruan, Wenjie
+                and Huang, Xiaowei
+                and Kwiatkowska, Marta
+                and Kroening, Daniel },
+  TITLE     = { Concolic Testing for Deep Neural Networks },
+  BOOKTITLE = { Automated Software Engineering (ASE) },
+  PUBLISHER = { ACM },
+  PAGES     = { 109--119 },
+  ISBN      = { 978-1-4503-5937-5 },
+  YEAR={2018}
+}
+```
+```
+@article{sun2018testing,
+  AUTHOR    = { Sun, Youcheng
+                and Huang, Xiaowei
+                and Kroening, Daniel },
+  TITLE={Testing Deep Neural Networks},
+  JOURNAL={arXiv preprint arXiv:1803.04792},
+  YEAR={2018}
 }
 ```
