@@ -85,7 +85,7 @@ The linear programming engine uses [CPLEX](https://www.ibm.com/support/knowledge
   PUBLISHER = { ACM },
   PAGES     = { 109--119 },
   ISBN      = { 978-1-4503-5937-5 },
-  YEAR={2018}
+  YEAR      = { 2018 }
 }
 ```
 ```
@@ -93,8 +93,8 @@ The linear programming engine uses [CPLEX](https://www.ibm.com/support/knowledge
   AUTHOR    = { Sun, Youcheng
                 and Huang, Xiaowei
                 and Kroening, Daniel },
-  TITLE={Testing Deep Neural Networks},
-  JOURNAL={arXiv preprint arXiv:1803.04792},
-  YEAR={2018}
+  TITLE     = { Testing Deep Neural Networks },
+  JOURNAL   = { arXiv preprint arXiv:1803.04792 },
+  YEAR      = { 2018 }
 }
 ```
