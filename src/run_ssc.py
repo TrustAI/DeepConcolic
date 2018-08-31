@@ -57,27 +57,7 @@ def run_ssc(test_object, outs):
     cond_cover=np.ones(cond_layer.ssc_map.shape, dtype=bool)
     ###
  
-    ## to check if dec_pos is a padding
-    dec_pos_unravel=None
-    osp=dec_layer.ssc_map.shape
-    dec_pos_unravel=np.unravel_index(dec_pos, osp)
-    if is_conv_layer(dec_layer.layer):
-      Weights=dec_layer.layer.get_weights()
-      weights=Weights[0]
-      biases=Weights[1]
-      I=0
-      J=dec_pos_unravel[1]
-      K=dec_pos_unravel[2]
-      L=dec_pos_unravel[3]
-      kernel_size=dec_layer.layer.kernel_size
-      try: 
-        for II in range(0, kernel_size[0]):
-          for JJ in range(0, kernel_size[1]):
-            for KK in range(0, weights.shape[2]):
-              try_tmp=cond_layer.ssc_map[0][J+II][K+JJ][KK]
-      except: 
-        #print ('dec neuron is a padding')
-        continue
+    if is_padding(dec_pos, dec_layer): continue
         
 
     cond_pos=np.random.randint(0, cond_cover.size)

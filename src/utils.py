@@ -227,15 +227,33 @@ def nc_report(clayers):
   return covered, non_covered
 
 def save_an_image(im, title, di='./'):
-  # we assume im is normalized
-  #img=Image.fromarray(np.uint8(im*255))
-  #img.save(di+title+'.png')
-  #matplotlib.pyplot.imsave(di+title+'.png', im)
-  #plt.show(im*255)
-  #plt.savefig(di+title+'.png')
   if not di.endswith('/'):
     di+='/'
   cv2.imwrite((di+title+'.png'), im*255)
+
+def is_padding(dec_pos, dec_layer):
+  ## to check if dec_pos is a padding
+  dec_pos_unravel=None
+  osp=dec_layer.ssc_map.shape
+  dec_pos_unravel=np.unravel_index(dec_pos, osp)
+  if is_conv_layer(dec_layer.layer):
+    Weights=dec_layer.layer.get_weights()
+    weights=Weights[0]
+    biases=Weights[1]
+    I=0
+    J=dec_pos_unravel[1]
+    K=dec_pos_unravel[2]
+    L=dec_pos_unravel[3]
+    kernel_size=dec_layer.layer.kernel_size
+    try:
+      for II in range(0, kernel_size[0]):
+        for JJ in range(0, kernel_size[1]):
+          for KK in range(0, weights.shape[2]):
+            try_tmp=cond_layer.ssc_map[0][J+II][K+JJ][KK]
+    except:
+      return True
+  return False
+
 
 def get_ssc_next(clayers):
   while True:
