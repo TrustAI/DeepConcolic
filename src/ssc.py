@@ -85,10 +85,12 @@ def local_search(dnn, local_input, ssc_pair, adv_crafter, e_max_input, ssc_ratio
 def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, dec_pos, adv_crafter):
 
   data=test_object.raw_data.data
+  labels=test_object.raw_data.labels
   dnn=test_object.dnn
   ssc_ratio=test_object.cond_ratio
 
   x=None
+  y=None
   new_x=None
   d_min=cond_layer.ssc_map.size
   print ('d_min initialised', d_min, len(data))
@@ -120,6 +122,7 @@ def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
     if diff<d_min:
       d_min=diff
       x=data[i]
+      y=labels[i]
       new_x=x_ret
       print ('new d: ', d_min, cond_layer.ssc_map.size)
       if d_min==1: break
@@ -129,9 +132,9 @@ def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
   print ('final d: ', d_min, ' count:', count)  
   if x is not None:
     d_norm=np.abs(new_x-x)
-    return d_min, np.max(d_norm), new_x, x
+    return d_min, np.max(d_norm), new_x, x, [y]
   else:
-    return d_min, None, None, None
+    return d_min, None, None, None, None
 
 
 def local_v_search(dnn, local_input, ssc_pair, adv_crafter, e_max_input, ssc_ratio, dec_ub):

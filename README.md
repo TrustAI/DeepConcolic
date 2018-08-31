@@ -54,6 +54,18 @@ To run an CIFAR10 model
 python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --cifar10-data --outputs outs/
 ```
 
+To run MC/DC for DNNs on the CIFAR-10 model
+
+```
+ python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --criterion ssc --cond-ratio 0.1 --cifar10-data --outputs outs
+```
+
+To run MC/DC for DNNs on the VGG16 model
+
+```
+python  deepconcolic.py --vgg16-model --inputs data/ --outputs outs --cond-ratio 0.1 --top-classes 5 --labels labels.txt --criterion ssc
+```
+
 ### Concolic Testing on Lipschitz Constants for DNNs
 
 To run Lipschitz Constant Testing, please refer to instructions in folder "Lipschitz Constant Testing".
