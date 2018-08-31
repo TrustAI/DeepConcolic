@@ -29,20 +29,20 @@ def deepconcolic(test_object, outs):
     elif test_object.norm=='l0':
       run_nc_l0(test_object, outs)
     else:
-      print('\n not supported norm...\n')
+      print('\n not supported norm... {0}\n'.format(test_object.norm))
       sys.exit(0)
   elif test_object.criterion=='ssc':
     run_ssc(test_object, outs)
   elif test_object.criterion=='svc':
     run_svc(test_object, outs)
   else:
-      print('\n for now, let us focus on neuron cover...\n')
+      print('\n not supported coverage criterion... {0}\n'.format(test_object.criterion))
       sys.exit(0)
 
 
 def main():
 
-  parser=argparse.ArgumentParser(description='The concolic testing for neural networks' )
+  parser=argparse.ArgumentParser(description='Concolic testing for neural networks' )
   parser.add_argument(
     '--model', dest='model', default='-1', help='The input neural network model (.h5)')
   parser.add_argument("--inputs", dest="inputs", default="-1",
@@ -70,6 +70,7 @@ def main():
                     help="experimental", metavar="")
   parser.add_argument("--top-classes", dest="top_classes", default="1",
                     help="experimental", metavar="")
+  parser.add_argument("--traceability", dest='trace_flag', help="to enable the traceability", action="store_true")
 
   args=parser.parse_args()
 
@@ -144,6 +145,8 @@ def main():
   test_object.cond_ratio=cond_ratio
   test_object.top_classes=top_classes
   test_object.inp_ub=inp_ub
+  if args.trace_flag:
+    test_object.trace_flag=True
   if args.training_data!='-1':
     tdata=[]
     print ('To load the extra training data...')

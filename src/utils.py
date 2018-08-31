@@ -179,6 +179,7 @@ class test_objectt:
     self.inp_ub=None
     self.training_data=None
     self.labels=None
+    self.trace_flag=None
 
 def calculate_pfactors(activations, cover_layers):
   fks=[]
