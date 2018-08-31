@@ -32,6 +32,9 @@ def run_ssc(test_object, outs):
   print ('To run ssc\n')
   
   f_results, layer_functions, cover_layers, _=ssc_setup(test_object, outs)
+  f = open(f_results, "a")
+  f.write('#ssc runs;  #test cases;  #adversarial examples;  is feasible; is top-1 adversarial example; is top-x adversarial example; condition feature size; L infinity distance; L0 distance; decision layer index; #condition layer neurons; new labels; original labels\n')
+  f.close()
 
   ## define a global attacker
   classifier=KerasClassifier((MIN, -MIN), model=test_object.dnn)
@@ -92,7 +95,6 @@ def run_ssc(test_object, outs):
 
     top1_adv_flag=False
     top5_adv_flag=False
-    top5b_adv_flag=False
     y1s=[]
     y2s=[]
     y1_flag=False
@@ -122,7 +124,6 @@ def run_ssc(test_object, outs):
 
       if y1s[top_classes-1]!=y2s[top_classes-1]: top1_adv_flag=True
 
-      if not y1s[top_classes-1] in y2s: top5b_adv_flag=True
 
       if labels==None: labels=old_labels
       for label in labels:
@@ -143,7 +144,7 @@ def run_ssc(test_object, outs):
 
     print ('f_results: ', f_results)
     f = open(f_results, "a")
-    f.write('{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} {13}\n'.format(count, len(test_cases), len(adversarials), feasible, top1_adv_flag, top5_adv_flag, top5b_adv_flag, d_min, d_norm, l0_d, dec_layer.layer_index, cond_layer.ssc_map.size, y1s, y2s))
+    f.write('{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12}\n'.format(count, len(test_cases), len(adversarials), feasible, top1_adv_flag, top5_adv_flag, d_min, d_norm, l0_d, dec_layer.layer_index, cond_layer.ssc_map.size, y1s, y2s))
     f.close()
 
 def run_svc(test_object, outs):
