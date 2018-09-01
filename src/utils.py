@@ -234,7 +234,8 @@ def save_an_image(im, title, di='./'):
 def save_adversarial_examples(adv, origin, diff, di):
   save_an_image(adv[0], adv[1], di)
   save_an_image(origin[0], origin[1], di)
-  save_an_image(diff[0], diff[1], di)
+  if diff is not None:
+    save_an_image(diff[0], diff[1], di)
 
 def is_padding(dec_pos, dec_layer):
   ## to check if dec_pos is a padding

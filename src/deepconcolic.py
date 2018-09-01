@@ -58,7 +58,7 @@ def main():
   parser.add_argument("--mnist-dataset", dest="mnist", help="MNIST dataset", action="store_true")
   parser.add_argument("--cifar10-dataset", dest="cifar10", help="CIFAR10 dataset", action="store_true")
   parser.add_argument("--vgg16-model", dest='vgg16', help="vgg16 model", action="store_true")
-  parser.add_argument("--norm", dest="norm", default="linf",
+  parser.add_argument("--norm", dest="norm", default="l0",
                     help="the norm metric", metavar="linf, l0")
   parser.add_argument("--input-rows", dest="img_rows", default="224",
                     help="input rows", metavar="")
@@ -70,7 +70,6 @@ def main():
                     help="experimental", metavar="")
   parser.add_argument("--top-classes", dest="top_classes", default="1",
                     help="experimental", metavar="")
-  parser.add_argument("--traceability", dest='trace_flag', help="to enable the traceability", action="store_true")
 
   args=parser.parse_args()
 
@@ -145,8 +144,6 @@ def main():
   test_object.cond_ratio=cond_ratio
   test_object.top_classes=top_classes
   test_object.inp_ub=inp_ub
-  if args.trace_flag:
-    test_object.trace_flag=True
   if args.training_data!='-1':
     tdata=[]
     print ('To load the extra training data...')

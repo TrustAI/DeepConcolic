@@ -116,9 +116,6 @@ def run_ssc(test_object, outs):
         print ('found an adversarial example')
         adversarials.append((new_image, old_image))
         save_adversarial_examples([new_image/(inp_ub*1.0), '{0}-adv-{1}'.format(len(adversarials), y1s[top_classes-1])], [old_image/(inp_ub*1.0), '{0}-original-{1}'.format(len(adversarials), y2s[top_classes-1])], [diff_image/(255*1.0), '{0}-diff'.format(len(adversarials))], f_results.split('/')[0]) 
-        #save_an_image(new_image/(inp_ub*1.0), '{0}-adv-{1}'.format(len(adversarials), y1s[top_classes-1]), f_results.split('/')[0])
-        #save_an_image(old_image/(inp_ub*1.0), '{0}-original-{1}'.format(len(adversarials), y2s[top_classes-1]), f_results.split('/')[0])
-        #save_an_image(diff_image/(255*1.0), '{0}-diff'.format(len(adversarials)), f_results.split('/')[0])
         adv_flag=True
     else:
       print ("not feasible")

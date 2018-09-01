@@ -52,14 +52,17 @@ def run_nc_linf(test_object, outs):
       update_nc_map_via_inst(cover_layers, eval(layer_functions, new_im))
       #y1 = test_object.dnn.predict_classes(np.array([im]))[0]
       #y2= test_object.dnn.predict_classes(np.array([new_im]))[0]
-      y1 =(np.argmax(test_object.dnn.predict(np.array([im])))) 
+      y1 =(np.argmax(test_object.dnn.predict(np.array([new_im])))) 
       y2= (np.argmax(test_object.dnn.predict(np.array([im]))))
-      if y1 != y2: adversarials.append([im, new_im])
-      old_acts=eval(layer_functions, im)
-      new_acts=eval(layer_functions, new_im)
-      if nc_layer.is_conv:
-        print ('\n should be < 0', old_acts[nc_layer.layer_index][pos[1]][pos[2]][pos[3]][pos[4]], '\n')
-        print ('\n should be > 0', new_acts[nc_layer.layer_index][pos[1]][pos[2]][pos[3]][pos[4]], '\n')
+      if y1 != y2: 
+        adversarials.append([im, new_im])
+        inp_ub=test_object.inp_ub
+        save_adversarial_examples([new_im/(inp_ub*1.0), '{0}-adv-{1}'.format(len(adversarials), y1)], [old_image/(inp_ub*1.0), '{0}-original-{1}'.format(len(adversarials), y2)], None, nc_results.split('/')[0]) 
+      #old_acts=eval(layer_functions, im)
+      #new_acts=eval(layer_functions, new_im)
+      #if nc_layer.is_conv:
+      #  print ('\n should be < 0', old_acts[nc_layer.layer_index][pos[1]][pos[2]][pos[3]][pos[4]], '\n')
+      #  print ('\n should be > 0', new_acts[nc_layer.layer_index][pos[1]][pos[2]][pos[3]][pos[4]], '\n')
     else:
       print ('\nis NOT feasible!!!\n')
     covered, not_covered=nc_report(cover_layers)

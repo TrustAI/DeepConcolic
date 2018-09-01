@@ -56,7 +56,7 @@ def nc_setup(test_object, outs):
   update_nc_map_via_inst(cover_layers, eval(layer_functions, im, is_input_layer(test_object.dnn.layers[0])))
   covered, not_covered=nc_report(cover_layers)
   print('\n== neuron coverage: {0}==\n'.format(covered*1.0/(covered+not_covered)))
-  save_an_image(im, 'seed-image', outs)
+  save_an_image(im/test_object.inp_ub*1.0, 'seed-image', outs)
   f = open(nc_results, "a")
   f.write('NC-cover: {0} #test cases: {1} #adversarial examples: {2}\n'.format(1.0 * covered / (covered + not_covered), len(test_cases), len(adversarials)))
   f.close()
