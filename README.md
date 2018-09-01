@@ -13,27 +13,32 @@ Concolic testing alternates between CONCrete program execution and symbOLIC anal
 
 ```
 usage: deepconcolic.py [-h] [--model MODEL] [--inputs DIR] [--outputs DIR]
-                       [--criterion nc, bc, ssc...] [--mnist-dataset]
-                       [--cifar10-dataset] [--vgg16-model] [--norm linf, l0]
-                       [--input-rows] [--input-cols] [--input-channels]
+                       [--training-data DIR] [--criterion nc, ssc...]
+                       [--labels FILE] [--mnist-dataset] [--cifar10-dataset]
+                       [--vgg16-model] [--norm linf, l0] [--input-rows INT]
+                       [--input-cols INT] [--input-channels INT]
+                       [--cond-ratio FLOAT] [--top-classes INT]
 
-The concolic testing for neural networks
+Concolic testing for neural networks
 
 optional arguments:
   -h, --help            show this help message and exit
-  --model MODEL         The input neural network model (.h5)
+  --model MODEL         the input neural network model (.h5)
   --inputs DIR          the input test data directory
   --outputs DIR         the outputput test data directory
-  --criterion nc, bc, ssc...
+  --training-data DIR   the extra training dataset
+  --criterion nc, ssc...
                         the test criterion
+  --labels FILE         the default labels
   --mnist-dataset       MNIST dataset
-  --cifar10-dataset     CIFAR10 dataset
+  --cifar10-dataset     CIFAR-10 dataset
   --vgg16-model         vgg16 model
   --norm linf, l0       the norm metric
-  --input-rows          input rows
-  --input-cols          input cols
-  --input-channels      input channels
-
+  --input-rows INT      input rows
+  --input-cols INT      input cols
+  --input-channels INT  input channels
+  --cond-ratio FLOAT    the condition feature size parameter (0, 1]
+  --top-classes INT     check the top-xx classifications
 ```
 
 The neural network model under tested is specified by ``--model`` and a set of raw test data should be given

@@ -44,7 +44,7 @@ def main():
 
   parser=argparse.ArgumentParser(description='Concolic testing for neural networks' )
   parser.add_argument(
-    '--model', dest='model', default='-1', help='The input neural network model (.h5)')
+    '--model', dest='model', default='-1', help='the input neural network model (.h5)')
   parser.add_argument("--inputs", dest="inputs", default="-1",
                     help="the input test data directory", metavar="DIR")
   parser.add_argument("--outputs", dest="outputs", default="-1",
@@ -52,24 +52,24 @@ def main():
   parser.add_argument("--training-data", dest="training_data", default="-1",
                     help="the extra training dataset", metavar="DIR")
   parser.add_argument("--criterion", dest="criterion", default="nc",
-                    help="the test criterion", metavar="nc, bc, ssc...")
+                    help="the test criterion", metavar="nc, ssc...")
   parser.add_argument("--labels", dest="labels", default="-1",
                     help="the default labels", metavar="FILE")
   parser.add_argument("--mnist-dataset", dest="mnist", help="MNIST dataset", action="store_true")
-  parser.add_argument("--cifar10-dataset", dest="cifar10", help="CIFAR10 dataset", action="store_true")
+  parser.add_argument("--cifar10-dataset", dest="cifar10", help="CIFAR-10 dataset", action="store_true")
   parser.add_argument("--vgg16-model", dest='vgg16', help="vgg16 model", action="store_true")
   parser.add_argument("--norm", dest="norm", default="l0",
                     help="the norm metric", metavar="linf, l0")
   parser.add_argument("--input-rows", dest="img_rows", default="224",
-                    help="input rows", metavar="")
+                    help="input rows", metavar="INT")
   parser.add_argument("--input-cols", dest="img_cols", default="224",
-                    help="input cols", metavar="")
+                    help="input cols", metavar="INT")
   parser.add_argument("--input-channels", dest="img_channels", default="3",
-                    help="input channels", metavar="")
-  parser.add_argument("--cond-ratio", dest="cond_ratio", default="0.01",
-                    help="experimental", metavar="")
+                    help="input channels", metavar="INT")
+  parser.add_argument("--cond-ratio", dest="cond_ratio", default="0.1",
+                    help="the condition feature size parameter (0, 1]", metavar="FLOAT")
   parser.add_argument("--top-classes", dest="top_classes", default="1",
-                    help="experimental", metavar="")
+                    help="check the top-xx classifications", metavar="INT")
 
   args=parser.parse_args()
 
