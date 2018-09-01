@@ -126,7 +126,8 @@ def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
     if diff<d_min:
       d_min=diff
       x=data[i]
-      y=labels[i]
+      if labels is not None:
+        y=labels[i]
       new_x=x_ret
       diff_map=diff_map_ret
       print ('new d: ', d_min, cond_layer.ssc_map.size)

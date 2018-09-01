@@ -94,16 +94,19 @@ def run_ssc(test_object, outs):
       top_classes=test_object.top_classes
       inp_ub=test_object.inp_ub
 
-
+      found_new=True
       if feasible:
         cond_cover=np.logical_or(cond_cover, cond_diff_map)
         covered=np.count_nonzero(cond_cover)
         new_step_coverage=covered*1.0/tot_conds
         if new_step_coverage==step_coverage:
            non_increasing+=1
+           found_new=False
         else:
            non_increasing=0
         step_coverage=new_step_coverage
+
+      if feasible and found_new:
         
         test_cases.append((new_image, old_image))
         if inp_ub==255: 

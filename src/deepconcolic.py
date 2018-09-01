@@ -66,7 +66,7 @@ def main():
                     help="input cols", metavar="INT")
   parser.add_argument("--input-channels", dest="img_channels", default="3",
                     help="input channels", metavar="INT")
-  parser.add_argument("--cond-ratio", dest="cond_ratio", default="0.1",
+  parser.add_argument("--cond-ratio", dest="cond_ratio", default="0.01",
                     help="the condition feature size parameter (0, 1]", metavar="FLOAT")
   parser.add_argument("--top-classes", dest="top_classes", default="1",
                     help="check the top-xx classifications", metavar="INT")
@@ -112,7 +112,7 @@ def main():
     print ('Total data loaded: ', len(xs))
     x_test=np.asarray(xs)
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
-    raw_data=raw_datat(x_test, [])
+    raw_data=raw_datat(x_test, None)
   elif args.mnist:
     img_rows, img_cols, img_channels = 28, 28, 1
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
