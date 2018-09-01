@@ -33,7 +33,7 @@ def run_ssc(test_object, outs):
   
   f_results, layer_functions, cover_layers, _=ssc_setup(test_object, outs)
   f = open(f_results, "a")
-  f.write('#ssc runs;  #test cases;  #adversarial examples;  is feasible; is top-1 adversarial example; is top-x adversarial example; condition feature size; L infinity distance; L0 distance; decision layer index; #condition layer neurons; new labels; original labels\n')
+  f.write('#ssc runs;  #test cases;  #adversarial examples;  is feasible; is top-1 adversarial example; is top-x adversarial example; condition feature size; L infinity distance; L0 distance; decision layer index; #condition layer neurons; new labels; original labels; coverage; local coverage\n')
   f.close()
 
   tot_decs=0
