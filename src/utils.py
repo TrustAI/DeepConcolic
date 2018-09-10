@@ -253,11 +253,12 @@ def save_adversarial_examples(adv, origin, diff, di):
   if diff is not None:
     save_an_image(diff[0], diff[1], di)
 
-def is_padding(dec_pos, dec_layer):
+def is_padding(dec_pos, dec_layer, cond_layer):
   ## to check if dec_pos is a padding
   dec_pos_unravel=None
   osp=dec_layer.ssc_map.shape
   dec_pos_unravel=np.unravel_index(dec_pos, osp)
+  #print (osp, dec_pos_unravel)
   if is_conv_layer(dec_layer.layer):
     Weights=dec_layer.layer.get_weights()
     weights=Weights[0]
@@ -282,15 +283,36 @@ def get_ssc_next(clayers, layer_indices=None):
   if layer_indices==None or layer_indices==[]:
     clayers2=clayers
   else:
-    ## to do
-    pass
+    for i in range(1, len(clayers)):
+      if clayers[i].layer_index in layer_indices:
+        clayers2.append(clayers[i])
+  if clayers2==[]:
+    print ('incorrect layer index specified (the layer tested shall be either conv or dense layer)', layer_indices)
+    sys.exit(0)
+  #print (clayers2[0].layer_index)
+  dec_layer_index_ret=None
+  dec_pos_ret=None
+    
   while True:
-    dec_layer_index=np.random.randint(1, len(clayers))
-    sp=clayers[dec_layer_index].ssc_map.shape
+    dec_layer_index=np.random.randint(0, len(clayers2))
+    sp=clayers2[dec_layer_index].ssc_map.shape
     tot_s=1
     for s in sp:
       tot_s*=s
     dec_pos=np.random.randint(0, tot_s)
-    if not clayers[dec_layer_index].ssc_map.item(dec_pos): 
-      continue
-    return dec_layer_index, dec_pos
+    found=False
+    while dec_pos<tot_s:
+      if not clayers2[dec_layer_index].ssc_map.item(dec_pos): 
+        dec_pos+=1
+        continue
+      else:
+        found=True 
+        break
+    if found:
+      dec_pos_ret=dec_pos
+      for i in range(0, len(clayers)):
+        if clayers[i].layer_index==clayers2[dec_layer_index].layer_index:
+          dec_layer_index_ret=i
+          break
+      break
+  return dec_layer_index_ret, dec_pos_ret

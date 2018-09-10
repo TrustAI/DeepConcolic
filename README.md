@@ -69,7 +69,7 @@ python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --cifar10-
 To run MC/DC for DNNs on the CIFAR-10 model
 
 ```
- python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --criterion ssc --cond-ratio 0.1 --cifar10-data --outputs outs
+python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --criterion ssc --cond-ratio 0.1 --cifar10-data --outputs outs
 ```
 
 To run MC/DC for DNNs on the VGG16 model

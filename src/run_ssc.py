@@ -33,7 +33,7 @@ def run_ssc(test_object, outs):
   
   f_results, layer_functions, cover_layers, _=ssc_setup(test_object, outs)
   f = open(f_results, "a")
-  f.write('#ssc runs;  #test cases;  #adversarial examples;  is feasible; is top-1 adversarial example; is top-x adversarial example; condition feature size; L infinity distance; L0 distance; decision layer index; #condition layer neurons; new labels; original labels; coverage; local coverage\n')
+  f.write('#ssc runs;  #test cases;  #adversarial examples;  is feasible; is top-1 adversarial example; is top-x adversarial example; condition feature size; L infinity distance; L0 distance; decision layer index; dec feature; #condition layer neurons; new labels; original labels; coverage; local coverage\n')
   f.close()
 
   tot_decs=0
@@ -52,7 +52,7 @@ def run_ssc(test_object, outs):
 
 
   while True:
-    dec_layer_index, dec_pos=get_ssc_next(cover_layers)
+    dec_layer_index, dec_pos=get_ssc_next(cover_layers, test_object.layer_indices)
     cover_layers[dec_layer_index].ssc_map.itemset(dec_pos, False)
 
     if dec_layer_index==1 and is_input_layer(test_object.dnn.layers[0]): continue
@@ -63,8 +63,9 @@ def run_ssc(test_object, outs):
     cond_cover=np.zeros(cond_layer.ssc_map.shape, dtype=bool)
     ###
  
-    if is_padding(dec_pos, dec_layer): continue
-    print ('dec_layer_index', dec_layer_index)
+    if is_padding(dec_pos, dec_layer, cond_layer): 
+      continue
+    print ('dec_layer_index', cover_layers[dec_layer_index].layer_index)
         
     tot_conds=cond_cover.size
     if is_conv_layer(cond_layer):
@@ -144,7 +145,8 @@ def run_ssc(test_object, outs):
 
       print ('f_results: ', f_results)
       f = open(f_results, "a")
-      f.write('{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} {13} {14}\n'.format(count, len(test_cases), len(adversarials), feasible, top1_adv_flag, top5_adv_flag, d_min, d_norm, l0_d, dec_layer.layer_index, cond_layer.ssc_map.size, y1s, y2s, tot_coverage+step_coverage/tot_conds, step_coverage))
+      #f.write('{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} {13} {14} {15}\n'.format(count, len(test_cases), len(adversarials), feasible, top1_adv_flag, top5_adv_flag, d_min, d_norm, l0_d, dec_layer.layer_index, dec_pos, cond_layer.ssc_map.size, y1s, y2s, tot_coverage+step_coverage/tot_conds, step_coverage))
+      f.write('{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} {13} {14} {15}\n'.format(count, len(test_cases), len(adversarials), feasible, top1_adv_flag, top5_adv_flag, d_min, d_norm, l0_d, dec_layer.layer_index, dec_pos, cond_layer.ssc_map.size, y1s, y2s, tot_coverage+step_coverage, step_coverage))
       f.close()
       #######
       if not feasible: break
@@ -169,7 +171,7 @@ def run_svc(test_object, outs):
     dec_layer_index, dec_pos=get_ssc_next(cover_layers)
 
     if dec_layer_index==1 and is_input_layer(test_object.dnn.layers[0]): continue
-    print ('dec_layer_index', dec_layer_index)
+    print ('dec_layer_index', clayers[dec_layer_index].layer_index)
 
     ###
     cond_layer=cover_layers[dec_layer_index-1]
@@ -203,7 +205,7 @@ def run_svc(test_object, outs):
     cond_pos=np.random.randint(0, cond_cover.size)
 
     print ('cond, dec layer index: ', cond_layer.layer_index, dec_layer.layer_index)
-    print ('dec_layer_index: ', dec_layer_index)
+    print ('dec_layer_index: ', clayers[dec_layer_index].layer_index)
 
     count+=1
     
