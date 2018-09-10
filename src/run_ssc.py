@@ -37,9 +37,31 @@ def run_ssc(test_object, outs):
   f.close()
 
   tot_decs=0
-  for i in range(1, len(cover_layers)):
-    if i==1 and is_input_layer(test_object.dnn.layers[0]): continue
-    else: tot_decs+=cover_layers[i].ssc_map.size
+  if test_object.layer_indices==[]:
+    for i in range(1, len(cover_layers)):
+      if i==1 and is_input_layer(test_object.dnn.layers[0]): continue
+      else:
+        csp=cover_layers[i].layer.input.shape
+        dsp=cover_layers[i].ssc_map.shape
+        if is_dense_layer(cover_layers[i].layer) or not (csp[1]==dsp[1] and csp[2]==dsp[2]): 
+          tot_decs+=cover_layers[i].ssc_map.size
+        else:
+          ks=cover_layers[i].layer.kernel_size
+          sp=cover_layers[i].ssc_map.shape
+          tot_decs+=((sp[1]-ks[0]+1)*(sp[2]-ks[1]+1)*sp[3])
+  else:
+    for i in range(1, len(cover_layers)):
+      if cover_layers[i].layer_index in test_object.layer_indices:
+        print ('i', i)
+        csp=cover_layers[i].layer.input.shape
+        dsp=cover_layers[i].ssc_map.shape
+        if is_dense_layer(cover_layers[i].layer) or not (csp[1]==dsp[1] and csp[2]==dsp[2]): 
+          tot_decs+=cover_layers[i].ssc_map.size
+        else:
+          ks=cover_layers[i].layer.kernel_size
+          sp=cover_layers[i].ssc_map.shape
+          tot_decs+=((sp[1]-ks[0]+1)*(sp[2]-ks[1]+1)*sp[3])
+  print ('tot_decs', tot_decs)
   tot_coverage=0.0
 
   ## define a global attacker
@@ -145,13 +167,12 @@ def run_ssc(test_object, outs):
 
       print ('f_results: ', f_results)
       f = open(f_results, "a")
-      #f.write('{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} {13} {14} {15}\n'.format(count, len(test_cases), len(adversarials), feasible, top1_adv_flag, top5_adv_flag, d_min, d_norm, l0_d, dec_layer.layer_index, dec_pos, cond_layer.ssc_map.size, y1s, y2s, tot_coverage+step_coverage/tot_conds, step_coverage))
-      f.write('{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} {13} {14} {15}\n'.format(count, len(test_cases), len(adversarials), feasible, top1_adv_flag, top5_adv_flag, d_min, d_norm, l0_d, dec_layer.layer_index, dec_pos, cond_layer.ssc_map.size, y1s, y2s, tot_coverage+step_coverage, step_coverage))
+      f.write('{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} {13} {14} {15}\n'.format(count, len(test_cases), len(adversarials), feasible, top1_adv_flag, top5_adv_flag, d_min, d_norm, l0_d, dec_layer.layer_index, dec_pos, cond_layer.ssc_map.size, y1s, y2s, tot_coverage+step_coverage/tot_decs, step_coverage))
       f.close()
       #######
       if not feasible: break
       #######
-    tot_coverage+=step_coverage
+    tot_coverage+=step_coverage/tot_decs
 
 def run_svc(test_object, outs):
   print ('To run svc\n')
