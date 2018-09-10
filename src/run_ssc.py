@@ -151,7 +151,7 @@ def run_ssc(test_object, outs):
       #######
       if not feasible: break
       #######
-    tot_coverage+=step_coverage/tot_conds
+    tot_coverage+=step_coverage
 
 def run_svc(test_object, outs):
   print ('To run svc\n')
