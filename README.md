@@ -63,7 +63,7 @@ python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --cifar10-
 
 To test a particular layer
 ```
-python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --cifar10-data --outputs outs/ --layer-index 3
+python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --cifar10-data --outputs outs/ --layer-index 2
 ```
 
 To run MC/DC for DNNs on the CIFAR-10 model

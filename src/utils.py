@@ -114,7 +114,7 @@ def get_nc_next(clayers, layer_indices=None):
       v*=clayer.pfactor
       if v > nc_value:
         nc_layer, nc_pos, nc_value= i, pos, v
-  if layer_indices==None and nc_layer==None:
+  if nc_layer==None:
     print ('incorrect layer index specified (the layer tested shall be either conv or dense layer)', layer_indices)
     sys.exit(0)
   return nc_layer, nc_pos, nc_value
@@ -277,7 +277,13 @@ def is_padding(dec_pos, dec_layer):
   return False
 
 
-def get_ssc_next(clayers):
+def get_ssc_next(clayers, layer_indices=None):
+  clayers2=[]
+  if layer_indices==None or layer_indices==[]:
+    clayers2=clayers
+  else:
+    ## to do
+    pass
   while True:
     dec_layer_index=np.random.randint(1, len(clayers))
     sp=clayers[dec_layer_index].ssc_map.shape
@@ -287,6 +293,4 @@ def get_ssc_next(clayers):
     dec_pos=np.random.randint(0, tot_s)
     if not clayers[dec_layer_index].ssc_map.item(dec_pos): 
       continue
-    #else: 
-    #  clayers[dec_layer_index].ssc_map.itemset(dec_pos, False) 
     return dec_layer_index, dec_pos

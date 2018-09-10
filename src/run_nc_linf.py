@@ -23,7 +23,7 @@ def run_nc_linf(test_object, outs):
   base_constraints=create_base_constraints(test_object.dnn)
 
   while True:
-    index_nc_layer, nc_pos, nc_value=get_nc_next(cover_layers)
+    index_nc_layer, nc_pos, nc_value=get_nc_next(cover_layers, test_object.layer_indices)
     #print (nc_layer.layer_index, nc_pos, nc_value/nc_layer.pfactor)
     nc_layer=cover_layers[index_nc_layer]
     print (np.array(nc_layer.activations).shape)
@@ -65,7 +65,7 @@ def run_nc_linf(test_object, outs):
       #  print ('\n should be > 0', new_acts[nc_layer.layer_index][pos[1]][pos[2]][pos[3]][pos[4]], '\n')
     else:
       print ('\nis NOT feasible!!!\n')
-    covered, not_covered=nc_report(cover_layers)
+    covered, not_covered=nc_report(cover_layers, test_object.layer_indices)
     f = open(nc_results, "a")
     f.write('NC-cover: {0} #test cases: {1} #adversarial examples: {2}\n'.format(1.0 * covered / (covered + not_covered), len(test_cases), len(adversarials)))
     f.close()
