@@ -94,15 +94,29 @@ class cover_layert:
     else:
       self.activations[pos[0]][pos[1]][pos[2]]=MIN
 
-def get_nc_next(clayers):
+#def get_nc_next(clayers):
+#  nc_layer, nc_pos, nc_value = None, None, MIN
+#  for i in range(0, len(clayers)):
+#    clayer=clayers[i]
+#    pos, v=clayer.get_nc_next()
+#    v*=clayer.pfactor
+#    if v > nc_value:
+#      nc_layer, nc_pos, nc_value= i, pos, v
+#      #print (clayer, pos, v)
+#  return nc_layer, nc_pos, nc_value
+
+def get_nc_next(clayers, layer_indices=None):
   nc_layer, nc_pos, nc_value = None, None, MIN
   for i in range(0, len(clayers)):
-    clayer=clayers[i]
-    pos, v=clayer.get_nc_next()
-    v*=clayer.pfactor
-    if v > nc_value:
-      nc_layer, nc_pos, nc_value= i, pos, v
-      #print (clayer, pos, v)
+    if layer_indices==None or layer_indices==[] or clayers[i].layer_index in layer_indices:
+      clayer=clayers[i]
+      pos, v=clayer.get_nc_next()
+      v*=clayer.pfactor
+      if v > nc_value:
+        nc_layer, nc_pos, nc_value= i, pos, v
+  if layer_indices==None and nc_layer==None:
+    print ('incorrect layer index specified (the layer tested shall be either conv or dense layer)', layer_indices)
+    sys.exit(0)
   return nc_layer, nc_pos, nc_value
 
 def get_layer_functions(dnn):
@@ -180,6 +194,7 @@ class test_objectt:
     self.training_data=None
     self.labels=None
     self.trace_flag=None
+    self.layer_indices=[]
 
 def calculate_pfactors(activations, cover_layers):
   fks=[]
@@ -211,19 +226,20 @@ def update_nc_map_via_inst(clayers, activations):
       clayers[i].activations[j]=np.multiply(clayers[i].activations[j], clayers[i].nc_map)
       clayers[i].activations[j][clayers[i].activations[j]>=0]=MIN
 
-def nc_report(clayers):
+def nc_report(clayers, layer_indices=None):
   covered = 0
   non_covered = 0
   for layer in clayers:
-    c = np.count_nonzero(layer.nc_map)
-    sp = layer.nc_map.shape
-    tot = 0
-    if layer.is_conv:
+    if layer_indices==None or layer_indices==[] or layer.layer_index in layer_indices:
+      c = np.count_nonzero(layer.nc_map)
+      sp = layer.nc_map.shape
+      tot = 0
+      if layer.is_conv:
         tot = sp[0] * sp[1] * sp[2] * sp[3]
-    else:
+      else:
         tot = sp[0] * sp[1]
-    non_covered += c
-    covered += (tot - c)
+      non_covered += c
+      covered += (tot - c)
   return covered, non_covered
 
 def save_an_image(im, title, di='./'):

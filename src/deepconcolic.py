@@ -70,6 +70,8 @@ def main():
                     help="the condition feature size parameter (0, 1]", metavar="FLOAT")
   parser.add_argument("--top-classes", dest="top_classes", default="1",
                     help="check the top-xx classifications", metavar="INT")
+  parser.add_argument("--layer-index", dest="layer_index", default="-1",
+                    help="to test a particular layer", metavar="INT")
 
   args=parser.parse_args()
 
@@ -144,6 +146,9 @@ def main():
   test_object.cond_ratio=cond_ratio
   test_object.top_classes=top_classes
   test_object.inp_ub=inp_ub
+  if args.layer_index!='-1':
+    test_object.layer_indices.append(int(args.layer_index))
+    print ('layer index specified:', test_object.layer_indices)
   if args.training_data!='-1':
     tdata=[]
     print ('To load the extra training data...')

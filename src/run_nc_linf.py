@@ -57,7 +57,7 @@ def run_nc_linf(test_object, outs):
       if y1 != y2: 
         adversarials.append([im, new_im])
         inp_ub=test_object.inp_ub
-        save_adversarial_examples([new_im/(inp_ub*1.0), '{0}-adv-{1}'.format(len(adversarials), y1)], [old_image/(inp_ub*1.0), '{0}-original-{1}'.format(len(adversarials), y2)], None, nc_results.split('/')[0]) 
+        save_adversarial_examples([new_im/(inp_ub*1.0), '{0}-adv-{1}'.format(len(adversarials), y1)], [im/(inp_ub*1.0), '{0}-original-{1}'.format(len(adversarials), y2)], None, nc_results.split('/')[0]) 
       #old_acts=eval(layer_functions, im)
       #new_acts=eval(layer_functions, new_im)
       #if nc_layer.is_conv:

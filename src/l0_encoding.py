@@ -93,7 +93,7 @@ def refine_act_image(dnn, layer_functions, image, nc_layer, pos, sorted_pixels, 
   idx_range=np.arange(idx_first)
   while True:
     length=len(idx_range)
-    print ('idx_first: ', idx_first)
+    #print ('idx_first: ', idx_first)
     for i in range(0, idx_first[0]):
       pixel_row = sorted_pixels[i, 0].astype('int')
       pixel_col = sorted_pixels[i, 1].astype('int')

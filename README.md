@@ -18,6 +18,7 @@ usage: deepconcolic.py [-h] [--model MODEL] [--inputs DIR] [--outputs DIR]
                        [--vgg16-model] [--norm linf, l0] [--input-rows INT]
                        [--input-cols INT] [--input-channels INT]
                        [--cond-ratio FLOAT] [--top-classes INT]
+                       [--layer-index INT]
 
 Concolic testing for neural networks
 
@@ -39,6 +40,7 @@ optional arguments:
   --input-channels INT  input channels
   --cond-ratio FLOAT    the condition feature size parameter (0, 1]
   --top-classes INT     check the top-xx classifications
+  --layer-index INT     to test a particular layer
 ```
 
 The neural network model under tested is specified by ``--model`` and a set of raw test data should be given
@@ -57,6 +59,11 @@ To run an CIFAR10 model
 
 ```
 python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --cifar10-data --outputs outs/
+```
+
+To test a particular layer
+```
+python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --cifar10-data --outputs outs/ --layer-index 3
 ```
 
 To run MC/DC for DNNs on the CIFAR-10 model
