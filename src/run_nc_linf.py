@@ -20,6 +20,8 @@ def run_nc_linf(test_object, outs):
 
   nc_results, layer_functions, cover_layers, activations, test_cases, adversarials=nc_setup(test_object, outs)
 
+  d_advs=[]
+
   base_constraints=create_base_constraints(test_object.dnn)
 
   while True:
@@ -58,6 +60,9 @@ def run_nc_linf(test_object, outs):
         adversarials.append([im, new_im])
         inp_ub=test_object.inp_ub
         save_adversarial_examples([new_im/(inp_ub*1.0), '{0}-adv-{1}'.format(len(adversarials), y1)], [im/(inp_ub*1.0), '{0}-original-{1}'.format(len(adversarials), y2)], None, nc_results.split('/')[0]) 
+        d_advs.append(np.amax(np.absolute(im-new_im)))
+        if len(d_advs)%100==0:
+          print_adversarial_distribution(d_advs, nc_results.replace('.txt', '')+'-adversarial-distribution.txt')
       #old_acts=eval(layer_functions, im)
       #new_acts=eval(layer_functions, new_im)
       #if nc_layer.is_conv:

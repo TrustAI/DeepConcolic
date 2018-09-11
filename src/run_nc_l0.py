@@ -17,6 +17,7 @@ from nc_l0 import *
 
 def run_nc_l0(test_object, outs):
   nc_results, layer_functions, cover_layers, activations, test_cases, adversarials=nc_setup(test_object, outs)
+  d_advs=[]
 
   while True:
     index_nc_layer, nc_pos, nc_value=get_nc_next(cover_layers, test_object.layer_indices)
@@ -42,6 +43,9 @@ def run_nc_l0(test_object, outs):
         adversarials.append([im, new_im])
         inp_ub=test_object.inp_ub
         save_adversarial_examples([new_im/(inp_ub*1.0), '{0}-adv-{1}'.format(len(adversarials), y1)], [im/(inp_ub*1.0), '{0}-original-{1}'.format(len(adversarials), y2)], None, nc_results.split('/')[0]) 
+        d_advs.append(np.count_nonzero(im-new_im))
+        if len(d_advs)%100==0:
+          print_adversarial_distribution(d_advs, nc_results.replace('.txt', '')+'-adversarial-distribution.txt', True)
     covered, not_covered=nc_report(cover_layers, test_object.layer_indices)
     f = open(nc_results, "a")
     f.write('NC-cover: {0} #test cases: {1} #adversarial examples: {2}\n'.format(1.0 * covered / (covered + not_covered), len(test_cases), len(adversarials)))

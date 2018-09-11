@@ -316,3 +316,28 @@ def get_ssc_next(clayers, layer_indices=None):
           break
       break
   return dec_layer_index_ret, dec_pos_ret
+
+def print_adversarial_distribution(advs, fname, int_flag=False):
+  advs=np.sort(advs)
+  ## average and std
+  ave=np.mean(advs)
+  std=np.std(advs)
+  d_max=advs[len(advs)-1]
+  xs=None
+  if not int_flag:
+    xs=np.arange(0.001, d_max+0.001, 0.001)
+  else:
+    xs=np.arange(1, d_max+1, 1)
+  ys=np.zeros(len(xs))
+  for i in range(0, len(xs)):
+    for d in advs:
+      if d<=xs[i]: ys[i]+=1
+    ys[i]=ys[i]*1.0/len(advs)
+
+  f=open(fname, "w")
+  f.write('adversarial examples:  (average distance, {0}), (standard variance, {1})\n'.format(ave, std))
+  f.write('#distance #accumulated adversarial examples fall into this distance\n')
+  for i in range(0, len(xs)):
+    f.write('{0} {1}\n'.format(xs[i], ys[i]))
+  f.close()
+      

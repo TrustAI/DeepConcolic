@@ -32,6 +32,7 @@ def run_ssc(test_object, outs):
   print ('To run ssc\n')
   
   f_results, layer_functions, cover_layers, _=ssc_setup(test_object, outs)
+  d_advs=[]
   f = open(f_results, "a")
   f.write('#ssc runs;  #test cases;  #adversarial examples;  is feasible; is top-1 adversarial example; is top-x adversarial example; condition feature size; L infinity distance; L0 distance; decision layer index; dec feature; #condition layer neurons; new labels; original labels; coverage; local coverage\n')
   f.close()
@@ -162,6 +163,9 @@ def run_ssc(test_object, outs):
           adversarials.append((new_image, old_image))
           save_adversarial_examples([new_image/(inp_ub*1.0), '{0}-adv-{1}'.format(len(adversarials), y1s[top_classes-1])], [old_image/(inp_ub*1.0), '{0}-original-{1}'.format(len(adversarials), y2s[top_classes-1])], [diff_image/(255*1.0), '{0}-diff'.format(len(adversarials))], f_results.split('/')[0]) 
           adv_flag=True
+          d_advs.append(d_norm)
+          if len(d_advs)%100==0:
+            print_adversarial_distribution(d_advs, nc_results.replace('.txt', '')+'-adversarial-distribution.txt')
       else:
         print ("not feasible")
 
