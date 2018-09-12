@@ -36,7 +36,7 @@ def run_nc_l0(test_object, outs):
     cover_layers[index_nc_layer].disable_by_pos(pos)
     if feasible:
       test_cases.append(new_im)
-      update_nc_map_via_inst(cover_layers, eval(layer_functions, new_im))
+      update_nc_map_via_inst(cover_layers, eval(layer_functions, new_im), (test_object.layer_indices, test_object.feature_indices))
       y1 =(np.argmax(test_object.dnn.predict(np.array([new_im])))) 
       y2= (np.argmax(test_object.dnn.predict(np.array([im]))))
       if y1 != y2:
@@ -46,10 +46,11 @@ def run_nc_l0(test_object, outs):
         d_advs.append(np.count_nonzero(im-new_im))
         if len(d_advs)%100==0:
           print_adversarial_distribution(d_advs, nc_results.replace('.txt', '')+'-adversarial-distribution.txt', True)
-    covered, not_covered=nc_report(cover_layers, test_object.layer_indices)
+    covered, not_covered=nc_report(cover_layers, test_object.layer_indices, test_object.feature_indices)
+    
     f = open(nc_results, "a")
     f.write('NC-cover: {0} #test cases: {1} #adversarial examples: {2}\n'.format(1.0 * covered / (covered + not_covered), len(test_cases), len(adversarials)))
     f.close()
 
-
+    if not_covered==0: break
 

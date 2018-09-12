@@ -53,16 +53,16 @@ def nc_setup(test_object, outs):
   im=xdata[iseed]
 
   test_cases.append(im)
-  update_nc_map_via_inst(cover_layers, eval(layer_functions, im, is_input_layer(test_object.dnn.layers[0])))
-  covered, not_covered=nc_report(cover_layers)
+  update_nc_map_via_inst(cover_layers, eval(layer_functions, im, is_input_layer(test_object.dnn.layers[0])), (test_object.layer_indices, test_object.feature_indices))
+  covered, not_covered=nc_report(cover_layers, test_object.layer_indices, test_object.feature_indices)
   print('\n== neuron coverage: {0}==\n'.format(covered*1.0/(covered+not_covered)))
   save_an_image(im/test_object.inp_ub*1.0, 'seed-image', outs)
   f = open(nc_results, "a")
   f.write('NC-cover: {0} #test cases: {1} #adversarial examples: {2}\n'.format(1.0 * covered / (covered + not_covered), len(test_cases), len(adversarials)))
   f.close()
 
-  for i in range(0, len(cover_layers)):
-    cover_layers[i].initialize_ssc_map()
+  #for i in range(0, len(cover_layers)):
+  #  cover_layers[i].initialize_ssc_map((test_object.layer_indices, test_object.feature_indices))
 
   return nc_results, layer_functions, cover_layers, activations, test_cases, adversarials
 
@@ -82,18 +82,18 @@ def ssc_setup(test_object, outs):
 
   for i in range(0, len(cover_layers)):
     cover_layers[i].initialize_ubs()
-    cover_layers[i].initialize_ssc_map()
+    cover_layers[i].initialize_ssc_map((test_object.layer_indices, test_object.feature_indices))
 
-  print ("to compute the ubs")
+  #print ("to compute the ubs")
   activations=None
   if not test_object.training_data is None:
     for x in test_object.training_data:
       x_acts=eval_batch(layer_functions, np.array([x]), is_input_layer(test_object.dnn.layers[0]))
       for i in range(1, len(cover_layers)):
-        print (type(x_acts[cover_layers[i].layer_index][0]))
-        print (type(cover_layers[i].ubs))
+        #print (type(x_acts[cover_layers[i].layer_index][0]))
+        #print (type(cover_layers[i].ubs))
         cover_layers[i].ubs=np.maximum(cover_layers[i].ubs, x_acts[cover_layers[i].layer_index][0])
-  print ("done")
+  #print ("done")
   #  tot_size=len(test_object.training_data)
   #  batches=np.array_split(test_object.training_data[0:tot_size], tot_size//10 + 1)
   #  for i in range(0, len(batches)):

@@ -62,17 +62,33 @@ class cover_layert:
     self.ssc_map=None ## 
     self.ubs=None ## 
 
-  def initialize_nc_map(self):
+  def initialize_nc_map(self, layer_feature=None):
     sp=self.layer.output.shape
     if self.is_conv:
       self.nc_map = np.ones((1, sp[1], sp[2], sp[3]), dtype=bool)
+      if layer_feature==None: return
+      if layer_feature[0]==None: return
+      if layer_feature[1]==None: return
+      if self.layer_index in layer_feature[0]:
+        sp=self.nc_map.shape
+        for i in range(0, sp[3]):
+          if not i in layer_feature[1]:
+            self.nc_map[:,:,:,i]=False
     else:
       self.nc_map = np.ones((1, sp[1]), dtype=bool)
 
-  def initialize_ssc_map(self):
+  def initialize_ssc_map(self, layer_feature=None):
     sp=self.layer.output.shape
     if self.is_conv:
       self.ssc_map = np.ones((1, sp[1], sp[2], sp[3]), dtype=bool)
+      if layer_feature==None: return
+      if layer_feature[0]==None: return
+      if layer_feature[1]==None: return
+      if self.layer_index in layer_feature[0]:
+        sp=self.ssc_map.shape
+        for i in range(0, sp[3]):
+          if not i in layer_feature[1]:
+            self.ssc_map[:,:,:,i]=False
     else:
       self.ssc_map = np.ones((1, sp[1]), dtype=bool)
 
@@ -196,7 +212,7 @@ def calculate_pfactors(activations, cover_layers):
   for i in range(0, len(fks)):
     cover_layers[i].pfactor=av/fks[i]
 
-def update_nc_map_via_inst(clayers, activations):
+def update_nc_map_via_inst(clayers, activations, layer_feature=None):
   for i in range(0, len(clayers)):
     ## to get the act of layer 'i'
     act=copy.copy(activations[clayers[i].layer_index])
@@ -205,7 +221,7 @@ def update_nc_map_via_inst(clayers, activations):
       act[act==0]=MIN/10
     act[act>=0]=0
     if clayers[i].nc_map is None: ## not initialized yet
-      clayers[i].initialize_nc_map()
+      clayers[i].initialize_nc_map(layer_feature)
       clayers[i].nc_map=np.logical_and(clayers[i].nc_map, act)
     else:
       clayers[i].nc_map=np.logical_and(clayers[i].nc_map, act)
@@ -216,18 +232,25 @@ def update_nc_map_via_inst(clayers, activations):
       clayers[i].activations[j]=np.multiply(clayers[i].activations[j], clayers[i].nc_map)
       clayers[i].activations[j][clayers[i].activations[j]>=0]=MIN
 
-def nc_report(clayers, layer_indices=None):
+def nc_report(clayers, layer_indices=None, feature_indices=None):
   covered = 0
   non_covered = 0
   for layer in clayers:
     if layer_indices==None or layer.layer_index in layer_indices:
-      c = np.count_nonzero(layer.nc_map)
-      sp = layer.nc_map.shape
-      tot = 0
-      if layer.is_conv:
-        tot = sp[0] * sp[1] * sp[2] * sp[3]
+      if feature_indices==None or not layer.is_conv:
+        c = np.count_nonzero(layer.nc_map)
+        sp = layer.nc_map.shape
+        tot = 0
+        if layer.is_conv:
+          tot = sp[0] * sp[1] * sp[2] * sp[3]
+        else:
+          tot = sp[0] * sp[1]
       else:
-        tot = sp[0] * sp[1]
+        sp=layer.nc_map.shape
+        for i in range(0, sp[3]):
+          if not i in feature_indices: continue
+          c = np.count_nonzero(layer.nc_map[:,:,:,i])
+          tot = layer.nc_map[:,:,:,i].size
       non_covered += c
       covered += (tot - c)
   return covered, non_covered

@@ -51,17 +51,24 @@ def run_ssc(test_object, outs):
           sp=cover_layers[i].ssc_map.shape
           tot_decs+=((sp[1]-ks[0]+1)*(sp[2]-ks[1]+1)*sp[3])
   else:
+    print (test_object.layer_indices, test_object.feature_indices)
     for i in range(1, len(cover_layers)):
       if cover_layers[i].layer_index in test_object.layer_indices:
-        print ('i', i)
+        print ('****', i)
         csp=cover_layers[i].layer.input.shape
         dsp=cover_layers[i].ssc_map.shape
         if is_dense_layer(cover_layers[i].layer) or not (csp[1]==dsp[1] and csp[2]==dsp[2]): 
-          tot_decs+=cover_layers[i].ssc_map.size
+          tmp_decs=cover_layers[i].ssc_map.size
         else:
           ks=cover_layers[i].layer.kernel_size
-          sp=cover_layers[i].ssc_map.shape
-          tot_decs+=((sp[1]-ks[0]+1)*(sp[2]-ks[1]+1)*sp[3])
+          dsp=cover_layers[i].ssc_map.shape
+          tmp_decs+=((sp[1]-ks[0]+1)*(sp[2]-ks[1]+1)*dsp[3])
+        if is_conv_layer(cover_layers[i].layer):
+          if not test_object.feature_indices==None:
+             print ('**', tmp_decs)
+             tmp_decs=tmp_decs*(len(test_object.feature_indices)*1.0/dsp[3])
+             print ('**', tmp_decs)
+        tot_decs+=tmp_decs
   print ('tot_decs', tot_decs)
   tot_coverage=0.0
 
