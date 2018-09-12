@@ -72,6 +72,8 @@ def main():
                     help="check the top-xx classifications", metavar="INT")
   parser.add_argument("--layer-index", dest="layer_index", default="-1",
                     help="to test a particular layer", metavar="INT")
+  parser.add_argument("--feature-index", dest="feature_index", default="-1",
+                    help="to test a particular feature map", metavar="INT")
 
   args=parser.parse_args()
 
@@ -147,8 +149,12 @@ def main():
   test_object.top_classes=top_classes
   test_object.inp_ub=inp_ub
   if args.layer_index!='-1':
+    test_object.layer_indices=[]
     test_object.layer_indices.append(int(args.layer_index))
-    print ('layer index specified:', test_object.layer_indices)
+    if args.feature_index!='-1':
+      test_object.feature_indices=[]
+      test_object.feature_indices.append(int(args.feature_index))
+      print ('feature index specified:', test_object.feature_indices)
   if args.training_data!='-1':
     tdata=[]
     print ('To load the extra training data...')

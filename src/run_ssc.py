@@ -38,7 +38,7 @@ def run_ssc(test_object, outs):
   f.close()
 
   tot_decs=0
-  if test_object.layer_indices==[]:
+  if test_object.layer_indices==None:
     for i in range(1, len(cover_layers)):
       if i==1 and is_input_layer(test_object.dnn.layers[0]): continue
       else:
@@ -165,7 +165,7 @@ def run_ssc(test_object, outs):
           adv_flag=True
           d_advs.append(d_norm)
           if len(d_advs)%100==0:
-            print_adversarial_distribution(d_advs, nc_results.replace('.txt', '')+'-adversarial-distribution.txt')
+            print_adversarial_distribution(d_advs, f_results.replace('.txt', '')+'-adversarial-distribution.txt')
       else:
         print ("not feasible")
 

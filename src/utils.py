@@ -94,21 +94,10 @@ class cover_layert:
     else:
       self.activations[pos[0]][pos[1]][pos[2]]=MIN
 
-#def get_nc_next(clayers):
-#  nc_layer, nc_pos, nc_value = None, None, MIN
-#  for i in range(0, len(clayers)):
-#    clayer=clayers[i]
-#    pos, v=clayer.get_nc_next()
-#    v*=clayer.pfactor
-#    if v > nc_value:
-#      nc_layer, nc_pos, nc_value= i, pos, v
-#      #print (clayer, pos, v)
-#  return nc_layer, nc_pos, nc_value
-
 def get_nc_next(clayers, layer_indices=None):
   nc_layer, nc_pos, nc_value = None, None, MIN
   for i in range(0, len(clayers)):
-    if layer_indices==None or layer_indices==[] or clayers[i].layer_index in layer_indices:
+    if layer_indices==None or clayers[i].layer_index in layer_indices:
       clayer=clayers[i]
       pos, v=clayer.get_nc_next()
       v*=clayer.pfactor
@@ -194,7 +183,8 @@ class test_objectt:
     self.training_data=None
     self.labels=None
     self.trace_flag=None
-    self.layer_indices=[]
+    self.layer_indices=None
+    self.feature_indices=None
 
 def calculate_pfactors(activations, cover_layers):
   fks=[]
@@ -230,7 +220,7 @@ def nc_report(clayers, layer_indices=None):
   covered = 0
   non_covered = 0
   for layer in clayers:
-    if layer_indices==None or layer_indices==[] or layer.layer_index in layer_indices:
+    if layer_indices==None or layer.layer_index in layer_indices:
       c = np.count_nonzero(layer.nc_map)
       sp = layer.nc_map.shape
       tot = 0
@@ -280,7 +270,7 @@ def is_padding(dec_pos, dec_layer, cond_layer):
 
 def get_ssc_next(clayers, layer_indices=None):
   clayers2=[]
-  if layer_indices==None or layer_indices==[]:
+  if layer_indices==None:
     clayers2=clayers
   else:
     for i in range(1, len(clayers)):
