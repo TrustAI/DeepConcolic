@@ -291,7 +291,7 @@ def is_padding(dec_pos, dec_layer, cond_layer):
   return False
 
 
-def get_ssc_next(clayers, layer_indices=None):
+def get_ssc_next(clayers, layer_indices=None, feature_indices=None):
   clayers2=[]
   if layer_indices==None:
     clayers2=clayers
@@ -313,9 +313,11 @@ def get_ssc_next(clayers, layer_indices=None):
     for s in sp:
       tot_s*=s
     dec_pos=np.random.randint(0, tot_s)
+    if not feature_indices==None:
+      dec_pos=np.argmax(clayers2[dec_layer_index].ssc_map.shape)
     found=False
     while dec_pos<tot_s:
-      if not clayers2[dec_layer_index].ssc_map.item(dec_pos): 
+      if not clayers2[dec_layer_index].ssc_map.item(dec_pos):
         dec_pos+=1
         continue
       else:
@@ -328,6 +330,9 @@ def get_ssc_next(clayers, layer_indices=None):
           dec_layer_index_ret=i
           break
       break
+  if dec_layer_index_ret==None:
+    print ('End of the testing')
+    sys.exit(0)
   return dec_layer_index_ret, dec_pos_ret
 
 def print_adversarial_distribution(advs, fname, int_flag=False):

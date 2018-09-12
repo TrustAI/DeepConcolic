@@ -62,7 +62,7 @@ def run_ssc(test_object, outs):
         else:
           ks=cover_layers[i].layer.kernel_size
           dsp=cover_layers[i].ssc_map.shape
-          tmp_decs+=((sp[1]-ks[0]+1)*(sp[2]-ks[1]+1)*dsp[3])
+          tmp_decs=((dsp[1]-ks[0]+1)*(dsp[2]-ks[1]+1)*dsp[3])
         if is_conv_layer(cover_layers[i].layer):
           if not test_object.feature_indices==None:
              print ('**', tmp_decs)
@@ -82,7 +82,7 @@ def run_ssc(test_object, outs):
 
 
   while True:
-    dec_layer_index, dec_pos=get_ssc_next(cover_layers, test_object.layer_indices)
+    dec_layer_index, dec_pos=get_ssc_next(cover_layers, test_object.layer_indices, test_object.feature_indices)
     cover_layers[dec_layer_index].ssc_map.itemset(dec_pos, False)
 
     if dec_layer_index==1 and is_input_layer(test_object.dnn.layers[0]): continue
