@@ -98,9 +98,13 @@ def run_ssc(test_object, outs):
     print ('dec_layer_index', cover_layers[dec_layer_index].layer_index)
         
     tot_conds=cond_cover.size
-    if is_conv_layer(cond_layer):
-      ks=cond_layer.kernel_size
-      tot_conds-=ks[0]*ks[1]
+    if is_conv_layer(cond_layer.layer):
+      csp=cond_layer.layer.input.shape
+      dsp=cond_layer.ssc_map.shape
+      if (csp[1]==dsp[1] and csp[2]==dsp[2]): 
+        ks=cond_layer.layer.kernel_size
+        dsp=cond_layer.ssc_map.shape
+        tot_decs=((dsp[1]-ks[0]+1)*(dsp[2]-ks[1]+1)*dsp[3])
 
     non_increasing=0
     step_coverage=0
@@ -184,6 +188,11 @@ def run_ssc(test_object, outs):
       if not feasible: break
       #######
     tot_coverage+=step_coverage/tot_decs
+    ## todo: this is a shortcut
+    if not np.any(cover_layers[dec_layer_index].ssc_map):
+      print ('all decision features at layer {0} have been covered'.format(dec_layer.layer_index))
+      sys.exit(0)
+
 
 def run_svc(test_object, outs):
   print ('To run svc\n')

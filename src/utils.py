@@ -8,6 +8,7 @@ import sys
 import cv2
 
 
+the_dec_pos=0
 MIN=-100000
 DIM=50
 #ssc_ratio=0.005 #0.1 #0.05 #0.01
@@ -292,6 +293,7 @@ def is_padding(dec_pos, dec_layer, cond_layer):
 
 
 def get_ssc_next(clayers, layer_indices=None, feature_indices=None):
+  global the_dec_pos
   clayers2=[]
   if layer_indices==None:
     clayers2=clayers
@@ -308,6 +310,11 @@ def get_ssc_next(clayers, layer_indices=None, feature_indices=None):
     
   while True:
     dec_layer_index=np.random.randint(0, len(clayers2))
+    ## todo: this is a shortcut
+    if not np.any(clayers2[dec_layer_index].ssc_map):
+      print ('all decision features at layer {0} have been covered'.format(dec_layer_index))
+      sys.exit(0)
+
     sp=clayers2[dec_layer_index].ssc_map.shape
     tot_s=1
     for s in sp:
@@ -316,15 +323,19 @@ def get_ssc_next(clayers, layer_indices=None, feature_indices=None):
     if not feature_indices==None:
       dec_pos=np.argmax(clayers2[dec_layer_index].ssc_map.shape)
     found=False
-    while dec_pos<tot_s:
-      if not clayers2[dec_layer_index].ssc_map.item(dec_pos):
-        dec_pos+=1
+    while the_dec_pos<tot_s:
+      if not clayers2[dec_layer_index].ssc_map.item(the_dec_pos):
+        the_dec_pos+=1
         continue
       else:
         found=True 
         break
+    if the_dec_pos>=tot_s:
+      print ('all decision features at layer {0} have been covered'.format(dec_layer_index))
+      sys.exit(0)
+      
     if found:
-      dec_pos_ret=dec_pos
+      dec_pos_ret=the_dec_pos
       for i in range(0, len(clayers)):
         if clayers[i].layer_index==clayers2[dec_layer_index].layer_index:
           dec_layer_index_ret=i

@@ -34,6 +34,7 @@ def run_nc_l0(test_object, outs):
     feasible, d, new_im = l0_negate(test_object.dnn, layer_functions, [im], nc_layer, nc_pos-s)
 
     cover_layers[index_nc_layer].disable_by_pos(pos)
+    d_adv=-1
     if feasible:
       test_cases.append(new_im)
       update_nc_map_via_inst(cover_layers, eval(layer_functions, new_im), (test_object.layer_indices, test_object.feature_indices))
@@ -43,13 +44,14 @@ def run_nc_l0(test_object, outs):
         adversarials.append([im, new_im])
         inp_ub=test_object.inp_ub
         save_adversarial_examples([new_im/(inp_ub*1.0), '{0}-adv-{1}'.format(len(adversarials), y1)], [im/(inp_ub*1.0), '{0}-original-{1}'.format(len(adversarials), y2)], None, nc_results.split('/')[0]) 
-        d_advs.append(np.count_nonzero(im-new_im))
+        d_adv=(np.count_nonzero(im-new_im))
+        d_advs.append(d_adv)
         if len(d_advs)%100==0:
           print_adversarial_distribution(d_advs, nc_results.replace('.txt', '')+'-adversarial-distribution.txt', True)
     covered, not_covered=nc_report(cover_layers, test_object.layer_indices, test_object.feature_indices)
     
     f = open(nc_results, "a")
-    f.write('NC-cover: {0} #test cases: {1} #adversarial examples: {2}\n'.format(1.0 * covered / (covered + not_covered), len(test_cases), len(adversarials)))
+    f.write('NC-cover: {0} #test cases: {1} #adversarial examples: {2} #diff: {3} #layer: {4} #pos: {5}\n'.format(1.0 * covered / (covered + not_covered), len(test_cases), len(adversarials), d_adv, nc_layer.layer_index, nc_pos))
     f.close()
 
     if not_covered==0: break
