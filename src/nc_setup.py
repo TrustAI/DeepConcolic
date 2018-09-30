@@ -72,7 +72,7 @@ def ssc_setup(test_object, outs):
     os.system('mkdir -p {0}'.format(outs))
   if not outs.endswith('/'):
     outs+='/'
-  nc_results=outs+'ssc_{0}_report-{1}.txt'.format(test_object.norm, str(datetime.now()).replace(' ', '-'))
+  nc_results=outs+'ssc_report-{0}.txt'.format(str(datetime.now()).replace(' ', '-'))
   nc_results=nc_results.replace(':', '-')
 
   layer_functions=get_layer_functions(test_object.dnn)
