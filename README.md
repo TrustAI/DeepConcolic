@@ -1,7 +1,7 @@
 # DeepConcolic (Concolic Testing for Deep Neural Networks)
 
 
-[![Watch the video](https://img.yohttps://img.youtube.com/vi/rliynbhoNLM/1.jpgg)](https://youtu.be/rliynbhoNLM)
+[![Watch the video](https://img.yohttps://img.youtube.com/vi/rliynbhoNLM/1.jpg)](https://youtu.be/rliynbhoNLM)
 
 Concolic testing alternates between CONCrete program execution and symbOLIC analysis to explore the execution paths of a software program and to increase code coverage. In this paper, we develop the first concolic testing approach for Deep Neural Networks (DNNs). More specifically, we utilise quantified linear arithmetic over rationals to express test requirements that have been studied in the literature, and then develop a coherent method to perform concolic testing with the aim of better coverage. Our experimental results show the effectiveness of the concolic testing approach in both achieving high coverage and finding adversarial examples.
 
