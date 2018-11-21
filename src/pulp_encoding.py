@@ -12,192 +12,201 @@ epsilon=0.001
 UPPER_BOUND=100000000
 LOWER_BOUND=-100000000
 
+## to create the base constraint for any AP
 def create_base_prob(dnn):
 
-    base_prob = LpProblem("base_prob", LpMinimize)
-    var_names=[]
-    var_names_vect=[]
-    the_index=0
+  base_prob = LpProblem("base_prob", LpMinimize)
+  var_names=[]
+  var_names_vect=[]
+  the_index=0
+  
+  for l in range(0, len(dnn.layers)):
+    ## There is no intention to DIRECTLY change the classification label 
+    if l==len(dnn.layers)-1: continue
+  
+    layer=dnn.layers[l]
+  
+    print ('== Create base variables: layer {0} == \n'.format(l), layer)
+  
+    if is_input_layer(layer):
+      osp=layer.input.shape ## the output at this layer (e.g.) 28x28x1, 32x32x3
+      if len(osp)<=2:
+          print ('=== We assume the input layer be conv... === \n')
+          sys.exit(0)
+      gen_vars(the_index, osp, var_names, var_names_vect)
 
-    for l in range(0, len(dnn.layers)):
-        if l==len(dnn.layers)-1: continue
+    elif is_conv_layer(layer):
+      ### conv layer is the 1st layer
+      if l==0:
+        ## create variables for layer INPUT neurons
+        isp = layer.input.shape
+        gen_vars(the_index, isp, var_names, var_names_vect)
+  
+      ### create variables for layer OUTPUT neurons
+      the_index+=1
+      osp=layer.output.shape
+      gen_vars(the_index, osp, var_names, var_names_vect)
+  
+      ### 'conv+relu'
+      if act_in_the_layer(layer)=='relu':
+        the_index+=1
+        osp=layer.output.shape
+        gen_vars(the_index, osp, var_names, var_names_vect)
+  
+    elif is_dense_layer(layer):
+      if l==0:
+        print ('=== We assume the input layer not be dense... === \n')
+        sys.exit(0)
+      the_index+=1
+      osp=layer.output.shape
+      gen_vars(the_index, osp, var_names, var_names_vect)
+  
+      ### 'dense+relu'
+      if act_in_the_layer(layer)=='relu':
+        the_index+=1
+        osp=layer.output.shape
+        gen_vars(the_index, osp, var_names, var_names_vect)
+  
+    elif is_activation_layer(layer):
+      if get_activation(layer)!='relu':
+        print ('=== We assume ReLU activation layer: layer {0}, {1} ==='.format(l, layer))
+        continue 
+      the_index+=1
+      osp=layer.output.shape
+      gen_vars(the_index, osp, var_names, var_names_vect)
+  
+    elif is_maxpooling_layer(layer):
+        the_index+=1
+        osp=layer.output.shape
+        gen_vars(the_index, osp, var_names, var_names_vect)
+  
+    elif is_flatten_layer(layer):
+        the_index+=1
+        isp=layer.input.shape
+        gen_vars_flattened(the_index, isp, var_names, var_names_vect)
+  
+    else:
+        print ('Unknown layer: layer {)}, {1}'.format(l, layer))
+        sys.exit(0)
 
-        layer=dnn.layers[l]
+  num_vars=0
+  for x in var_names:
+    num_vars+=x.size
+  print ('LP variables have all been collected, #variables: {0}'.format(num_vars))
+  
+  
+  ## now, it comes the encoding of constraints
+  ## reset the_index
+  weight_index=-1
+  the_index=0
+  tot_weights=dnn.get_weights()
+  base_prob_dict=dict()
 
-        print ('== {0} == \n'.format(l), layer)
+  for l in range(0, len(dnn.layers)):
+    ## we skip the last layer
+    if l==len(dnn.layers)-1: continue
 
-        if is_input_layer(layer):
-            osp=layer.input.shape ## the output at this layer (e.g.) 28x28x1, 32x32x3
+    layer=dnn.layers[l]
 
-            if len(osp)<=2:
-                print ('== well, we do not think the input layer shall be non-convolutional... == \n')
-                sys.exit(0)
+    print ('== Create base constraint: layer {0} == \n'.format(l), layer)
 
-            gen_vars(the_index, osp, var_names, var_names_vect)
-        elif is_conv_layer(layer):
-            ### conv layer is also the input layer
-            if l==0:
-                isp = layer.input.shape
-                gen_vars(the_index, isp, var_names, var_names_vect)
+    if is_input_layer(layer):
+      ## nothing to constrain for InputLayer
+      continue
+    elif is_conv_layer(layer):
+      if l==0:
+        pass
+      the_index+=1
+      isp=var_names[the_index-1].shape
+      osp=var_names[the_index].shape
+      kernel_size=layer.kernel_size
+      weight_index+=1
+      weights=tot_weights[weight_index]
+      weight_index+=1
+      biases=tot_weights[weight_index]
+      for I in range(0, osp[0]):
+        for J in range(0, osp[1]):
+          for K in range(0, osp[2]):
+            for L in range(0, osp[3]):
+              LpAffineExpression_list=[]
+              out_neuron_var_name=var_names[the_index][I][J][K][L]
+              LpAffineExpression_list.append((out_neuron_var_name, -1))
+              for II in range(0, kernel_size[0]):
+                for JJ in range(0, kernel_size[1]):
+                  for KK in range(0, weights.shape[2]):
+                    try:
+                      in_neuron_var_name=var_names[the_index-1][0][J+II][K+JJ][KK]
+                      LpAffineExpression_list.append((in_neuron_var_name, float(weights[II][JJ][KK][L])))
+                    except:
+                      ## padding
+                      pass
+              #LpAffineconstraints.append(constraint)
+              c = LpAffineExpression(LpAffineExpression_list)
+              constraint = LpConstraint(c, LpConstraintEQ, 'c_name_{0}'.format(out_neuron_var_name), -float(biases[L]))
+              base_prob+=constraint
+      if act_in_the_layer(layer)=='relu':
+          the_index+=1
+          base_constraints_dict[l]=base_prob.copy()
 
-            ### normal conv layer
-            the_index+=1
-            osp=layer.output.shape ## the output at this layer
-            gen_vars(the_index, osp, var_names, var_names_vect)
+    elif is_dense_layer(layer):
+      the_index+=1
+      isp=var_names[the_index-1].shape
+      osp=var_names[the_index].shape
+      weight_index+=1
+      weights=tot_weights[weight_index]
+      weight_index+=1
+      biases=tot_weights[weight_index]
+      for I in range(0, osp[0]):
+        for J in range(0, osp[1]):
+          LpAffineExpression_list=[]
+          out_neuron_var_name=var_names[the_index][I][J]
+          LpAffineExpression_list.append((out_neuron_var_name, -1))
+          for II in range(0, isp[1]):
+            in_neuron_var_name=var_names[the_index-1][0][II]
+            LpAffineExpression_list.append((in_neuron_var_name, float(weights[II][J])))
+          c = LpAffineExpression(LpAffineExpression_list)
+          constraint = LpConstraint(c, LpConstraintEQ, 'c_name_{0}'.format(out_neuron_var_name), -float(biases[J]))
+          base_prob+=constraint
 
-            ###conv layer is also an activation layer
-            if act_in_the_layer(layer)=='relu':
-                the_index+=1
-                osp=layer.output.shape ## the output at this layer
-                gen_vars(the_index, osp, var_names, var_names_vect)
+      if act_in_the_layer(layer)=='relu':
+        the_index+=1
+        base_prob_dict[l]=base_prob.copy()
 
-        elif is_dense_layer(layer):
-            if l==0: ## well, let us not allow to define a net starting with dense a layer...
-                print ('well, let us not allow to define a net starting with dense a layer... ==\n')
-                sys.exit(0)
-            the_index+=1
-            osp=layer.output.shape
-            gen_vars(the_index, osp, var_names, var_names_vect)
+    elif is_flatten_layer(layer):
+      the_index+=1
+      isp=var_names[the_index-1].shape
+      osp=var_names[the_index].shape
 
-            ### dense layer is also activation layer
-            if act_in_the_layer(layer)=='relu':
-                the_index+=1
-                osp=layer.output.shape
-                gen_vars(the_index, osp, var_names, var_names_vect)
+      tot=isp[1]*isp[2]*isp[3]
+      for I in range(0, tot):
+        d0=int(I)//(int(isp[2])*int(isp[3]))
+        d1=(int(I)%(int(isp[2])*int(isp[3])))//int(isp[3])
+        d2=int(I)-int(d0)*(int(isp[2])*int(isp[3]))-d1*int(isp[3])
+        LpAffineExpression_list=[]
+        out_neuron_var_name=var_names[the_index][0][I]
+        LpAffineExpression_list.append((out_neuron_var_name, -1))
+        in_neuron_var_name=var_names[the_index-1][0][int(d0)][int(d1)][int(d2)]
+        LpAffineExpression_list.append((in_neuron_var_name, +1))
+        c = LpAffineExpression(LpAffineExpression_list)
+        constraint = LpConstraint(c, LpConstraintEQ, 'c_name_{0}'.format(out_neuron_var_name), 0)
+        base_prob+=constraint
+    elif is_activation_layer(layer):
+      if get_activation(layer)!='relu': 
+        print ('### We assume ReLU activation layer... ')
+        continue
+      the_index+=1
+      base_prob_dict[l]=base_prob.copy()
+      continue
+    elif is_maxpooling_layer(layer):
+      the_index+=1
+      #isp=var_names[the_index-1].shape
+      #osp=var_names[the_index].shape
+      continue
+    else:
+      print ('Unknown layer', layer)
+      sys.exit(0)
 
-        elif is_activation_layer(layer):
-            if str(layer.activation).find('relu')<0: continue ## well, we only consider ReLU activation layer
-            the_index+=1
-            osp=layer.output.shape
-            gen_vars(the_index, osp, var_names, var_names_vect)
-
-        elif is_maxpooling_layer(layer):
-            the_index+=1
-            osp=layer.output.shape
-            gen_vars(the_index, osp, var_names, var_names_vect)
-
-        elif is_flatten_layer(layer):
-            the_index+=1
-            isp=layer.input.shape
-            gen_vars_flattened(the_index, isp, var_names, var_names_vect)
-
-        else:
-            print ('Unknown layer', layer)
-            sys.exit(0)
-
-
-    ## now, it comes the encoding of constraints
-    weight_index=-1
-    the_index=0
-    tot_weights=dnn.get_weights()
-    
-    for l in range(0, len(dnn.layers)):
-        ## we skip the last layer
-        if l==len(dnn.layers)-1: continue
-    
-        layer=dnn.layers[l]
-        if is_input_layer(layer):
-            continue
-        elif is_conv_layer(layer):
-            if l==0:
-                pass
-            the_index+=1
-            #print ('length of var_names: ', len(var_names))
-            isp=var_names[the_index-1].shape
-            osp=var_names[the_index].shape
-            kernel_size=layer.kernel_size
-            weight_index+=1
-            weights=tot_weights[weight_index]
-            weight_index+=1
-            biases=tot_weights[weight_index]
-            for I in range(0, osp[0]):
-                for J in range(0, osp[1]):
-                    for K in range(0, osp[2]):
-                        for L in range(0, osp[3]):
-                            LpAffineExpression_list=[]
-                            out_neuron_var_name=var_names[the_index][I][J][K][L]
-                            #print ('out neuron var name: '+ out_neuron_var_name)
-                            LpAffineExpression_list.append((out_neuron_var_name, -1))
-                            for II in range(0, kernel_size[0]):
-                                for JJ in range(0, kernel_size[1]):
-                                    for KK in range(0, weights.shape[2]):
-                                        try:
-                                            in_neuron_var_name=var_names[the_index-1][0][J+II][K+JJ][KK]
-                                            LpAffineExpression_list.append((in_neuron_var_name, float(weights[II][JJ][KK][L])))
-                                        except: pass
-                            #LpAffineconstraints.append(constraint)
-                            c = LpAffineExpression(LpAffineExpression_list)
-                            constraint = LpConstraint(c, LpConstraintEQ, 'c_name_{0}'.format(out_neuron_var_name), -float(biases[L]))
-                            base_prob+=constraint
-#   if act_in_the_layer(layer)=='relu':
-#       the_index+=1
-#       base_constraints_dict[l]=base_constraintst(objective, lower_bounds, upper_bounds, var_names_vect, var_names, constraints, constraint_senses, rhs, constraint_names)
-#   elif is_dense_layer(layer):
-#     the_index+=1
-#     isp=var_names[the_index-1].shape
-#     osp=var_names[the_index].shape
-#     weight_index+=1
-#     weights=tot_weights[weight_index]
-#     weight_index+=1
-#     biases=tot_weights[weight_index]
-#     for I in range(0, osp[0]):
-#       for J in range(0, osp[1]):
-#         #print ('dense == ', l, ' == ', I, J)
-#         constraint=[[], []]
-#         constraint[0].append(var_names[the_index][I][J])
-#         constraint[1].append(-1)
-#         for II in range(0, isp[1]):
-#           #print (weights.shape)
-#           constraint[0].append(var_names[the_index-1][0][II])
-#           constraint[1].append(float(weights[II][J]))
-
-#         constraints.append(constraint)
-#         rhs.append(-float(biases[J]))
-#         constraint_senses.append('E')
-#         constraint_names.append('')
-#     if act_in_the_layer(layer)=='relu':
-#       the_index+=1
-#       base_constraints_dict[l]=base_constraintst(objective, lower_bounds, upper_bounds, var_names_vect,var_names, constraints, constraint_senses, rhs, constraint_names)
-#   elif is_flatten_layer(layer):
-#     the_index+=1
-#     isp=var_names[the_index-1].shape
-#     osp=var_names[the_index].shape
-
-#     #print (isp, osp)
-
-#     tot=isp[1]*isp[2]*isp[3]
-#     for I in range(0, tot):
-#       #print ('flatten, == ', l, ' == ', I)
-#       d0=int(I)//(int(isp[2])*int(isp[3]))
-#       d1=(int(I)%(int(isp[2])*int(isp[3])))//int(isp[3])
-#       d2=int(I)-int(d0)*(int(isp[2])*int(isp[3]))-d1*int(isp[3])
-#       constraint=[[], []]
-#       constraint[0].append(var_names[the_index][0][I])
-#       constraint[1].append(-1)
-#       constraint[0].append(var_names[the_index-1][0][int(d0)][int(d1)][int(d2)])
-#       constraint[1].append(+1)
-
-#       constraints.append(constraint)
-#       constraint_senses.append('E')
-#       rhs.append(0)
-#       constraint_names.append('')
-#   elif is_activation_layer(layer):
-#     if str(layer.activation).find('relu')<0: continue ## well, we only consider ReLU activation layer
-#     the_index+=1
-#     print ('add one relu layer')
-#     base_constraints_dict[l]=base_constraintst(objective, lower_bounds, upper_bounds, var_names_vect, var_names, constraints, constraint_senses, rhs, constraint_names)
-#     continue
-#   elif is_maxpooling_layer(layer):
-#     the_index+=1
-#     isp=var_names[the_index-1].shape
-#     osp=var_names[the_index].shape
-#     continue
-#   else:
-#     print ('Unknown layer', layer)
-#     sys.exit(0)
-
-# #return base_constraintst(objective, lower_bounds, upper_bounds, var_names_vect, constraints, constraint_senses, rhs, constraint_names)
-# return base_constraints_dict
+  return base_prob_dict
 
 # def build_conv_constraint(the_index, ll, I, J, K, L, act_inst, var_names, has_input_layer):
 #   #print (' == build conv constraints == ', the_index, l)
@@ -406,47 +415,35 @@ def create_base_prob(dnn):
 #   return res
 
 def gen_vars(the_index, sp, var_names, var_names_vect):
-    sp_len = len(sp)
-    print ('the_index', the_index, 'len of var_names', len(var_names), sp_len)
-    if sp_len==4:
-        var_names.append(np.empty((1, sp[1], sp[2], sp[3]), dtype="S40"))
-        for I in range(0, 1):
-            for J in range(0, sp[1]):
-                for K in range(0, sp[2]):
-                    for L in range(0, sp[3]):
-                        var_name='x_{0}_{1}_{2}_{3}_{4}'.format(the_index, I, J, K, L)
-                        var_names[the_index][I][J][K][L]=var_name
-                        x_var = LpVariable(var_name, lowBound=None, upBound=None)
-                        var_names_vect.append(x_var)
-    #elif sp_len==2:
-    #    var_names.append(np.empty((1, sp[1], sp[2]), dtype="S40"))
-    #    for I in range(0, 1):
-    #        for J in range(0, sp[1]):
-    #            for K in range(0, sp[2]):
-    #                var_name='x_{0}_{1}_{2}_{3}'.format(the_index, I, J, K)
-    #                var_names[the_index][I][J][K]=var_name
-    #                x_var = LpVariable(var_name, lowBound=None, upBound=None)
-    #                var_names_vect.append(x_var)
-    elif sp_len==2:
-        var_names.append(np.empty((1, sp[1]), dtype="S40"))
-        for I in range(0, 1):
-            for J in range(0, sp[1]):
-                var_name='x_{0}_{1}_{2}'.format(the_index, I, J)
-                var_names[the_index][I][J]=var_name
-                x_var = LpVariable(var_name, lowBound=None, upBound=None)
-                var_names_vect.append(x_var)
-    else:
-        pass
-
-
-def gen_vars_flattened(the_index, sp, var_names, var_names_vect):
-    print ('the_index', the_index, 'len of var_names', len(var_names), len(sp))
-    tot=int(sp[1]) * int(sp[2]) * int(sp[3])
-    var_names.append(np.empty((1, tot), dtype="S40"))
+  sp_len = len(sp)
+  if sp_len==4: ## conv
+    var_names.append(np.empty((1, sp[1], sp[2], sp[3]), dtype="S40"))
     for I in range(0, 1):
-        for J in range(0, tot):
-            var_name='x_{0}_{1}_{2}'.format(the_index, I, J)
-            var_names[the_index][I][J]=var_name
+      for J in range(0, sp[1]):
+        for K in range(0, sp[2]):
+          for L in range(0, sp[3]):
+            var_name='x_{0}_{1}_{2}_{3}_{4}'.format(the_index, I, J, K, L)
+            var_names[the_index][I][J][K][L]=var_name
             x_var = LpVariable(var_name, lowBound=None, upBound=None)
             var_names_vect.append(x_var)
+  elif sp_len==2: ## not conv
+    var_names.append(np.empty((1, sp[1]), dtype="S40"))
+    for I in range(0, 1):
+      for J in range(0, sp[1]):
+        var_name='x_{0}_{1}_{2}'.format(the_index, I, J)
+        var_names[the_index][I][J]=var_name
+        x_var = LpVariable(var_name, lowBound=None, upBound=None)
+        var_names_vect.append(x_var)
+  else:
+    print ('## Unrecognised shape in gen_vars: {0}...'.format(sp))
+
+def gen_vars_flattened(the_index, sp, var_names, var_names_vect):
+  tot=int(sp[1]) * int(sp[2]) * int(sp[3])
+  var_names.append(np.empty((1, tot), dtype="S40"))
+  for I in range(0, 1):
+    for J in range(0, tot):
+      var_name='x_{0}_{1}_{2}'.format(the_index, I, J)
+      var_names[the_index][I][J]=var_name
+      x_var = LpVariable(var_name, lowBound=None, upBound=None)
+      var_names_vect.append(x_var)
   
