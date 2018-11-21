@@ -13,7 +13,7 @@ epsilon=1.0/(255)
 
 def negate(dnn, act_inst, test, nc_layer, nc_pos, base_prob_, var_names_, LB=0., UB=1.):
   ##
-  base_prob=copy.copy(base_prob_)
+  base_prob=base_prob_.copy()
   var_names=copy.copy(var_names_)
 
   # distance variable 
@@ -218,12 +218,23 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_prob_, var_names_, LB=0.,
       sys.exit(0)
   
   print ('### to solve...')
-  base_prob.solve()
-  #base_prob.solve(CPLEX())
+  lp_status_b=True
+  try:
+    print ('### Using CPLEX backend')
+    base_prob.solve(CPLEX())
+  except:
+    print ('### CPLEX not available')
+    print ('### Using default CBC backend')
+    base_prob.solve()
   print ('### solved!')
-  # Print the status of the solved LP
+
   lp_status=LpStatus[base_prob.status]
-  print ('Status:', lp_status)
+  if lp_status!='Optimal': lp_status_b=False
+  print ('Status:', lp_status, lp_status_b)
+
+  if not lp_status_b:
+    return False, -1, None
+
   d_v=pulp.value(d_var)
   print ('min distance:', d_v)
   new_x = np.zeros((var_names[0].shape[1], var_names[0].shape[2], var_names[0].shape[3]))
@@ -232,47 +243,8 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_prob_, var_names_, LB=0.,
       for K in range(0, var_names[0].shape[3]):
         v = pulp.value(var_names[0][0][I][J][K])
         if v < 0 or v > 1:
-            return lp_status, d_v, None
+            return False, -1, None
         new_x[I][J][K] = v
-  save_an_image(new_x,'new_x','')
-  return lp_status, d_v, new_x
-  #try:
-  #    # print 'the valuie of d is '
-  #    print ('cplex now...')
-  #    problem = cplex.Cplex()
-  #    #print (len(objective), len(lower_bounds), len(upper_bounds), len(var_names_vect))
-  #    problem.variables.add(obj=objective,
-  #                          lb=lower_bounds,
-  #                          ub=upper_bounds,
-  #                          names=var_names_vect)
-  #    problem.linear_constraints.add(lin_expr=constraints,
-  #                                   senses=constraint_senses,
-  #                                   rhs=rhs,
-  #                                   names=constraint_names)
-  #    print ('-- to solve----')
-  #    timeLimit = 60 * 5
-  #    problem.parameters.timelimit.set(60 * 5)
-  #    problem.solve()
-  #    ##
-  #    d = problem.solution.get_values("d")
-  #    print ('d:', d)
-  #    if d == 0:
-  #        return False, -1, None
-  #    #print '***the target var: ', problem.solution.get_values(target_var)
-  #    # print 'distance d is: {0}'.format(d)
-  #    new_x = np.zeros((var_names[0].shape[1], var_names[0].shape[2], var_names[0].shape[3]))
-  #    for I in range(0, var_names[0].shape[1]):
-  #        for J in range(0, var_names[0].shape[2]):
-  #            for K in range(0, var_names[0].shape[3]):
-  #                # print I, J, K
-  #                v = problem.solution.get_values(var_names[0][0][I][J][K])
-  #                # print v
-  #                if v < 0 or v > 1:
-  #                    return False, -1, None
-  #                new_x[I][J][K] = v
-  #    return True, d, new_x
-  #except:
-  #    print ('there is one except')
-  #    return False, -1, None
 
-  #return None, None, None
+  save_an_image(new_x,'new_x','./')
+  return lp_status_b, d_v, new_x
