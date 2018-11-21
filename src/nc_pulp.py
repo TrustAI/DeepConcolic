@@ -1,7 +1,9 @@
 import pulp
 try:
   import cplex
-except: pass
+  cplex_flag=True
+except:
+  cplex_flag=False
 from pulp import *
 import sys
 import numpy as np
@@ -219,11 +221,10 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_prob_, var_names_, LB=0.,
   
   print ('### to solve...')
   lp_status_b=True
-  try:
+  if cplex_flag:
     print ('### Using CPLEX backend')
     base_prob.solve(CPLEX())
-  except:
-    print ('### CPLEX not available')
+  else:
     print ('### Using default CBC backend')
     base_prob.solve()
   print ('### solved!')
