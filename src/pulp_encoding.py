@@ -206,244 +206,261 @@ def create_base_prob(dnn):
       print ('Unknown layer', layer)
       sys.exit(0)
 
-  return base_prob_dict
+  return base_prob_dict, var_names
 
-# def build_conv_constraint(the_index, ll, I, J, K, L, act_inst, var_names, has_input_layer):
-#   #print (' == build conv constraints == ', the_index, l)
-#   #print (var_names[the_index].shape, var_names[the_index-1].shape)
-#   #print (var_names[0].shape)
-#   #print (var_names[1].shape)
-#   #print (var_names[2].shape)
-#   l=ll
-#   #if not has_input_layer: l=ll-1
-#   osp=var_names[the_index].shape
-#   res=[]
-#   if act_inst[l][I][J][K][L]>0: ## we know what to do
-#     ## C1:
-#     constraint = [[], []]
-#     constraint[0].append(var_names[the_index][I][J][K][L])
-#     constraint[1].append(1)
-#     constraint[0].append(var_names[the_index-1][I][J][K][L])
-#     constraint[1].append(-1)
-#     res.append([constraint, 0, 'E', ''])
-#     #constraints.append(constraint)
-#     #rhs.append(0)
-#     #constraint_senses.append('E')
-#     #constraint_names.append('')
-#     ## C2: >=0
-#     constraint = [[], []]
-#     constraint[0].append(var_names[the_index-1][I][J][K][L])
-#     constraint[1].append(1)
-#     res.append([constraint, epsilon, 'G', ''])
-#     #constraints.append(constraint)
-#     #rhs.append(0)
-#     #constraint_senses.append('G')
-#     #constraint_names.append('')
-#   else:
-#     ## C1:
-#     constraint = [[], []]
-#     constraint[0].append(var_names[the_index][I][J][K][L])
-#     constraint[1].append(1)
-#     #constraints.append(constraint)
-#     #rhs.append(0)
-#     #constraint_senses.append('E')
-#     #constraint_names.append('')
-#     res.append([constraint, 0, 'E', ''])
-#     ## C2: <=0
-#     constraint = [[], []]
-#     constraint[0].append(var_names[the_index-1][I][J][K][L])
-#     constraint[1].append(1)
-#     #constraints.append(constraint)
-#     #rhs.append(0)
-#     #constraint_senses.append('L')
-#     #constraint_names.append('')
-#     res.append([constraint, -epsilon, 'L', ''])
-#   return res
+def build_conv_constraint(the_index, ll, I, J, K, L, act_inst, var_names, has_input_layer):
+  l=ll
+  #if not has_input_layer: l=ll-1
+  osp=var_names[the_index].shape
+  res=[]
+  if act_inst[l][I][J][K][L]>0: ## we know what to do
+    ## C1:
+    #constraint = [[], []]
+    #constraint[0].append(var_names[the_index][I][J][K][L])
+    #constraint[1].append(1)
+    #constraint[0].append(var_names[the_index-1][I][J][K][L])
+    #constraint[1].append(-1)
+    #res.append([constraint, 0, 'E', ''])
+    LpAffineExpression_list=[]
+    LpAffineExpression_list.append((var_names[the_index][I][J][K][L], +1))
+    LpAffineExpression_list.append((var_names[the_index-1][I][J][K][L], -1))
+    c = LpAffineExpression(LpAffineExpression_list)
+    constraint = LpConstraint(c, LpConstraintEQ, '', 0.)
+    res.append(constraint)
+    ## C2: >=0
+    #constraint = [[], []]
+    #constraint[0].append(var_names[the_index-1][I][J][K][L])
+    #constraint[1].append(1)
+    #res.append([constraint, epsilon, 'G', ''])
+    LpAffineExpression_list=[]
+    LpAffineExpression_list.append((var_names[the_index-1][I][J][K][L], +1))
+    c = LpAffineExpression(LpAffineExpression_list)
+    constraint = LpConstraint(c, LpConstraintGE, '', epsilon)
+    res.append(constraint)
+  else:
+    ## C1:
+    #constraint = [[], []]
+    #constraint[0].append(var_names[the_index][I][J][K][L])
+    #constraint[1].append(1)
+    #res.append([constraint, 0, 'E', ''])
+    LpAffineExpression_list=[]
+    LpAffineExpression_list.append((var_names[the_index][I][J][K][L], +1))
+    c = LpAffineExpression(LpAffineExpression_list)
+    constraint = LpConstraint(c, LpConstraintEQ, '', 0.)
+    res.append(constraint)
+    ## C2: <=0
+    #constraint = [[], []]
+    #constraint[0].append(var_names[the_index-1][I][J][K][L])
+    #constraint[1].append(1)
+    #res.append([constraint, -epsilon, 'L', ''])
+    LpAffineExpression_list=[]
+    LpAffineExpression_list.append((var_names[the_index-1][I][J][K][L], +1))
+    c = LpAffineExpression(LpAffineExpression_list)
+    constraint = LpConstraint(c, LpConstraintLE, '', -epsilon)
+    res.append(constraint)
+  return res
 
-# def build_dense_constraint(the_index, ll, I, J, act_inst, var_names, has_input_layer):
-#   osp=var_names[the_index].shape
-#   res=[]
+def build_dense_constraint(the_index, ll, I, J, act_inst, var_names, has_input_layer):
+  osp=var_names[the_index].shape
+  res=[]
 
-#   l=ll
-#   if not has_input_layer: l=ll-1
+  l=ll
+  if not has_input_layer: l=ll-1
 
-#   if act_inst[l][I][J]>0: ## do something
-#     ## C1:
-#     constraint = [[], []]
-#     constraint[0].append(var_names[the_index][I][J])
-#     constraint[1].append(1)
-#     constraint[0].append(var_names[the_index-1][I][J])
-#     constraint[1].append(-1)
-#     #constraints.append(constraint)
-#     #rhs.append(0)
-#     #constraint_senses.append('E')
-#     #constraint_names.append('')
-#     res.append([constraint, 0, 'E', ''])
-#     ## C2: >=0
-#     constraint = [[], []]
-#     constraint[0].append(var_names[the_index-1][I][J])
-#     constraint[1].append(1)
-#     #constraints.append(constraint)
-#     #rhs.append(0)
-#     #constraint_senses.append('G')
-#     #constraint_names.append('')
-#     res.append([constraint, epsilon, 'G', ''])
-#   else:
-#     ## C1:
-#     constraint = [[], []]
-#     constraint[0].append(var_names[the_index][I][J])
-#     constraint[1].append(1)
-#     #constraints.append(constraint)
-#     #rhs.append(0)
-#     #constraint_senses.append('E')
-#     #constraint_names.append('')
-#     res.append([constraint, 0, 'E', ''])
-#     ## C2: <=0
-#     constraint = [[], []]
-#     constraint[0].append(var_names[the_index-1][I][J])
-#     constraint[1].append(1)
-#     #constraints.append(constraint)
-#     #rhs.append(0)
-#     #constraint_senses.append('L')
-#     #constraint_names.append('')
-#     res.append([constraint, -epsilon, 'L', ''])
+  if act_inst[l][I][J]>0: ## do something
+    ## C1:
+    #constraint = [[], []]
+    #constraint[0].append(var_names[the_index][I][J])
+    #constraint[1].append(1)
+    #constraint[0].append(var_names[the_index-1][I][J])
+    #constraint[1].append(-1)
+    #res.append([constraint, 0, 'E', ''])
+    LpAffineExpression_list=[]
+    LpAffineExpression_list.append((var_names[the_index][I][J], +1))
+    LpAffineExpression_list.append((var_names[the_index-1][I][J], -1))
+    c = LpAffineExpression(LpAffineExpression_list)
+    constraint = LpConstraint(c, LpConstraintEQ, '', 0.)
+    res.append(constraint)
+    ## C2: >=0
+    #constraint = [[], []]
+    #constraint[0].append(var_names[the_index-1][I][J])
+    #constraint[1].append(1)
+    #res.append([constraint, epsilon, 'G', ''])
+    LpAffineExpression_list=[]
+    LpAffineExpression_list.append((var_names[the_index-1][I][J], +1))
+    c = LpAffineExpression(LpAffineExpression_list)
+    constraint = LpConstraint(c, LpConstraintGE, '', epsilon)
+    res.append(constraint)
+  else:
+    ## C1:
+    #constraint = [[], []]
+    #constraint[0].append(var_names[the_index][I][J])
+    #constraint[1].append(1)
+    #res.append([constraint, 0, 'E', ''])
+    LpAffineExpression_list=[]
+    LpAffineExpression_list.append((var_names[the_index][I][J], +1))
+    c = LpAffineExpression(LpAffineExpression_list)
+    constraint = LpConstraint(c, LpConstraintEQ, '', 0.)
+    res.append(constraint)
+    ## C2: <=0
+    #constraint = [[], []]
+    #constraint[0].append(var_names[the_index-1][I][J])
+    #constraint[1].append(1)
+    #res.append([constraint, -epsilon, 'L', ''])
+    LpAffineExpression_list=[]
+    LpAffineExpression_list.append((var_names[the_index-1][I][J], +1))
+    c = LpAffineExpression(LpAffineExpression_list)
+    constraint = LpConstraint(c, LpConstraintLE, '', -epsilon)
+    res.append(constraint)
 
-#   return res
+  return res
 
-# def build_conv_constraint_neg(the_index, ll, I, J, K, L, act_inst, var_names, has_input_layer):
-#   if (act_inst[ll][I][J][K][L]>0):
-#     print ('activated neuron')
-#     sys.exit(0)
-#   #print (' == build conv constraints == ', the_index, l)
-#   #print (var_names[the_index].shape, var_names[the_index-1].shape)
-#   #print (var_names[0].shape)
-#   #print (var_names[1].shape)
-#   #print (var_names[2].shape)
-#   l=ll
-#   osp=var_names[the_index].shape
-#   res=[]
-#   if not(act_inst[l][I][J][K][L]>0): ## we know what to do
-#     ## C1:
-#     constraint = [[], []]
-#     constraint[0].append(var_names[the_index][I][J][K][L])
-#     constraint[1].append(1)
-#     constraint[0].append(var_names[the_index-1][I][J][K][L])
-#     constraint[1].append(-1)
-#     res.append([constraint, 0, 'E', ''])
-#     #constraints.append(constraint)
-#     #rhs.append(0)
-#     #constraint_senses.append('E')
-#     #constraint_names.append('')
-#     ## C2: >=0
-#     constraint = [[], []]
-#     constraint[0].append(var_names[the_index-1][I][J][K][L])
-#     constraint[1].append(1)
-#     res.append([constraint, epsilon, 'G', ''])
-#     #constraints.append(constraint)
-#     #rhs.append(0)
-#     #constraint_senses.append('G')
-#     #constraint_names.append('')
-#   else:
-#     ## C1:
-#     constraint = [[], []]
-#     constraint[0].append(var_names[the_index][I][J][K][L])
-#     constraint[1].append(1)
-#     #constraints.append(constraint)
-#     #rhs.append(0)
-#     #constraint_senses.append('E')
-#     #constraint_names.append('')
-#     res.append([constraint, 0, 'E', ''])
-#     ## C2: <=0
-#     constraint = [[], []]
-#     constraint[0].append(var_names[the_index-1][I][J][K][L])
-#     constraint[1].append(1)
-#     #constraints.append(constraint)
-#     #rhs.append(0)
-#     #constraint_senses.append('L')
-#     #constraint_names.append('')
-#     res.append([constraint, -epsilon, 'L', ''])
-#   return res
+def build_conv_constraint_neg(the_index, ll, I, J, K, L, act_inst, var_names, has_input_layer):
+  if (act_inst[ll][I][J][K][L]>0):
+    print ('activated neuron')
+    sys.exit(0)
+  l=ll
+  osp=var_names[the_index].shape
+  res=[]
+  if not(act_inst[l][I][J][K][L]>0): ## we know what to do
+    ## C1:
+    #constraint = [[], []]
+    #constraint[0].append(var_names[the_index][I][J][K][L])
+    #constraint[1].append(1)
+    #constraint[0].append(var_names[the_index-1][I][J][K][L])
+    #constraint[1].append(-1)
+    #res.append([constraint, 0, 'E', ''])
+    LpAffineExpression_list=[]
+    LpAffineExpression_list.append((var_names[the_index][I][J][K][L], +1))
+    LpAffineExpression_list.append((var_names[the_index-1][I][J][K][L], -1))
+    c = LpAffineExpression(LpAffineExpression_list)
+    constraint = LpConstraint(c, LpConstraintEQ, '', 0.)
+    res.append(constraint)
 
-# def build_dense_constraint_neg(the_index, ll, I, J, act_inst, var_names, has_input_layer):
-#   osp=var_names[the_index].shape
-#   res=[]
+    ## C2: >=0
+    #constraint = [[], []]
+    #constraint[0].append(var_names[the_index-1][I][J][K][L])
+    #constraint[1].append(1)
+    #res.append([constraint, epsilon, 'G', ''])
+    LpAffineExpression_list=[]
+    LpAffineExpression_list.append((var_names[the_index-1][I][J][K][L], +1))
+    c = LpAffineExpression(LpAffineExpression_list)
+    constraint = LpConstraint(c, LpConstraintGE, '', epsilon)
+    res.append(constraint)
+  else:
+    ## C1:
+    #constraint = [[], []]
+    #constraint[0].append(var_names[the_index][I][J][K][L])
+    #constraint[1].append(1)
+    #res.append([constraint, 0, 'E', ''])
+    LpAffineExpression_list=[]
+    LpAffineExpression_list.append((var_names[the_index][I][J][K][L], +1))
+    c = LpAffineExpression(LpAffineExpression_list)
+    constraint = LpConstraint(c, LpConstraintEQ, '', 0.)
+    res.append(constraint)
+    ## C2: <=0
+    #constraint = [[], []]
+    #constraint[0].append(var_names[the_index-1][I][J][K][L])
+    #constraint[1].append(1)
+    #res.append([constraint, -epsilon, 'L', ''])
+    LpAffineExpression_list=[]
+    LpAffineExpression_list.append((var_names[the_index-1][I][J][K][L], +1))
+    c = LpAffineExpression(LpAffineExpression_list)
+    constraint = LpConstraint(c, LpConstraintLE, '', -epsilon)
+    res.append(constraint)
+  return res
 
-#   l=ll
-#   if not has_input_layer: l=ll-1
+def build_dense_constraint_neg(the_index, ll, I, J, act_inst, var_names, has_input_layer):
+  osp=var_names[the_index].shape
+  res=[]
 
-#   if not (act_inst[l][I][J]>0): ## do something
-#     ## C1:
-#     constraint = [[], []]
-#     constraint[0].append(var_names[the_index][I][J])
-#     constraint[1].append(1)
-#     constraint[0].append(var_names[the_index-1][I][J])
-#     constraint[1].append(-1)
-#     #constraints.append(constraint)
-#     #rhs.append(0)
-#     #constraint_senses.append('E')
-#     #constraint_names.append('')
-#     res.append([constraint, 0, 'E', ''])
-#     ## C2: >=0
-#     constraint = [[], []]
-#     constraint[0].append(var_names[the_index-1][I][J])
-#     constraint[1].append(1)
-#     #constraints.append(constraint)
-#     #rhs.append(0)
-#     #constraint_senses.append('G')
-#     #constraint_names.append('')
-#     res.append([constraint, epsilon, 'G', ''])
-#   else:
-#     ## C1:
-#     constraint = [[], []]
-#     constraint[0].append(var_names[the_index][I][J])
-#     constraint[1].append(1)
-#     #constraints.append(constraint)
-#     #rhs.append(0)
-#     #constraint_senses.append('E')
-#     #constraint_names.append('')
-#     res.append([constraint, 0, 'E', ''])
-#     ## C2: <=0
-#     constraint = [[], []]
-#     constraint[0].append(var_names[the_index-1][I][J])
-#     constraint[1].append(1)
-#     #constraints.append(constraint)
-#     #rhs.append(0)
-#     #constraint_senses.append('L')
-#     #constraint_names.append('')
-#     res.append([constraint, -epsilon, 'L', ''])
+  l=ll
+  if not has_input_layer: l=ll-1
 
-#   return res
+  if not (act_inst[l][I][J]>0): ## do something
+    ## C1:
+    #constraint = [[], []]
+    #constraint[0].append(var_names[the_index][I][J])
+    #constraint[1].append(1)
+    #constraint[0].append(var_names[the_index-1][I][J])
+    #constraint[1].append(-1)
+    #res.append([constraint, 0, 'E', ''])
+    LpAffineExpression_list=[]
+    LpAffineExpression_list.append((var_names[the_index][I][J], +1))
+    LpAffineExpression_list.append((var_names[the_index-1][I][J], -1))
+    c = LpAffineExpression(LpAffineExpression_list)
+    constraint = LpConstraint(c, LpConstraintEQ, '', 0.)
+    res.append(constraint)
+    ## C2: >=0
+    #constraint = [[], []]
+    #constraint[0].append(var_names[the_index-1][I][J])
+    #constraint[1].append(1)
+    #res.append([constraint, epsilon, 'G', ''])
+    LpAffineExpression_list=[]
+    LpAffineExpression_list.append((var_names[the_index-1][I][J], +1))
+    c = LpAffineExpression(LpAffineExpression_list)
+    constraint = LpConstraint(c, LpConstraintGE, '', epsilon)
+    res.append(constraint)
+  else:
+    ## C1:
+    #constraint = [[], []]
+    #constraint[0].append(var_names[the_index][I][J])
+    #constraint[1].append(1)
+    #res.append([constraint, 0, 'E', ''])
+    LpAffineExpression_list=[]
+    LpAffineExpression_list.append((var_names[the_index][I][J], +1))
+    c = LpAffineExpression(LpAffineExpression_list)
+    constraint = LpConstraint(c, LpConstraintEQ, '', 0.)
+    res.append(constraint)
+    ## C2: <=0
+    #constraint = [[], []]
+    #constraint[0].append(var_names[the_index-1][I][J])
+    #constraint[1].append(1)
+    #res.append([constraint, -epsilon, 'L', ''])
+    LpAffineExpression_list=[]
+    LpAffineExpression_list.append((var_names[the_index-1][I][J], +1))
+    c = LpAffineExpression(LpAffineExpression_list)
+    constraint = LpConstraint(c, LpConstraintLE, '', -epsilon)
+    res.append(constraint)
+
+  return res
 
 def gen_vars(the_index, sp, var_names, var_names_vect):
   sp_len = len(sp)
   if sp_len==4: ## conv
-    var_names.append(np.empty((1, sp[1], sp[2], sp[3]), dtype="S40"))
+    #var_names.append(np.empty((1, sp[1], sp[2], sp[3]), dtype="S40"))
+    var_names.append(np.empty((1, sp[1], sp[2], sp[3]), dtype=LpVariable))
     for I in range(0, 1):
       for J in range(0, sp[1]):
         for K in range(0, sp[2]):
           for L in range(0, sp[3]):
             var_name='x_{0}_{1}_{2}_{3}_{4}'.format(the_index, I, J, K, L)
-            var_names[the_index][I][J][K][L]=var_name
+            #var_names[the_index][I][J][K][L]=var_name
             x_var = LpVariable(var_name, lowBound=None, upBound=None)
+            var_names[the_index][I][J][K][L]=x_var
             var_names_vect.append(x_var)
   elif sp_len==2: ## not conv
-    var_names.append(np.empty((1, sp[1]), dtype="S40"))
+    #var_names.append(np.empty((1, sp[1]), dtype="S40"))
+    var_names.append(np.empty((1, sp[1]), dtype=LpVariable))
     for I in range(0, 1):
       for J in range(0, sp[1]):
         var_name='x_{0}_{1}_{2}'.format(the_index, I, J)
-        var_names[the_index][I][J]=var_name
+        #var_names[the_index][I][J]=var_name
         x_var = LpVariable(var_name, lowBound=None, upBound=None)
+        var_names[the_index][I][J]=x_var
         var_names_vect.append(x_var)
   else:
     print ('## Unrecognised shape in gen_vars: {0}...'.format(sp))
 
 def gen_vars_flattened(the_index, sp, var_names, var_names_vect):
   tot=int(sp[1]) * int(sp[2]) * int(sp[3])
-  var_names.append(np.empty((1, tot), dtype="S40"))
+  #var_names.append(np.empty((1, tot), dtype="S40"))
+  var_names.append(np.empty((1, tot), dtype=LpVariable))
   for I in range(0, 1):
     for J in range(0, tot):
       var_name='x_{0}_{1}_{2}'.format(the_index, I, J)
-      var_names[the_index][I][J]=var_name
+      #var_names[the_index][I][J]=var_name
       x_var = LpVariable(var_name, lowBound=None, upBound=None)
+      var_names[the_index][I][J]=x_var
       var_names_vect.append(x_var)
   

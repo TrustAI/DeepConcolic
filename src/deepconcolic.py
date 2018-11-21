@@ -14,9 +14,9 @@ from keras.layers import *
 from keras import *
 
 from utils import *
-from nc_lp import *
-from lp_encoding import *
-from run_nc_linf import run_nc_linf
+#from nc_lp import *
+#from lp_encoding import *
+from run_nc_pulp import run_nc_linf
 from run_nc_l0 import run_nc_l0
 from run_ssc import *
 
