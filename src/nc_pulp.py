@@ -20,7 +20,7 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_prob_, var_names_, LB=0.,
   var_names=copy.copy(var_names_)
 
   # distance variable 
-  d_var=LpVariable('d', lowBound=np.random.uniform(1.,25.)/255, upBound=UB)
+  d_var=LpVariable('d', lowBound=np.random.uniform(1./255, 0.01), upBound=UB)
   base_prob+=d_var
 
   ## so, we go directly to convolutional input layer
