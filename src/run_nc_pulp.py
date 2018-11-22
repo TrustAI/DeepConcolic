@@ -30,7 +30,7 @@ def run_nc_linf(test_object, outs):
     index_nc_layer, nc_pos, nc_value=get_nc_next(cover_layers, test_object.layer_indices)
     #print (nc_layer.layer_index, nc_pos, nc_value/nc_layer.pfactor)
     nc_layer=cover_layers[index_nc_layer]
-    print (np.array(nc_layer.activations).shape)
+    #print (np.array(nc_layer.activations).shape)
     shape=np.array(nc_layer.activations).shape
     pos=np.unravel_index(nc_pos, shape)
     im=test_cases[pos[0]]
@@ -42,7 +42,12 @@ def run_nc_linf(test_object, outs):
       s*=int(shape[3])*int(shape[4])
     print ('\n::', nc_pos, pos, nc_pos-s)
     print (nc_layer.layer, nc_layer.layer_index)
-    print ('the max v', nc_value)
+    print ('the max v', nc_value/nc_layer.pfactor)
+    print (len(pos), pos, act_inst[nc_layer.layer_index].shape)
+    if len(pos)>3:
+      print ('act_inst', act_inst[nc_layer.layer_index][pos[1]][pos[2]][pos[3]][pos[4]])
+    else:
+      print ('act_inst', act_inst[nc_layer.layer_index][pos[1]][pos[2]])
 
     mkey=nc_layer.layer_index
     if act_in_the_layer(nc_layer.layer) != 'relu':
@@ -53,7 +58,13 @@ def run_nc_linf(test_object, outs):
     if feasible:
       print ('\nis feasible!!!\n')
       test_cases.append(new_im)
-      update_nc_map_via_inst(cover_layers, eval(layer_functions, new_im), (test_object.layer_indices, test_object.feature_indices))
+      new_act=eval(layer_functions, new_im)
+      if len(pos)>3:
+        print ('new_act_inst', new_act[nc_layer.layer_index][pos[1]][pos[2]][pos[3]][pos[4]])
+      else:
+        print ('new_act_inst', new_act[nc_layer.layer_index][pos[1]][pos[2]])
+
+      update_nc_map_via_inst(cover_layers, new_act, (test_object.layer_indices, test_object.feature_indices))
       #y1 = test_object.dnn.predict_classes(np.array([im]))[0]
       #y2= test_object.dnn.predict_classes(np.array([new_im]))[0]
       y1 =(np.argmax(test_object.dnn.predict(np.array([new_im])))) 

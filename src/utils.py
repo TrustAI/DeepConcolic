@@ -139,6 +139,7 @@ def get_cover_layers(dnn, criterion):
     if l==len(dnn.layers)-1: continue
     layer=dnn.layers[l]
     if is_conv_layer(layer) or is_dense_layer(layer):
+      if l==len(dnn.layers)-2 and get_activation(layer)!='relu': continue
       sp=layer.output.shape
       clayer=cover_layert(layer, l, is_conv_layer(layer))
       cover_layers.append(clayer)

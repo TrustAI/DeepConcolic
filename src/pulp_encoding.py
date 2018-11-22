@@ -8,7 +8,7 @@ from utils import *
 
 import copy
 
-epsilon=0.001
+epsilon=0.0001
 UPPER_BOUND=100000000
 LOWER_BOUND=-100000000
 
@@ -265,7 +265,7 @@ def build_dense_constraint(the_index, ll, I, J, act_inst, var_names, has_input_l
   res=[]
 
   l=ll
-  if not has_input_layer: l=ll-1
+  #if not has_input_layer: l=ll-1
 
   if act_inst[l][I][J]>0: ## do something
     ## C1:
@@ -320,6 +320,9 @@ def build_conv_constraint_neg(the_index, ll, I, J, K, L, act_inst, var_names, ha
     print ('activated neuron')
     sys.exit(0)
   l=ll
+  #if not has_input_layer: l=ll-1
+  print ('**** to confirm act value: ', act_inst[l-1][I][J][K][L])
+  print (l, I, J, K, L)
   osp=var_names[the_index].shape
   res=[]
   if not(act_inst[l][I][J][K][L]>0): ## we know what to do
@@ -375,7 +378,12 @@ def build_dense_constraint_neg(the_index, ll, I, J, act_inst, var_names, has_inp
   res=[]
 
   l=ll
-  if not has_input_layer: l=ll-1
+  #if not has_input_layer: l=ll-1
+  print ('\n**** to confirm act value: ', act_inst[l-1][I][J])
+  print (the_index, ll, I, J)
+  if (act_inst[ll][I][J]>0):
+    print ('activated neuron')
+    sys.exit(0)
 
   if not (act_inst[l][I][J]>0): ## do something
     ## C1:
@@ -397,7 +405,8 @@ def build_dense_constraint_neg(the_index, ll, I, J, act_inst, var_names, has_inp
     #constraint[1].append(1)
     #res.append([constraint, epsilon, 'G', ''])
     LpAffineExpression_list=[]
-    LpAffineExpression_list.append((var_names[the_index-1][I][J], +1))
+    #LpAffineExpression_list.append((var_names[the_index-1][I][J], +1))
+    LpAffineExpression_list.append((var_names[the_index][I][J], +1))
     c = LpAffineExpression(LpAffineExpression_list)
     constraint = LpConstraint(c, LpConstraintGE, '', epsilon)
     res.append(constraint)
@@ -436,7 +445,7 @@ def gen_vars(the_index, sp, var_names, var_names_vect):
           for L in range(0, sp[3]):
             var_name='x_{0}_{1}_{2}_{3}_{4}'.format(the_index, I, J, K, L)
             #var_names[the_index][I][J][K][L]=var_name
-            x_var = LpVariable(var_name, lowBound=None, upBound=None)
+            x_var = LpVariable(var_name, lowBound=LOWER_BOUND, upBound=UPPER_BOUND)
             var_names[the_index][I][J][K][L]=x_var
             var_names_vect.append(x_var)
   elif sp_len==2: ## not conv
@@ -446,7 +455,7 @@ def gen_vars(the_index, sp, var_names, var_names_vect):
       for J in range(0, sp[1]):
         var_name='x_{0}_{1}_{2}'.format(the_index, I, J)
         #var_names[the_index][I][J]=var_name
-        x_var = LpVariable(var_name, lowBound=None, upBound=None)
+        x_var = LpVariable(var_name, lowBound=LOWER_BOUND, upBound=UPPER_BOUND)
         var_names[the_index][I][J]=x_var
         var_names_vect.append(x_var)
   else:
@@ -460,7 +469,7 @@ def gen_vars_flattened(the_index, sp, var_names, var_names_vect):
     for J in range(0, tot):
       var_name='x_{0}_{1}_{2}'.format(the_index, I, J)
       #var_names[the_index][I][J]=var_name
-      x_var = LpVariable(var_name, lowBound=None, upBound=None)
+      x_var = LpVariable(var_name, lowBound=LOWER_BOUND, upBound=UPPER_BOUND)
       var_names[the_index][I][J]=x_var
       var_names_vect.append(x_var)
   

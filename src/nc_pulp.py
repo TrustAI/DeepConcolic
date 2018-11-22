@@ -14,12 +14,13 @@ import copy
 epsilon=1.0/(255)
 
 def negate(dnn, act_inst, test, nc_layer, nc_pos, base_prob_, var_names_, LB=0., UB=1.):
+  to_stop_index=-1
   ##
   base_prob=base_prob_.copy()
   var_names=copy.copy(var_names_)
 
   # distance variable 
-  d_var=LpVariable('d', lowBound=1.0/255, upBound=None)
+  d_var=LpVariable('d', lowBound=np.random.uniform(1.,25.)/255, upBound=UB)
   base_prob+=d_var
 
   ## so, we go directly to convolutional input layer
@@ -102,6 +103,8 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_prob_, var_names_, LB=0.,
               if to_stop and I==npos[0][0] and J==npos[0][1] and K==npos[0][2]  and L==npos[0][3]:
                 res=build_conv_constraint_neg(the_index, l, I, J, K, L, act_inst, var_names, has_input_layer)
                 stopped=True
+                to_stop_index=the_index
+                print ('to_stop_index', to_stop_index)
                 print ('stopped:', l, I, J, K, L)
               elif not to_stop:
                 res=build_conv_constraint(the_index, l, I, J, K, L, act_inst, var_names, has_input_layer)
@@ -121,7 +124,8 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_prob_, var_names_, LB=0.,
           if stopped: break
           if to_stop and I==npos[0][0] and J==npos[0][1]:
             stopped=True
-            print ('stopped:', l, I, J)
+            to_stop_index=the_index
+            print ('\nstopped:', l, I, J)
             res=build_dense_constraint_neg(the_index, l, I, J, act_inst, var_names, has_input_layer)
           elif not to_stop:
             res=build_dense_constraint(the_index, l, I, J, act_inst, var_names, has_input_layer)
@@ -145,6 +149,7 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_prob_, var_names_, LB=0.,
                 if to_stop and I==npos[0][0] and J==npos[0][1] and K==npos[0][2]  and L==npos[0][3]:
                   res=build_conv_constraint_neg(the_index, l, I, J, K, L, act_inst, var_names, has_input_layer)
                   stopped=True
+                  to_stop_index=the_index
                   print ('stopped:', l, I, J, K, L)
                 elif not to_stop:
                   res=build_conv_constraint(the_index, l, I, J, K, L, act_inst, var_names, has_input_layer)
@@ -160,6 +165,7 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_prob_, var_names_, LB=0.,
             if to_stop and I==npos[0][0] and J==npos[0][1]:
               res=build_dense_constraint_neg(the_index, l, I, J, act_inst, var_names, has_input_layer)
               stopped=True
+              to_stop_index=the_index
               print ('stopped:', l, I, J)
             elif not to_stop:
               res=build_dense_constraint(the_index, l, I, J, act_inst, var_names, has_input_layer)
@@ -170,11 +176,11 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_prob_, var_names_, LB=0.,
     elif is_maxpooling_layer(layer):
       the_index+=1
       pool_size = layer.pool_size
-      max_found = False
       osp=var_names[the_index].shape
       for I in range(0, osp[1]):
         for J in range(0, osp[2]):
           for K in range(0, osp[3]):
+            max_found = False
             for II in range(I * pool_size[0], (I + 1) * pool_size[0]):
               for JJ in range(J * pool_size[1], (J + 1) * pool_size[1]):
                 #constraint = [[], []]
@@ -211,7 +217,9 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_prob_, var_names_, LB=0.,
                   c = LpAffineExpression(LpAffineExpression_list)
                   constraint = LpConstraint(c, LpConstraintEQ, '', 0.)
                   base_prob+=constraint
-
+            if not max_found:
+              print ('not max fuond')
+              sys.exit(0)
 
     elif is_flatten_layer(layer):
       the_index+=1
@@ -223,9 +231,11 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_prob_, var_names_, LB=0.,
   lp_status_b=True
   if cplex_flag:
     print ('### Using CPLEX backend')
-    base_prob.solve(CPLEX())
+    base_prob.solve(CPLEX(timeLimit=5*60))
+    #base_prob.solve()
   else:
     print ('### Using default CBC backend')
+    print ('### WARNING: CBC does not support time limit for the LP solving procedure')
     base_prob.solve()
   print ('### solved!')
 
@@ -238,13 +248,29 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_prob_, var_names_, LB=0.,
 
   d_v=pulp.value(d_var)
   print ('min distance:', d_v)
+  #try:
+  if len(npos[0])>3:
+    print ('@@@', to_stop_index, npos[0][0], npos[0][1], npos[0][2], npos[0][3])
+    print (var_names[to_stop_index].shape)
+    print (pulp.value(var_names[to_stop_index][npos[0][0]][npos[0][1]][npos[0][2]][npos[0][3]]))
+  else:
+    print ('@@@', to_stop_index, npos[0][0], npos[0][1])
+    print (var_names[to_stop_index].shape)
+    print (pulp.value(var_names[to_stop_index][npos[0][0]][npos[0][1]]))
+    print (pulp.value(var_names[to_stop_index-1][npos[0][0]][npos[0][1]]))
+  #except: pass
   new_x = np.zeros((var_names[0].shape[1], var_names[0].shape[2], var_names[0].shape[3]))
   for I in range(0, var_names[0].shape[1]):
     for J in range(0, var_names[0].shape[2]):
       for K in range(0, var_names[0].shape[3]):
         v = pulp.value(var_names[0][0][I][J][K])
-        if v < 0 or v > 1:
+        #if v-LB<-epsilon or v-UB>epsilon:
+        if v<LB or v>UB:
+            print ('\n\n**** THIS IS THE v', v)
+            #sys.exit(0)
             return False, -1, None
+        #if v<LB: v=LB
+        #if v>UB: v=UB
         new_x[I][J][K] = v
 
   save_an_image(new_x,'new_x','./')
