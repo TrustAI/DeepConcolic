@@ -20,7 +20,8 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_prob_, var_names_, LB=0.,
   var_names=copy.copy(var_names_)
 
   # distance variable 
-  d_var=LpVariable('d', lowBound=np.random.uniform(1./255, 0.01), upBound=UB)
+  d_var=LpVariable('d', lowBound=np.random.uniform(0./255, 1./255), upBound=UB)
+  #d_var=LpVariable('d', lowBound=1./255, upBound=UB)
   base_prob+=d_var
 
   ## so, we go directly to convolutional input layer
@@ -104,8 +105,8 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_prob_, var_names_, LB=0.,
                 res=build_conv_constraint_neg(the_index, l, I, J, K, L, act_inst, var_names, has_input_layer)
                 stopped=True
                 to_stop_index=the_index
-                print ('to_stop_index', to_stop_index)
-                print ('stopped:', l, I, J, K, L)
+                #print ('to_stop_index', to_stop_index)
+                #print ('stopped:', l, I, J, K, L)
               elif not to_stop:
                 res=build_conv_constraint(the_index, l, I, J, K, L, act_inst, var_names, has_input_layer)
               else: continue
@@ -125,7 +126,7 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_prob_, var_names_, LB=0.,
           if to_stop and I==npos[0][0] and J==npos[0][1]:
             stopped=True
             to_stop_index=the_index
-            print ('\nstopped:', l, I, J)
+            #print ('\nstopped:', l, I, J)
             res=build_dense_constraint_neg(the_index, l, I, J, act_inst, var_names, has_input_layer)
           elif not to_stop:
             res=build_dense_constraint(the_index, l, I, J, act_inst, var_names, has_input_layer)
@@ -150,7 +151,7 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_prob_, var_names_, LB=0.,
                   res=build_conv_constraint_neg(the_index, l, I, J, K, L, act_inst, var_names, has_input_layer)
                   stopped=True
                   to_stop_index=the_index
-                  print ('stopped:', l, I, J, K, L)
+                  #print ('stopped:', l, I, J, K, L)
                 elif not to_stop:
                   res=build_conv_constraint(the_index, l, I, J, K, L, act_inst, var_names, has_input_layer)
                 else: continue
@@ -166,7 +167,7 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_prob_, var_names_, LB=0.,
               res=build_dense_constraint_neg(the_index, l, I, J, act_inst, var_names, has_input_layer)
               stopped=True
               to_stop_index=the_index
-              print ('stopped:', l, I, J)
+              #print ('stopped:', l, I, J)
             elif not to_stop:
               res=build_dense_constraint(the_index, l, I, J, act_inst, var_names, has_input_layer)
             else: continue
@@ -241,37 +242,35 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_prob_, var_names_, LB=0.,
 
   lp_status=LpStatus[base_prob.status]
   if lp_status!='Optimal': lp_status_b=False
-  print ('Status:', lp_status, lp_status_b)
+  #print ('Status:', lp_status, lp_status_b)
 
   if not lp_status_b:
     return False, -1, None
 
   d_v=pulp.value(d_var)
   print ('min distance:', d_v)
-  #try:
-  if len(npos[0])>3:
-    print ('@@@', to_stop_index, npos[0][0], npos[0][1], npos[0][2], npos[0][3])
-    print (var_names[to_stop_index].shape)
-    print (pulp.value(var_names[to_stop_index][npos[0][0]][npos[0][1]][npos[0][2]][npos[0][3]]))
-  else:
-    print ('@@@', to_stop_index, npos[0][0], npos[0][1])
-    print (var_names[to_stop_index].shape)
-    print (pulp.value(var_names[to_stop_index][npos[0][0]][npos[0][1]]))
-    print (pulp.value(var_names[to_stop_index-1][npos[0][0]][npos[0][1]]))
-  #except: pass
+  #if len(npos[0])>3:
+  #  print ('@@@', to_stop_index, npos[0][0], npos[0][1], npos[0][2], npos[0][3])
+  #  print (var_names[to_stop_index].shape)
+  #  print (pulp.value(var_names[to_stop_index][npos[0][0]][npos[0][1]][npos[0][2]][npos[0][3]]))
+  #else:
+  #  print ('@@@', to_stop_index, npos[0][0], npos[0][1])
+  #  print (var_names[to_stop_index].shape)
+  #  print (pulp.value(var_names[to_stop_index][npos[0][0]][npos[0][1]]))
+  #  print (pulp.value(var_names[to_stop_index-1][npos[0][0]][npos[0][1]]))
   new_x = np.zeros((var_names[0].shape[1], var_names[0].shape[2], var_names[0].shape[3]))
   for I in range(0, var_names[0].shape[1]):
     for J in range(0, var_names[0].shape[2]):
       for K in range(0, var_names[0].shape[3]):
         v = pulp.value(var_names[0][0][I][J][K])
-        #if v-LB<-epsilon or v-UB>epsilon:
-        if v<LB or v>UB:
-            print ('\n\n**** THIS IS THE v', v)
-            #sys.exit(0)
-            return False, -1, None
-        #if v<LB: v=LB
-        #if v>UB: v=UB
+        ##if v-LB<-epsilon or v-UB>epsilon:
+        #if v<LB or v>UB:
+        #    print ('\n\n**** WARNING *** THIS IS THE pixel value', v)
+        #    #sys.exit(0)
+        #    return False, -1, None
+        ##if v<LB: v=LB
+        ##if v>UB: v=UB
         new_x[I][J][K] = v
 
-  save_an_image(new_x,'new_x','./')
+  #save_an_image(new_x,'new_x','./')
   return lp_status_b, d_v, new_x

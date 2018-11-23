@@ -36,18 +36,15 @@ def run_nc_linf(test_object, outs):
     im=test_cases[pos[0]]
     act_inst=eval(layer_functions, im)
 
-
     s=pos[0]*int(shape[1]*shape[2])
     if nc_layer.is_conv:
       s*=int(shape[3])*int(shape[4])
-    print ('\n::', nc_pos, pos, nc_pos-s)
-    print (nc_layer.layer, nc_layer.layer_index)
-    print ('the max v', nc_value/nc_layer.pfactor)
-    print (len(pos), pos, act_inst[nc_layer.layer_index].shape)
-    if len(pos)>3:
-      print ('act_inst', act_inst[nc_layer.layer_index][pos[1]][pos[2]][pos[3]][pos[4]])
-    else:
-      print ('act_inst', act_inst[nc_layer.layer_index][pos[1]][pos[2]])
+    print ('\n::', pos, nc_layer.layer, nc_layer.layer_index, 'the max v::', nc_value/nc_layer.pfactor)
+    #print (len(pos), pos, act_inst[nc_layer.layer_index].shape)
+    #if len(pos)>3:
+    #  print ('act_inst', act_inst[nc_layer.layer_index][pos[1]][pos[2]][pos[3]][pos[4]])
+    #else:
+    #  print ('act_inst', act_inst[nc_layer.layer_index][pos[1]][pos[2]])
 
     mkey=nc_layer.layer_index
     if act_in_the_layer(nc_layer.layer) != 'relu':
@@ -59,10 +56,10 @@ def run_nc_linf(test_object, outs):
       print ('\nis feasible!!!\n')
       test_cases.append(new_im)
       new_act=eval(layer_functions, new_im)
-      if len(pos)>3:
-        print ('new_act_inst', new_act[nc_layer.layer_index][pos[1]][pos[2]][pos[3]][pos[4]])
-      else:
-        print ('new_act_inst', new_act[nc_layer.layer_index][pos[1]][pos[2]])
+      #if len(pos)>3:
+      #  print ('new_act_inst', new_act[nc_layer.layer_index][pos[1]][pos[2]][pos[3]][pos[4]])
+      #else:
+      #  print ('new_act_inst', new_act[nc_layer.layer_index][pos[1]][pos[2]])
 
       update_nc_map_via_inst(cover_layers, new_act, (test_object.layer_indices, test_object.feature_indices))
       #y1 = test_object.dnn.predict_classes(np.array([im]))[0]
@@ -85,7 +82,9 @@ def run_nc_linf(test_object, outs):
       print ('\nis NOT feasible!!!\n')
     covered, not_covered=nc_report(cover_layers, test_object.layer_indices, test_object.feature_indices)
     f = open(nc_results, "a")
-    f.write('NC-cover: {0} #test cases: {1} #adversarial examples: {2}\n'.format(1.0 * covered / (covered + not_covered), len(test_cases), len(adversarials)))
+    nc_percentage=1.0 * covered / (covered + not_covered)
+    f.write('NC-cover: {0} #test cases: {1} #adversarial examples: {2}\n'.format(nc_percentage, len(test_cases), len(adversarials)))
     f.close()
+    if nc_percentage>0.9999: break
     #break
 

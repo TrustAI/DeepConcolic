@@ -321,8 +321,8 @@ def build_conv_constraint_neg(the_index, ll, I, J, K, L, act_inst, var_names, ha
     sys.exit(0)
   l=ll
   #if not has_input_layer: l=ll-1
-  print ('**** to confirm act value: ', act_inst[l-1][I][J][K][L])
-  print (l, I, J, K, L)
+  #print ('**** to confirm act value: ', act_inst[l-1][I][J][K][L])
+  #print (l, I, J, K, L)
   osp=var_names[the_index].shape
   res=[]
   if not(act_inst[l][I][J][K][L]>0): ## we know what to do
@@ -379,8 +379,8 @@ def build_dense_constraint_neg(the_index, ll, I, J, act_inst, var_names, has_inp
 
   l=ll
   #if not has_input_layer: l=ll-1
-  print ('\n**** to confirm act value: ', act_inst[l-1][I][J])
-  print (the_index, ll, I, J)
+  #print ('\n**** to confirm act value: ', act_inst[l-1][I][J])
+  #print (the_index, ll, I, J)
   if (act_inst[ll][I][J]>0):
     print ('activated neuron')
     sys.exit(0)
