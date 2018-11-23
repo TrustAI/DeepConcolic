@@ -11,6 +11,7 @@ import cv2
 the_dec_pos=0
 MIN=-100000
 DIM=50
+BUFFER_SIZE=20
 #ssc_ratio=0.005 #0.1 #0.05 #0.01
 
 ## some DNN model has an explicit input layer
@@ -120,6 +121,7 @@ def get_nc_next(clayers, layer_indices=None):
       v*=clayer.pfactor
       if v > nc_value:
         nc_layer, nc_pos, nc_value= i, pos, v
+        if np.random.uniform(0., 1.)>=i*1./len(clayers): break
   if nc_layer==None:
     print ('incorrect layer index specified (the layer tested shall be either conv or dense layer)', layer_indices)
     sys.exit(0)
@@ -139,6 +141,7 @@ def get_cover_layers(dnn, criterion):
     if l==len(dnn.layers)-1: continue
     layer=dnn.layers[l]
     if is_conv_layer(layer) or is_dense_layer(layer):
+      if l==len(dnn.layers)-2 and get_activation(layer)!='relu': continue
       sp=layer.output.shape
       clayer=cover_layert(layer, l, is_conv_layer(layer))
       cover_layers.append(clayer)
@@ -227,7 +230,11 @@ def update_nc_map_via_inst(clayers, activations, layer_feature=None):
     else:
       clayers[i].nc_map=np.logical_and(clayers[i].nc_map, act)
     ## update activations after nc_map change
-    clayers[i].activations.append(act)
+    if len(clayers[i].activations)>=BUFFER_SIZE:
+      ind=np.random.randint(0,BUFFER_SIZE)
+      clayers[i].activations[ind]=(act)
+    else:
+      clayers[i].activations.append(act)
     ## clayers[i].update_activations() 
     for j in range(0, len(clayers[i].activations)):
       clayers[i].activations[j]=np.multiply(clayers[i].activations[j], clayers[i].nc_map)
