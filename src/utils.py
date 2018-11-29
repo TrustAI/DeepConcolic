@@ -384,3 +384,14 @@ def l0_filtered(data_set, x, factor=0.25):
     if np.count_nonzero(diff)<size:
       return False
   return True
+
+def linf_filtered(data_set, x, factor=0.25):
+  size=data_set.size*factor
+  diffs=data_set-x
+  for index, diff in np.ndenumerate(diffs):
+    diff_abs=np.abs(diff)
+    diff_abs=np.array(diff_abs)
+    diff_abs[diff_abs<=factor]=0.
+    if np.count_nonzero(diff)<size:
+      return False
+  return True

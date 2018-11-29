@@ -53,6 +53,9 @@ def run_nc_linf(test_object, outs):
 
     cover_layers[index_nc_layer].disable_by_pos(pos)
     if feasible:
+      if linf_filtered(test_object.raw_data.data, new_im): 
+        print ('does not linf post filter')
+        continue
       print ('\nis feasible!!!\n')
       test_cases.append(new_im)
       new_act=eval(layer_functions, new_im)
