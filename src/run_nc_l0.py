@@ -36,6 +36,8 @@ def run_nc_l0(test_object, outs):
     cover_layers[index_nc_layer].disable_by_pos(pos)
     d_adv=-1
     if feasible:
+      if l0_filtered(test_object.raw_data.data, new_im): 
+        continue
       test_cases.append(new_im)
       update_nc_map_via_inst(cover_layers, eval(layer_functions, new_im), (test_object.layer_indices, test_object.feature_indices))
       y1 =(np.argmax(test_object.dnn.predict(np.array([new_im])))) 

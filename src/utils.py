@@ -376,4 +376,11 @@ def print_adversarial_distribution(advs, fname, int_flag=False):
   for i in range(0, len(xs)):
     f.write('{0} {1}\n'.format(xs[i], ys[i]))
   f.close()
-      
+  
+def l0_filtered(data_set, x, factor=0.25):
+  size=data_set.size*factor
+  diffs=data_set-x
+  for diff in diffs:
+    if np.count_nonzero(diff)<size:
+      return False
+  return True
