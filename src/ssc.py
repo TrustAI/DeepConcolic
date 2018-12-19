@@ -8,6 +8,8 @@ from keras.datasets import cifar10
 from keras.applications.vgg16 import VGG16
 from keras.layers import *
 from keras import *
+import tensorflow as tf
+import numpy as np
 
 import copy
 
@@ -85,7 +87,13 @@ def local_search(dnn, local_input, ssc_pair, adv_crafter, e_max_input, ssc_ratio
 
   return d_min, x_ret, diff_map
 
-def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, dec_pos, adv_crafter):
+def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, dec_pos, adv_crafter, adv_object=None):
+
+  from keras import backend
+  backend.set_learning_phase(False)
+
+  sess = backend.get_session()
+  sess.run(tf.global_variables_initializer())
 
   data=test_object.raw_data.data
   labels=test_object.raw_data.labels
@@ -104,15 +112,18 @@ def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
   count=0
   for i in indices:
     inp_vect=np.array([data[i]])
-    e_max_input=np.random.uniform(EPS_MAX*2/3, EPS_MAX)
-    adv_inp_vect=adv_crafter.generate(x=inp_vect, eps=e_max_input)
+    if adv_object is None:
+      e_max_input=np.random.uniform(EPS_MAX*2/3, EPS_MAX)
+      adv_inp_vect=adv_crafter.generate(x=inp_vect, eps=e_max_input)
+    else:
+      e_max_input=np.random.uniform(adv_object.max_v*EPS_MAX*2/3, adv_object.max_v*EPS_MAX)
+      adv_inp_vect=adv_crafter.generate(x=inp_vect, eps=e_max_input)
+      adv_inp_vect=np.clip(adv_inp_vect, adv_object.lb_v, adv_object.max_v)
     acts=eval_batch(layer_functions, inp_vect, is_input_layer(dnn.layers[0]))
     adv_acts=eval_batch(layer_functions, adv_inp_vect, is_input_layer(dnn.layers[0]))
     dec1=(acts[dec_layer.layer_index][0].item(dec_pos))
     dec2=(adv_acts[dec_layer.layer_index][0].item(dec_pos))
     if not np.logical_xor(dec1>0, dec2>0): continue
-    #cond1=(acts[cond_layer.layer_index][0].item(cond_pos))
-    #cond2=(adv_acts[cond_layer.layer_index][0].item(cond_pos))
 
     count+=1
 
@@ -133,6 +144,7 @@ def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
       print ('new d: ', d_min, cond_layer.ssc_map.size)
       if d_min==1: break
 
+    print ("++++++",d_min, ssc_ratio, ssc_ratio*cond_layer.ssc_map.size)
     if d_min<=ssc_ratio*cond_layer.ssc_map.size: break
     
   print ('final d: ', d_min, ' count:', count)  

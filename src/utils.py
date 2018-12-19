@@ -8,7 +8,7 @@ import sys
 import cv2
 
 
-the_dec_pos=0
+#the_dec_pos=0
 MIN=-100000
 DIM=50
 BUFFER_SIZE=20
@@ -274,7 +274,7 @@ def save_adversarial_examples(adv, origin, diff, di):
   if diff is not None:
     save_an_image(diff[0], diff[1], di)
 
-def is_padding(dec_pos, dec_layer, cond_layer):
+def is_padding(dec_pos, dec_layer, cond_layer, post=True):
   ## to check if dec_pos is a padding
   dec_pos_unravel=None
   osp=dec_layer.ssc_map.shape
@@ -290,17 +290,23 @@ def is_padding(dec_pos, dec_layer, cond_layer):
     L=dec_pos_unravel[3]
     kernel_size=dec_layer.layer.kernel_size
     try:
-      for II in range(0, kernel_size[0]):
-        for JJ in range(0, kernel_size[1]):
-          for KK in range(0, weights.shape[2]):
-            try_tmp=cond_layer.ssc_map[0][J+II][K+JJ][KK]
+      if post:
+        for II in range(0, kernel_size[0]):
+          for JJ in range(0, kernel_size[1]):
+            for KK in range(0, weights.shape[2]):
+              try_tmp=cond_layer.ssc_map[0][J+II][K+JJ][KK]
+      else:
+        for II in range(0, weights.shape[0]):
+          for JJ in range(0, kernel_size[0]):
+            for KK in range(0, kernel_size[1]):
+              try_tmp=cond_layer.ssc_map[0][II][K+JJ][L+KK]
     except:
       return True
   return False
 
 
 def get_ssc_next(clayers, layer_indices=None, feature_indices=None):
-  global the_dec_pos
+  #global the_dec_pos
   clayers2=[]
   if layer_indices==None:
     clayers2=clayers
@@ -316,19 +322,21 @@ def get_ssc_next(clayers, layer_indices=None, feature_indices=None):
   dec_pos_ret=None
     
   while True:
-    dec_layer_index=np.random.randint(0, len(clayers2))
+    dec_layer_index=np.random.randint(1, len(clayers2))
     ## todo: this is a shortcut
+    #print ('#######',len(clayers2), dec_layer_index, clayers[1].layer)
     if not np.any(clayers2[dec_layer_index].ssc_map):
       print ('all decision features at layer {0} have been covered'.format(dec_layer_index))
-      sys.exit(0)
+      continue
+      #sys.exit(0)
 
     sp=clayers2[dec_layer_index].ssc_map.shape
     tot_s=1
     for s in sp:
       tot_s*=s
-    dec_pos=np.random.randint(0, tot_s)
+    the_dec_pos=np.random.randint(0, tot_s)
     if not feature_indices==None:
-      dec_pos=np.argmax(clayers2[dec_layer_index].ssc_map.shape)
+      the_dec_pos=np.argmax(clayers2[dec_layer_index].ssc_map.shape)
     found=False
     while the_dec_pos<tot_s:
       if not clayers2[dec_layer_index].ssc_map.item(the_dec_pos):
@@ -337,10 +345,9 @@ def get_ssc_next(clayers, layer_indices=None, feature_indices=None):
       else:
         found=True 
         break
-    if the_dec_pos>=tot_s:
-      print ('all decision features at layer {0} have been covered'.format(dec_layer_index))
-      sys.exit(0)
-      
+    #if the_dec_pos>=tot_s:
+    #  print ('all decision features at layer {0} have been covered'.format(dec_layer_index))
+    #  sys.exit(0)
     if found:
       dec_pos_ret=the_dec_pos
       for i in range(0, len(clayers)):
