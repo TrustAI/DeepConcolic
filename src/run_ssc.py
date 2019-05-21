@@ -29,7 +29,7 @@ except:
 
 
 def run_ssc(test_object, outs):
-  print ('To run ssc\n')
+  #print ('To run ssc\n')
   
   f_results, layer_functions, cover_layers, _=ssc_setup(test_object, outs)
   d_advs=[]
@@ -54,7 +54,7 @@ def run_ssc(test_object, outs):
     print (test_object.layer_indices, test_object.feature_indices)
     for i in range(1, len(cover_layers)):
       if cover_layers[i].layer_index in test_object.layer_indices:
-        print ('****', i)
+        #print ('****', i)
         csp=cover_layers[i].layer.input.shape
         dsp=cover_layers[i].ssc_map.shape
         if is_dense_layer(cover_layers[i].layer) or not (csp[1]==dsp[1] and csp[2]==dsp[2]): 
@@ -65,11 +65,11 @@ def run_ssc(test_object, outs):
           tmp_decs=((dsp[1]-ks[0]+1)*(dsp[2]-ks[1]+1)*dsp[3])
         if is_conv_layer(cover_layers[i].layer):
           if not test_object.feature_indices==None:
-             print ('**', tmp_decs)
+             #print ('**', tmp_decs)
              tmp_decs=tmp_decs*(len(test_object.feature_indices)*1.0/dsp[3])
-             print ('**', tmp_decs)
+             #print ('**', tmp_decs)
         tot_decs+=tmp_decs
-  print ('tot_decs', tot_decs)
+  print ('== Total decisions: {0} ==\n'.format(tot_decs))
   tot_coverage=0.0
 
   ## define a global attacker
@@ -80,8 +80,10 @@ def run_ssc(test_object, outs):
   adversarials=[]
   count=0
 
-
+  print ('== Enter the coverage loop ==\n')
+  ite=0
   while True:
+    ite+=1
     dec_layer_index, dec_pos=get_ssc_next(cover_layers, test_object.layer_indices, test_object.feature_indices)
     cover_layers[dec_layer_index].ssc_map.itemset(dec_pos, False)
 
@@ -95,7 +97,7 @@ def run_ssc(test_object, outs):
  
     if is_padding(dec_pos, dec_layer, cond_layer): 
       continue
-    print ('dec_layer_index', cover_layers[dec_layer_index].layer_index)
+    print ('==== Decision layer: {0}, decision pos: {1} ====\n'.format(cover_layers[dec_layer_index].layer_index, dec_pos))
         
     tot_conds=cond_cover.size
     if is_conv_layer(cond_layer.layer):
@@ -113,7 +115,7 @@ def run_ssc(test_object, outs):
 
       d_min, d_norm, new_image, old_image, old_labels, cond_diff_map=ssc_search(test_object, layer_functions, cond_layer, None, dec_layer, dec_pos, adv_crafter)
 
-      print ('d_min is', d_min, 'd_norm is', d_norm)
+      print ('====== #Condition changes: {0}, norm distance: {1} ======\n'.format( d_min, d_norm))
 
       feasible=(d_min<=test_object.cond_ratio*cond_layer.ssc_map.size or d_min==1)
 
@@ -163,6 +165,7 @@ def run_ssc(test_object, outs):
 
 
         if labels==None: labels=old_labels
+        #print (labels, y1s, y2s)
         for label in labels:
           if label in y1s: y1_flag=True
           if label in y2s: y2_flag=True
@@ -170,17 +173,20 @@ def run_ssc(test_object, outs):
         if y1_flag!=y2_flag: top5_adv_flag=True
 
         if top5_adv_flag:
-          print ('found an adversarial example')
+          print ('******** This is an adversarial example ********\n')
           adversarials.append((new_image, old_image))
           save_adversarial_examples([new_image/(inp_ub*1.0), '{0}-adv-{1}'.format(len(adversarials), y1s[top_classes-1])], [old_image/(inp_ub*1.0), '{0}-original-{1}'.format(len(adversarials), y2s[top_classes-1])], [diff_image/(255*1.0), '{0}-diff'.format(len(adversarials))], f_results.split('/')[0]) 
           adv_flag=True
           d_advs.append(d_norm)
           if len(d_advs)%100==0:
             print_adversarial_distribution(d_advs, f_results.replace('.txt', '')+'-adversarial-distribution.txt')
+        #elif y1s[0]==y2s[0]:
+        #  adversarials.append((new_image, old_image))
+        #  save_adversarial_examples([new_image/(inp_ub*1.0), 't{0}-{1}'.format(len(test_cases), y1s[top_classes-1])], [old_image/(inp_ub*1.0), 't{0}-original-{1}'.format(len(test_cases), y2s[top_classes-1])], None, f_results.split('/')[0]) 
       else:
-        print ("not feasible")
+        print ("******** Not feasible ********\n")
 
-      print ('f_results: ', f_results)
+      #print ('f_results: ', f_results)
       f = open(f_results, "a")
       f.write('{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} {13} {14} {15}\n'.format(count, len(test_cases), len(adversarials), feasible, top1_adv_flag, top5_adv_flag, d_min, d_norm, l0_d, dec_layer.layer_index, dec_pos, cond_layer.ssc_map.size, y1s, y2s, tot_coverage+step_coverage/tot_decs, step_coverage))
       f.close()

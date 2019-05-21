@@ -105,7 +105,7 @@ def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
   new_x=None
   diff_map=None
   d_min=cond_layer.ssc_map.size
-  print ('d_min initialised', d_min, len(data))
+  print ('====== To catch independent condition change: {0}/{1}'.format(d_min, d_min))
 
   indices=np.random.choice(len(data), len(data))
 
@@ -141,13 +141,13 @@ def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
         y=labels[i]
       new_x=x_ret
       diff_map=diff_map_ret
-      print ('new d: ', d_min, cond_layer.ssc_map.size)
+      print ('====== Update independent condition change: {0}/{1}'.format(d_min, cond_layer.ssc_map.size))
       if d_min==1: break
 
-    print ("++++++",d_min, ssc_ratio, ssc_ratio*cond_layer.ssc_map.size)
+    #print ("++++++",d_min, ssc_ratio, ssc_ratio*cond_layer.ssc_map.size)
     if d_min<=ssc_ratio*cond_layer.ssc_map.size: break
     
-  print ('final d: ', d_min, ' count:', count)  
+  #print ('final d: ', d_min, ' count:', count)  
   if x is not None:
     d_norm=np.abs(new_x-x)
     return d_min, np.max(d_norm), new_x, x, [y], diff_map

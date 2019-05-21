@@ -322,7 +322,7 @@ def get_ssc_next(clayers, layer_indices=None, feature_indices=None):
   dec_pos_ret=None
     
   while True:
-    dec_layer_index=np.random.randint(1, len(clayers2))
+    dec_layer_index=np.random.randint(0, len(clayers2))
     ## todo: this is a shortcut
     #print ('#######',len(clayers2), dec_layer_index, clayers[1].layer)
     if not np.any(clayers2[dec_layer_index].ssc_map):
