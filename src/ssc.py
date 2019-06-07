@@ -51,7 +51,8 @@ def local_search(dnn, local_input, ssc_pair, adv_crafter, e_max_input, ssc_ratio
   diff_map=None
   while e_max-e_min>=EPSILON:
     #print ('                     === in while')
-    x_adv_vect=adv_crafter.generate(x=np.array([local_input]), eps=e_max)
+    adv_crafter.set_params(eps=e_max)
+    x_adv_vect=adv_crafter.generate(x=np.array([local_input]))
     adv_acts=eval_batch(ssc_pair.layer_functions, x_adv_vect, is_input_layer(dnn.layers[0]))
     adv_cond_flags=adv_acts[ssc_pair.cond_layer.layer_index][0]
     adv_cond_flags[adv_cond_flags<=0]=0
@@ -114,10 +115,12 @@ def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
     inp_vect=np.array([data[i]])
     if adv_object is None:
       e_max_input=np.random.uniform(EPS_MAX*2/3, EPS_MAX)
-      adv_inp_vect=adv_crafter.generate(x=inp_vect, eps=e_max_input)
+      adv_crafter.set_params(eps=e_max_input)
+      adv_inp_vect=adv_crafter.generate(x=inp_vect)
     else:
       e_max_input=np.random.uniform(adv_object.max_v*EPS_MAX*2/3, adv_object.max_v*EPS_MAX)
-      adv_inp_vect=adv_crafter.generate(x=inp_vect, eps=e_max_input)
+      adv_crafter.set_params(eps=e_max_input)
+      adv_inp_vect=adv_crafter.generate(x=inp_vect)
       adv_inp_vect=np.clip(adv_inp_vect, adv_object.lb_v, adv_object.max_v)
     acts=eval_batch(layer_functions, inp_vect, is_input_layer(dnn.layers[0]))
     adv_acts=eval_batch(layer_functions, adv_inp_vect, is_input_layer(dnn.layers[0]))
@@ -167,7 +170,8 @@ def local_v_search(dnn, local_input, ssc_pair, adv_crafter, e_max_input, ssc_rat
   not_changed=0
   while e_max-e_min>=EPSILON:
     print ('                     === in while', e_max-e_min)
-    x_adv_vect=adv_crafter.generate(x=np.array([local_input]), eps=e_max)
+    adv_crafter.set_params(eps=e_max)
+    x_adv_vect=adv_crafter.generate(x=np.array([local_input]))
     adv_acts=eval_batch(ssc_pair.layer_functions, x_adv_vect, is_input_layer(dnn.layers[0]))
     adv_cond_flags=adv_acts[ssc_pair.cond_layer.layer_index][0]
     adv_cond_flags[adv_cond_flags<=0]=0
@@ -237,7 +241,8 @@ def svc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, de
         e_max_input+=np.random.uniform(0, 0.1) #0.3
       else:
         e_max_input+=np.random.uniform(0, 0.05) #0.3
-      adv_inp_vect=adv_crafter.generate(x=inp_vect, eps=e_max_input)
+      adv_crafter.set_params(eps=e_max_input)
+      adv_inp_vect=adv_crafter.generate(x=inp_vect)
       adv_acts=eval_batch(layer_functions, adv_inp_vect, is_input_layer(dnn.layers[0]))
 
       dec2=(adv_acts[dec_layer.layer_index][0].item(dec_pos))

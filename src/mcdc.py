@@ -66,7 +66,8 @@ def mcdc(x, dnn, aveImg_binary, mcdc_cond_ratio=0.2, max_v=255, lb_v=-125.5, ub_
   tot_coverage=0.0
 
   ## define a global attacker
-  classifier=KerasClassifier((MIN, -MIN), model=test_object.dnn)
+  #classifier=KerasClassifier((MIN, -MIN), model=test_object.dnn)
+  classifier=KerasClassifier(test_object.dnn)
   adv_crafter = FastGradientMethod(classifier)
 
   test_cases=[]
