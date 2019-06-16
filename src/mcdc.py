@@ -18,7 +18,7 @@ class adv_objectt:
     self.lb_v=lb_v
     self.ub_v=ub_v
 
-def mcdc(x, dnn, aveImg_binary, mcdc_cond_ratio=0.2, max_v=255, lb_v=-125.5, ub_v=125.5, opt=True):
+def mcdc(x, dnn, aveImg_binary, mcdc_cond_ratio=0.2, max_v=255, lb_v=-125.5, ub_v=125.5, opt=True, num=None, tot_iters=1000):
   x_test=np.array([x])
   raw_data=raw_datat(x_test,None)
   test_object=test_objectt(dnn, raw_data, 'ssc', 'linf')
@@ -32,6 +32,9 @@ def mcdc(x, dnn, aveImg_binary, mcdc_cond_ratio=0.2, max_v=255, lb_v=-125.5, ub_
   f = open(f_results, "a")
   f.write('#ssc runs;  #test cases;  #adversarial examples;  is feasible; is top-1 adversarial example; is top-x adversarial example; condition feature size; L infinity distance; L0 distance; decision layer index; dec feature; #condition layer neurons; new labels; original labels; coverage; local coverage\n')
   f.close()
+
+  if not (num is None):
+    new_images=[]
 
   tot_decs=0
   if test_object.layer_indices==None:
@@ -74,7 +77,7 @@ def mcdc(x, dnn, aveImg_binary, mcdc_cond_ratio=0.2, max_v=255, lb_v=-125.5, ub_
   adversarials=[]
   count=0
 
-  while count<1000:
+  while count<tot_iters:
     dec_layer_index, dec_pos=get_ssc_next(cover_layers)
     cover_layers[dec_layer_index].ssc_map.itemset(dec_pos, False)
     if dec_layer_index==1 and is_input_layer(test_object.dnn.layers[0]): continue
@@ -126,10 +129,16 @@ def mcdc(x, dnn, aveImg_binary, mcdc_cond_ratio=0.2, max_v=255, lb_v=-125.5, ub_
           #  plt.imshow(x[ii],cmap='gray')
           #  plt.show()
           ##  #plt.imsave('origin_{0}.png'.format(ii),x[ii],cmap='gray')
-          return True, simple_x
-      return True, new_image
+          if num is None: return True, simple_x
+          else: new_images.append(simple_x)
+      else:
+          if num is None: return True, new_image
+          else: new_images.append(new_image)
+    if not (num is None):
+      if len(new_images)>=num: return True, np.array(new_images)
 
-  return False, None
+  if (num is None): return False, None
+  else: return False, np.array(new_images)
   
   
 def mcdc_regression_linf(x, dnn, aveImg_binary, regression_threshold = 0.5, mcdc_cond_ratio=0.2, max_v=255, lb_v=-125.5, ub_v=125.5, opt=True):
