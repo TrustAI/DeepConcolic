@@ -88,7 +88,7 @@ python  deepconcolic.py --vgg16-model --inputs data/ --outputs outs --cond-ratio
 To run Lipschitz Constant Testing, please refer to instructions in folder "Lipschitz Constant Testing".
 
 # Dependencies
-We suggest create an environment using `conda`, `tensorflow>=1.5.0`
+We suggest create an environment using `conda`, `tensorflow>=2.0.0`
 ```
 conda create --name deepconcolic
 source activate deepconcolic

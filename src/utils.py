@@ -1,6 +1,12 @@
 #import matplotlib.pyplot as plt
-from keras import *
-from keras import backend as K
+from abc import abstractmethod
+from datetime import datetime
+
+try:
+  from tensorflow import keras
+except:
+  import keras
+
 import numpy as np
 from PIL import Image
 import copy
@@ -13,6 +19,9 @@ MIN=-100000
 DIM=50
 BUFFER_SIZE=20
 #ssc_ratio=0.005 #0.1 #0.05 #0.01
+
+# Some type for any DNN layer
+Layer = keras.layers.Layer
 
 ## some DNN model has an explicit input layer
 def is_input_layer(layer):
@@ -131,7 +140,7 @@ def get_layer_functions(dnn):
   layer_functions=[]
   for l in range(0, len(dnn.layers)):
     layer=dnn.layers[l]
-    current_layer_function=K.function([layer.input], [layer.output])
+    current_layer_function=keras.backend.function([layer.input], [layer.output])
     layer_functions.append(current_layer_function)
   return layer_functions
 
@@ -154,14 +163,14 @@ def eval(layer_functions, im, having_input_layer=False):
   for l in range(0, len(layer_functions)):
     if not having_input_layer:
       if l==0:
-        activations.append(layer_functions[l]([[im]])[0])
+        activations.append(layer_functions[l]([np.array([im])])[0])
       else:
         activations.append(layer_functions[l]([activations[l-1]])[0])
     else:
       if l==0:
         activations.append([]) #activations.append(layer_functions[l]([ims])[0])
       elif l==1:
-        activations.append(layer_functions[l]([[im]])[0])
+        activations.append(layer_functions[l]([np.array([im])])[0])
       else:
         activations.append(layer_functions[l]([activations[l-1]])[0])
   return activations

@@ -1,31 +1,15 @@
 import argparse
 import sys
-from datetime import datetime
-
-import keras
-from keras.models import *
-from keras.datasets import cifar10
-from keras.applications.vgg16 import VGG16
-from keras.layers import *
-from keras import *
-import tensorflow as tf
 import numpy as np
-
 import copy
-
-
 from utils import *
 
-try:
-  from art.attacks.fast_gradient import FastGradientMethod
-  from art.classifiers import KerasClassifier
-except:
-  from attacks import *
 
 RP_SIZE=50 ## the top 50 pairs
 NNUM=1000000000
 EPSILON=0.00000000001 #sys.float_info.epsilon*10 #0.000000000000001
 EPS_MAX=0.3
+
 
 class ssc_pairt:
 
@@ -90,11 +74,15 @@ def local_search(dnn, local_input, ssc_pair, adv_crafter, e_max_input, ssc_ratio
 
 def ssc_search(test_object, layer_functions, cond_layer, cond_pos, dec_layer, dec_pos, adv_crafter, adv_object=None):
 
-  from keras import backend
-  backend.set_learning_phase(False)
-
-  sess = backend.get_session()
-  sess.run(tf.global_variables_initializer())
+  # NB: What's this for?
+  keras.backend.set_learning_phase(False)
+  import tensorflow
+  try:
+    sess = tensorflow.compat.v1.Session ()
+    sess.run(tensorflow.compat.v1.global_variables_initializer())
+  except:
+    sess = keras.backend.get_session()
+    sess.run(tensorflow.global_variables_initializer())
 
   data=test_object.raw_data.data
   labels=test_object.raw_data.labels

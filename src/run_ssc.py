@@ -21,13 +21,6 @@ try:
 except:
   from attacks import *
 
-try:
-  from art.attacks.fast_gradient import FastGradientMethod
-  from art.classifiers import KerasClassifier
-except:
-  from attacks import *
-
-
 def run_ssc(test_object, outs):
   #print ('To run ssc\n')
   
@@ -73,7 +66,7 @@ def run_ssc(test_object, outs):
   tot_coverage=0.0
 
   ## define a global attacker
-  classifier=KerasClassifier((MIN, -MIN), model=test_object.dnn)
+  classifier=KerasClassifier(clip_values=(MIN, -MIN), model=test_object.dnn)
   adv_crafter = FastGradientMethod(classifier)
 
   test_cases=[]
@@ -182,7 +175,9 @@ def run_ssc(test_object, outs):
             print_adversarial_distribution(d_advs, f_results.replace('.txt', '')+'-adversarial-distribution.txt')
         #elif y1s[0]==y2s[0]:
         #  adversarials.append((new_image, old_image))
-        #  save_adversarial_examples([new_image/(inp_ub*1.0), 't{0}-{1}'.format(len(test_cases), y1s[top_classes-1])], [old_image/(inp_ub*1.0), 't{0}-original-{1}'.format(len(test_cases), y2s[top_classes-1])], None, f_results.split('/')[0]) 
+        #  save_adversarial_examples([new_image/(inp_ub*1.0), 't{0}-{1}'.format(len(test_cases), y1s[top_classes-1])], [old_image/(inp_ub*1.0), 't{0}-original-{1}'.format(len(test_cases), y2s[top_classes-1])], None, f_results.split('/')[0])
+      elif feasible:
+        print ("******** Already found ********\n")
       else:
         print ("******** Not feasible ********\n")
 

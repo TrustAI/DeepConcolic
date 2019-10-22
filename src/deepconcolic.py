@@ -2,16 +2,23 @@ import argparse
 import sys
 import os
 import cv2
-from datetime import datetime
+import warnings
 
-import keras
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+try:
+  import tensorflow as tf
+  from tensorflow import keras
+  # NB: Eager execution needs to be disabled before any model loading.
+  tf.compat.v1.disable_eager_execution ()
+except:
+  import keras
+
 from keras.models import *
 from keras.datasets import cifar10
 from keras.datasets import mnist
 from keras.applications.vgg16 import VGG16
 from keras.preprocessing.image import load_img
-from keras.layers import *
-from keras import *
 
 from utils import *
 #from nc_lp import *
@@ -20,7 +27,6 @@ from run_nc_pulp import run_nc_linf
 #from run_nc_linf import run_nc_linf
 from run_nc_l0 import run_nc_l0
 from run_ssc import *
-
 
 def deepconcolic(test_object, outs):
   print('\n== Start DeepConcolic testing ==\n')
@@ -90,11 +96,11 @@ def main():
   dnn=None
   inp_ub=1
   if args.model!='-1':
-    dnn=load_model(args.model)
+    dnn = keras.models.load_model (args.model)
     dnn.summary()
   elif args.vgg16:
-    dnn=VGG16()
-    inp_ub=255
+    dnn = keras.applications.VGG16 ()
+    inp_ub = 255
     dnn.summary()
   else:
     print (' \n == Please specify the input neural network == \n')
