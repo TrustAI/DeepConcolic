@@ -121,6 +121,12 @@ class cover_layert:
     else:
       self.activations[pos[0]][pos[1]][pos[2]]=MIN
 
+
+# Basic helper to build more polymorphic functions
+def actual_layer(l):
+  return l.layer if isinstance (l, cover_layert) else l
+
+
 def get_nc_next(clayers, layer_indices=None):
   nc_layer, nc_pos, nc_value = None, None, MIN
   for i in range(0, len(clayers)):
@@ -283,34 +289,25 @@ def save_adversarial_examples(adv, origin, diff, di):
   if diff is not None:
     save_an_image(diff[0], diff[1], di)
 
+# TODO: generalize to n-dimensional convolutional layers:
 def is_padding(dec_pos, dec_layer, cond_layer, post=True):
   ## to check if dec_pos is a padding
-  dec_pos_unravel=None
-  osp=dec_layer.ssc_map.shape
-  dec_pos_unravel=np.unravel_index(dec_pos, osp)
-  #print (osp, dec_pos_unravel)
-  if is_conv_layer(dec_layer.layer):
-    Weights=dec_layer.layer.get_weights()
-    weights=Weights[0]
-    biases=Weights[1]
-    I=0
-    J=dec_pos_unravel[1]
-    K=dec_pos_unravel[2]
-    L=dec_pos_unravel[3]
-    kernel_size=dec_layer.layer.kernel_size
-    try:
-      if post:
-        for II in range(0, kernel_size[0]):
-          for JJ in range(0, kernel_size[1]):
-            for KK in range(0, weights.shape[2]):
-              try_tmp=cond_layer.ssc_map[0][J+II][K+JJ][KK]
-      else:
-        for II in range(0, weights.shape[0]):
-          for JJ in range(0, kernel_size[0]):
-            for KK in range(0, kernel_size[1]):
-              try_tmp=cond_layer.ssc_map[0][II][K+JJ][L+KK]
-    except:
-      return True
+  dec_layer = actual_layer (dec_layer)
+  if is_conv_layer (dec_layer):
+    cond_layer = actual_layer (cond_layer)
+    kernel_size = dec_layer.kernel_size
+    weights = dec_layer.get_weights()[0]
+    (I, J, K) = np.unravel_index(dec_pos, dec_layer.output.shape[1:])
+    return ((I - kernel_size[0] < 0 or
+             I + kernel_size[0] > cond_layer.output.shape[1] or
+             J - kernel_size[1] < 0 or
+             J + kernel_size[1] > cond_layer.output.shape[2] or
+             weights.shape[1]   > cond_layer.output.shape[3]) if post else
+            (J - kernel_size[0] < 0 or
+             J + kernel_size[0] > cond_layer.output.shape[2] or
+             K - kernel_size[1] < 0 or
+             K + kernel_size[1] > cond_layer.output.shape[3] or
+             weights.shape[0]   > cond_layer.output.shape[1]))
   return False
 
 
