@@ -18,7 +18,7 @@ class adv_objectt:
     self.lb_v=lb_v
     self.ub_v=ub_v
 
-def mcdc(x, dnn, aveImg_binary, mcdc_cond_ratio=0.2, max_v=255, lb_v=-125.5, ub_v=125.5, opt=True, num=None, tot_iters=1000):
+def mcdc(x, dnn, aveImg_binary, mcdc_cond_ratio=0.2, max_v=255, lb_v=-125.5, ub_v=125.5, opt=True, num=None, tot_iters=1000, outs = '/tmp/'):
   x_test=np.array([x])
   raw_data=raw_datat(x_test,None)
   test_object=test_objectt(dnn, raw_data, 'ssc', 'linf')
@@ -26,12 +26,11 @@ def mcdc(x, dnn, aveImg_binary, mcdc_cond_ratio=0.2, max_v=255, lb_v=-125.5, ub_
   adv_object=adv_objectt(max_v, lb_v, ub_v)
   predictResults = dnn.predict(np.array([x]), verbose=1)
   res=np.argmax(predictResults)
-  f_results, layer_functions, cover_layers, _=ssc_setup(test_object, '/tmp/')
+  f_results, layer_functions, cover_layers, _ = ssc_setup(test_object, outs)
 
   d_advs=[]
-  f = open(f_results, "a")
-  f.write('#ssc runs;  #test cases;  #adversarial examples;  is feasible; is top-1 adversarial example; is top-x adversarial example; condition feature size; L infinity distance; L0 distance; decision layer index; dec feature; #condition layer neurons; new labels; original labels; coverage; local coverage\n')
-  f.close()
+  append_in_file (f_results,
+                  '#ssc runs;  #test cases;  #adversarial examples;  is feasible; is top-1 adversarial example; is top-x adversarial example; condition feature size; L infinity distance; L0 distance; decision layer index; dec feature; #condition layer neurons; new labels; original labels; coverage; local coverage\n')
 
   if not (num is None):
     new_images=[]
@@ -141,7 +140,7 @@ def mcdc(x, dnn, aveImg_binary, mcdc_cond_ratio=0.2, max_v=255, lb_v=-125.5, ub_
   else: return False, np.array(new_images)
   
   
-def mcdc_regression_linf(x, dnn, aveImg_binary, regression_threshold = 0.5, mcdc_cond_ratio=0.2, max_v=255, lb_v=-125.5, ub_v=125.5, opt=True):
+def mcdc_regression_linf(x, dnn, aveImg_binary, regression_threshold = 0.5, mcdc_cond_ratio=0.2, max_v=255, lb_v=-125.5, ub_v=125.5, opt=True, outs = '/tmp/'):
   x_test=np.array([x])
   raw_data=raw_datat(x_test,None)
   test_object=test_objectt(dnn, raw_data, 'ssc', 'linf')
@@ -149,12 +148,11 @@ def mcdc_regression_linf(x, dnn, aveImg_binary, regression_threshold = 0.5, mcdc
   adv_object=adv_objectt(max_v, lb_v, ub_v)
   predictResults = dnn.predict(np.array([x]), verbose=1)
   res=predictResults # np.argmax(predictResults)
-  f_results, layer_functions, cover_layers, _=ssc_setup(test_object, '/tmp/')
+  f_results, layer_functions, cover_layers, _ = ssc_setup(test_object, outs)
 
   d_advs=[]
-  f = open(f_results, "a")
-  f.write('#ssc runs;  #test cases;  #adversarial examples;  is feasible; is top-1 adversarial example; is top-x adversarial example; condition feature size; L infinity distance; L0 distance; decision layer index; dec feature; #condition layer neurons; new labels; original labels; coverage; local coverage\n')
-  f.close()
+  append_in_file (f_results,
+                  '#ssc runs;  #test cases;  #adversarial examples;  is feasible; is top-1 adversarial example; is top-x adversarial example; condition feature size; L infinity distance; L0 distance; decision layer index; dec feature; #condition layer neurons; new labels; original labels; coverage; local coverage\n')
 
   tot_decs=0
   if test_object.layer_indices==None:

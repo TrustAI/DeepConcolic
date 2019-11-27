@@ -1,38 +1,43 @@
-
-from numpy import linalg as LA
-import time
-import os
-import sys
+# from numpy import linalg as LA
+from typing import *
+from time import time
+from norms import L0
+from nc import NcAnalyzer, NcTarget
+from l0_encoding import L0Analyzer
 import numpy as np
-from utils import *
-from l0_encoding import *
 
-def l0_negate(dnn, layer_functions, test, nc_layer, pos):
-    idx_min = 0
-    idx_max = 10
 
-    gran = 2
+class NcL0Analyzer (NcAnalyzer, L0Analyzer):
+  '''
+  Neuron-cover analyzer that is dedicated to find close inputs w.r.t
+  L0 norm.
+  '''
+
+  def __init__(self, _clayers, l0_args = {}, **kwds):
+    super().__init__(**kwds)
+    self.norm = L0 (**l0_args)
+
+
+  def input_metric(self):
+    return self.norm
+
+
+  def search_input_close_to(self, x, target: NcTarget) -> Optional[Tuple[float, Any]]:
     mani_range = 100
-    adv = 0
 
-    (row, col, chl) = test[0].shape
-
-    tic=time.time()
-    sorted_pixels=sort_pixels(dnn, layer_functions, test[0], nc_layer, pos, gran)
-    (act_images, idx_first, success_flag) = accumulate(dnn, layer_functions, test[0], nc_layer, pos, sorted_pixels, mani_range)
-
-    elapsed=time.time()-tic
+    tic = time()
+    sorted_pixels = self.sort_pixels (x, target)
+    act_images, idx_first, success_flag = self.accumulate (x, target, sorted_pixels, mani_range)
+    elapsed = time() - tic
     #print ('\n == Elapsed time: ', elapsed)
 
-    result=[]
     if success_flag:
-      act_image_first=act_images[0]
-      refined_act_image=refine_act_image(dnn, layer_functions, test[0], nc_layer, pos, sorted_pixels, act_image_first, idx_first)
-      image_diff = np.abs(refined_act_image - test[0])
+      refined_act_image = self.refine_act_image (x, target, sorted_pixels, act_images[0], idx_first)
+      image_diff = np.abs (refined_act_image - x)
       L0_distance = (image_diff * 255 > 1).sum()
-      L1_distance = image_diff.sum()
-      L2_distance = LA.norm(image_diff)
-      return True, L0_distance, refined_act_image
+      # L1_distance = image_diff.sum()
+      # L2_distance = LA.norm (image_diff)
+      return L0_distance, refined_act_image
 
+    return None
 
-    return False, None, None

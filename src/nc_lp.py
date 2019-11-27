@@ -10,6 +10,8 @@ from utils import *
 from lp_encoding import *
 import copy
 
+assert False
+
 epsilon=1.0/(255)
 
 def negate(dnn, act_inst, test, nc_layer, nc_pos, base_constraints):
@@ -76,7 +78,7 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_constraints):
 
     to_stop=False
     npos=[]
-    if (l==nc_layer.layer_index and act_in_the_layer(layer)=='relu'):
+    if (l==nc_layer.layer_index and activation_is_relu (layer)):
       to_stop=True
     elif (l==nc_layer.layer_index+1 and is_activation_layer(layer)):
       to_stop=True
@@ -86,7 +88,7 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_constraints):
     elif is_conv_layer(layer):
       if l==0: pass
       the_index+=1
-      if not (act_in_the_layer(layer)=='relu'): continue
+      if not activation_is_relu (layer): continue
       the_index+=1 ## here is the activation thing
 
 
@@ -117,7 +119,7 @@ def negate(dnn, act_inst, test, nc_layer, nc_pos, base_constraints):
 
     elif is_dense_layer(layer):
       the_index+=1
-      if not (act_in_the_layer(layer)=='relu'): continue
+      if not activation_is_relu (layer): continue
       the_index+=1
       osp=var_names[the_index].shape
       if to_stop: npos.append(np.unravel_index(nc_pos, osp))

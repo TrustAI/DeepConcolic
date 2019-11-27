@@ -91,7 +91,7 @@ def create_base_constraints(dnn):
               upper_bounds.append(cplex.infinity)
               var_names[the_index][I][J][K][L]=var_name
               var_names_vect.append(var_name)
-      if act_in_the_layer(layer)=='relu':
+      if activation_is_relu (layer):
         ##
         the_index+=1
         osp=layer.output.shape ## the output at this layer
@@ -121,7 +121,7 @@ def create_base_constraints(dnn):
           upper_bounds.append(cplex.infinity)
           var_names[the_index][I][J]=var_name
           var_names_vect.append(var_name)
-      if act_in_the_layer(layer)=='relu':
+      if activation_is_relu (layer):
         ##
         the_index+=1
         osp=layer.output.shape
@@ -135,7 +135,7 @@ def create_base_constraints(dnn):
             var_names[the_index][I][J]=var_name
             var_names_vect.append(var_name)
     elif is_activation_layer(layer):
-      if str(layer.activation).find('relu')<0: continue ## well, we only consider ReLU activation layer
+      if not activation_is_relu(layer): continue ## well, we only consider ReLU activation layer
       the_index+=1
       osp=layer.output.shape
       if len(osp) > 2: ## multiple feature maps
@@ -247,7 +247,7 @@ def create_base_constraints(dnn):
                 rhs.append(0)
                 constraint_senses.append('E')
                 constraint_names.append('')
-      if act_in_the_layer(layer)=='relu':
+      if activation_is_relu (layer):
         the_index+=1
         base_constraints_dict[l]=base_constraintst(objective, lower_bounds, upper_bounds, var_names_vect, var_names, constraints, constraint_senses, rhs, constraint_names)
     elif is_dense_layer(layer):
@@ -273,7 +273,7 @@ def create_base_constraints(dnn):
           rhs.append(-float(biases[J])) 
           constraint_senses.append('E')
           constraint_names.append('')
-      if act_in_the_layer(layer)=='relu':
+      if activation_is_relu (layer):
         the_index+=1
         base_constraints_dict[l]=base_constraintst(objective, lower_bounds, upper_bounds, var_names_vect,var_names, constraints, constraint_senses, rhs, constraint_names)
     elif is_flatten_layer(layer):
@@ -300,7 +300,7 @@ def create_base_constraints(dnn):
         rhs.append(0)
         constraint_names.append('')
     elif is_activation_layer(layer):
-      if str(layer.activation).find('relu')<0: continue ## well, we only consider ReLU activation layer
+      if not activation_is_relu (layer): continue ## well, we only consider ReLU activation layer
       the_index+=1
       print ('add one relu layer')
       base_constraints_dict[l]=base_constraintst(objective, lower_bounds, upper_bounds, var_names_vect, var_names, constraints, constraint_senses, rhs, constraint_names)
@@ -317,6 +317,8 @@ def create_base_constraints(dnn):
   #return base_constraintst(objective, lower_bounds, upper_bounds, var_names_vect, constraints, constraint_senses, rhs, constraint_names)
   return base_constraints_dict
 
+def constraints_for_cover_layer(constraints, clayer):
+  return constraints[clayer.layer_index + (0 if activation_is_relu (clayer.layer) else 1)]
 
 def build_conv_constraint(the_index, ll, I, J, K, L, act_inst, var_names, has_input_layer):
   #print (' == build conv constraints == ', the_index, l)
