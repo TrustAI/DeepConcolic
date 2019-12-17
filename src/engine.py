@@ -328,7 +328,6 @@ class Criterion:
   def __init__(self,
                analyzer: Analyzer = None,
                prefer_rooted_search = None,
-               initial_test_cases = None,
                **kwds):
     '''
     A criterion operates based on a `test_object` (to retrieve the DNN
@@ -343,7 +342,6 @@ class Criterion:
     super().__init__(**kwds)
     self.analyzer = analyzer
     self.test_cases = []
-    self.initial_test_cases = initial_test_cases
     self.rooted_search = self._rooted_search (prefer_rooted_search)
 
 
@@ -423,17 +421,16 @@ class Criterion:
     self.test_cases.append (t)
 
 
-  def initialize_search (self, ref_data, report: Report):
+  def initialize_search (self, ref_data, report: Report, initial_test_cases = None):
     '''
     Method called once at the beginning of search.
     '''
     xl = []
-    if self.initial_test_cases is not None:
+    if initial_test_cases is not None:
       p1 ('Initializing with {} randomly selected test case{}.'
-          .format(self.initial_test_cases,
-                  's' if self.initial_test_cases > 1 else ''))
+          .format(initial_test_cases, 's' if initial_test_cases > 1 else ''))
       xl = np.random.default_rng().choice (a = ref_data.data, axis = 0,
-                                           size = self.initial_test_cases)
+                                           size = initial_test_cases)
       for x in xl:
         self.add_new_test_case (x)
     if self.rooted_search:
@@ -584,6 +581,7 @@ class Engine:
 
   def run(self,
           setup_report: Callable[[Criterion], Report] = setup_basic_report,
+          initial_test_cases = None,
           max_iterations = None,
           **kwds):
     '''
@@ -602,7 +600,7 @@ class Engine:
                  ' ({} max iterations)'.format (max_iterations)))
     report = setup_report (criterion, **kwds)
 
-    criterion.initialize_search (self.ref_data, report)
+    criterion.initialize_search (self.ref_data, report, initial_test_cases)
 
     coverage = criterion.coverage ()
     p1 ('#0 {}: {.as_prop:10.8%}'.format(criterion, coverage))
