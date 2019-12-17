@@ -216,6 +216,11 @@ def post_activation_layer (dnn, idx):
               if (i >= idx and (is_activation_layer (layer) or
                                 activation_is_relu(layer)))))
 
+
+def deepest_tested_layer (dnn, clayers):
+  return post_activation_layer (dnn, max((l.layer_index for l in clayers)))
+
+
 def testable_layer (dnn, idx,
                     exclude_direct_input_succ = False):
   layer = dnn.layers[idx]
@@ -330,12 +335,6 @@ class test_objectt:
 
   def tests_layer(self, cl):
     return self.layer_indices == None or cl.layer_index in self.layer_indices
-
-
-  def deepest_tested_layer (self):
-    if self.layer_indices == None:
-      return None
-    return post_activation_layer (self.dnn, max(self.layer_indices))
 
 
   def check_layer_indices (self):

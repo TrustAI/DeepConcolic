@@ -18,9 +18,9 @@ class NcPulpAnalyzer (NcAnalyzer, PulpSolver4DNN):
                **kwds):
     assert isinstance (input_metric, PulpLinearMetric)
     self.metric = input_metric
-    upto = post_activation_layer (analyzed_dnn, max((l.layer_index for l in clayers)))
     super().__init__(analyzed_dnn = analyzed_dnn, lp_dnn = analyzed_dnn,
-                     upto = upto, **kwds)
+                     upto = deepest_tested_layer (analyzed_dnn, clayers),
+                     **kwds)
 
 
   def input_metric(self):
