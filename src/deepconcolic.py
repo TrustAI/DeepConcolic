@@ -42,8 +42,7 @@ def deepconcolic(test_object, outs):
     from ssc import SScAttackBasedAnalyzer, setup as ssc_setup
     engine = ssc_setup (test_object = test_object,
                         setup_analyzer = SScAttackBasedAnalyzer,
-                        ref_data = test_object.raw_data,
-                        criterion_args = { 'all_layers': test_object.dnn.layers })
+                        ref_data = test_object.raw_data)
     engine.run (**report_args)
   elif test_object.criterion=='svc':
     outs = setup_output_dir (outs)

@@ -14,20 +14,10 @@ class NcLayer (BoolMappedCoverableLayer):
   Covered layer that tracks per-neuron activation.
   '''
 
-  def __init__(self, **kwds):
-    super().__init__(**kwds, filter_nonneg_value = MIN)
-
-
-  def update(self, act) -> None:
+  def update_with_activations(self, act) -> None:
     if activation_is_relu (self.layer): # todo (???)
       sys.exit ('Unsupported NC-update for activation layer (bug/todo?)')
-    act = copy.copy (act[self.layer_index])
-    # Keep only negative new activation values:
-    act[act >= 0] = 0
-    # print (self.map.shape, len(act))
-    self.map = np.logical_and (self.map, act[0])
-    # Append activations after map change
-    self.append_activations (act)
+    super().update_with_activations (act)
 
 
 # ---

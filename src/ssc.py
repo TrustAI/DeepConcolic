@@ -303,7 +303,7 @@ from engine import setup as engine_setup
 class SScLayer (BoolMappedCoverableLayer):
 
   def __init__(self, **kwds):
-    super().__init__(**kwds, filter_nonneg_value = MIN)
+    super().__init__(**kwds)
     self._initialize_conditions_map ()
 
 
@@ -341,7 +341,7 @@ class SScLayer (BoolMappedCoverableLayer):
   #   self.ubs = np.zeros((1,) + self.layer.output.shape[1:], dtype = float)
 
 
-  def update(self, act) -> None:
+  def update_with_activations(self, act) -> None:
     # if self.layer_index <= 1: return
 
     prior_act = act[self.layer_index # - 1
@@ -360,8 +360,13 @@ class SScLayer (BoolMappedCoverableLayer):
 
 
 class SScTarget (NamedTuple, TestTarget):
+  '''
+  Note positions are w.r.t a sequence of activations (i.e. actual
+  neurons indexes consist in all but the first components).
+  '''
   decision_layer: SScLayer
   decision_pos: Tuple[int, ...]
+  condition_layer: Optional[BoolMappedCoverableLayer]
   condition_pos: Optional[Tuple[int, ...]]
 
 
@@ -369,11 +374,14 @@ class SScTarget (NamedTuple, TestTarget):
     # XXX: this assumes a single condition position is eligible...
     self.decision_layer.cover (self.condition_pos[1:] if self.condition_pos is not None else None,
                                self.decision_pos)
+    if self.condition_layer is not None and self.condition_pos is not None:
+      self.condition_layer.cover (self.condition_pos[1:])
 
 
   @property
   def decision_position(self):
     return self.decision_pos
+
 
   @property
   def condition_position(self):
@@ -382,9 +390,11 @@ class SScTarget (NamedTuple, TestTarget):
 
   def __repr__(self) -> str:
     if self.condition_pos is not None:
-      return ('decision {} in {}, subject to condition {}'
+      return ('decision {} in {}, subject to condition {}{}'
               .format (xtuple (self.decision_pos), self.decision_layer,
-                       xtuple (self.condition_pos[1:])))
+                       xtuple (self.condition_pos[1:]),
+                       '' if self.condition_layer is None else
+                       ' in {}'.format(self.condition_layer)))
     else:
       return ('decision {} in {}, subject to any condition'
               .format (xtuple (self.decision_pos), self.decision_layer))
@@ -434,19 +444,34 @@ class SScCriterion (LayerLocalCriterion, Criterion4FreeSearch, Criterion4RootedS
   def __init__(self,
                clayers: Sequence[SScLayer],
                analyzer: Union[SScAnalyzer4FreeSearch, SScAnalyzer4RootedSearch],
-               all_layers: Sequence[Any] = None,
+               injecting_layer: BoolMappedCoverableLayer = None,
                **kwds):
+
     assert (isinstance (analyzer, SScAnalyzer4FreeSearch) or
             isinstance (analyzer, SScAnalyzer4RootedSearch))
-    self.all_layers = all_layers
+    assert isinstance (injecting_layer, BoolMappedCoverableLayer)
+
     super().__init__(clayers = clayers, analyzer = analyzer, **kwds)
+
+    self.injecting_layer = injecting_layer
+    self.layer_imap = { injecting_layer.layer_index: injecting_layer }
     for cl in self.cover_layers:
-      cl.filter_out_padding_against (self.all_layers[cl.prev_layer_index])
+      self.layer_imap[cl.layer_index] = cl
+    for cl in self.cover_layers:
+      cl.filter_out_padding_against (self.layer_imap[cl.prev_layer_index].layer)
+
+
+  @property
+  def _updatable_layers(self):
+    """
+    Updatable layers include both layers to cover (SScLayer's) plus
+    the inputing layer (a BoolMappedCoverableLayer).
+    """
+    return self.layer_imap.values ()
 
 
   def __repr__(self):
     return "SSC"
-
 
 
   def find_next_test_target(self) -> SScTarget:
@@ -455,18 +480,23 @@ class SScCriterion (LayerLocalCriterion, Criterion4FreeSearch, Criterion4RootedS
     if decision_search_attempt == None:
       raise EarlyTermination ('All decision features have been covered.')
     dec_cl, dec_pos = decision_search_attempt
-    cond_l = self.all_layers[dec_cl.prev_layer_index]
-    assert not (is_padding (dec_pos# [1:]
-                            , dec_cl, cond_l,
+    cond_cl = self.layer_imap[dec_cl.prev_layer_index]
+    assert not (is_padding (dec_pos, dec_cl, cond_cl,
                             post = True, unravel_pos = False))
-    # TODO: find an appropriate condition neuron (i.e. based on
-    # Eq. (18)).
-    # dec_cl.inhibit_activation ((0,) + dec_pos)
-    return SScTarget (dec_cl, dec_pos, None)
+    try:
+      # Try and find an appropriate condition neuron (i.e. based on
+      # Eq. (18)).
+      cond_pos, cond_val = cond_cl.find (np.argmax)
+      # print (cond_cl.activations[cond_pos[0]][cond_pos[1:]])
+      cond_cl.inhibit_activation (cond_pos)
+      # print (cond_cl.activations[cond_pos[0]][cond_pos[1:]])
+      return SScTarget (dec_cl, dec_pos, cond_cl, cond_pos[1:])
+    except ValueError:
+      # XXX this case may only happen upon cold start.
+      return SScTarget (dec_cl, dec_pos, None, None)
     # ppos = (lambda p: p if len(p) > 1 else p[0])(ssc_pos[1:])
     # tp1 ('Targeting decision {} in {}'.format(ppos, cl))
     # return cl, ssc_pos[1:]
-
 
 
   # ---
@@ -489,7 +519,7 @@ class SScCriterion (LayerLocalCriterion, Criterion4FreeSearch, Criterion4RootedS
 # ---
 
 
-def setup (test_object = None, **kwds):
+def setup (test_object = None, criterion_args: dict = {}, **kwds):
 
   setup_layer = (
     lambda l, i, **kwds: SScLayer (layer = l, layer_index = i,
@@ -498,9 +528,15 @@ def setup (test_object = None, **kwds):
   cover_layers = get_cover_layers (test_object.dnn, setup_layer,
                                    layer_indices = test_object.layer_indices,
                                    exclude_direct_input_succ = True)
+  injecting_layer_index = cover_layers[0].prev_layer_index
+  criterion_args['injecting_layer'] = (
+    BoolMappedCoverableLayer (layer = test_object.dnn.layers[injecting_layer_index],
+                              layer_index = injecting_layer_index,
+                              feature_indices = test_object.feature_indices))
   return engine_setup (test_object = test_object,
                        cover_layers = cover_layers,
                        setup_criterion = SScCriterion,
+                       criterion_args = criterion_args,
                        **kwds)
 
 

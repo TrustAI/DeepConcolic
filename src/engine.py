@@ -747,8 +747,8 @@ class CoverableLayer (cover_layert):
   Base class for any layer based on which coverability criteria are
   defined.
 
-  Note: this reuses cover_layert to hold layer and layer_index, but
-  one should not rely on that as this is only temporary.
+  Note: this reuses `cover_layert` to hold `layer` and `layer_index`,
+  yet one should not rely on that as this is only temporary.
   '''
 
   def __init__(self, layer = None, layer_index = None, **kwds):
@@ -770,11 +770,11 @@ class BoolMappedCoverableLayer (CoverableLayer):
 
   def __init__(self,
                feature_indices = None,
-               filter_nonneg_value = None,
+               bottom_act_value = MIN,
                **kwds):
     super().__init__(**kwds)
     self._initialize_map (feature_indices)
-    self.filter_nonneg_value = filter_nonneg_value
+    self.bottom_act_value = bottom_act_value
     self.filtered_out = 0
 
 
@@ -822,25 +822,33 @@ class BoolMappedCoverableLayer (CoverableLayer):
     return pos, acts.item (spos)
 
 
+  def update_with_activations(self, act) -> None:
+    act = copy.copy (act[self.layer_index])
+    # Keep only negative new activation values:
+    # TODO: parameterize this (ditto bottom_act_value)
+    act[act >= 0] = 0
+    self.map = np.logical_and (self.map, act[0])
+    # Append activations after map change
+    self.append_activations (act)
+
+
   def cover(self, pos) -> None:
     self.map[pos] = False
 
 
   def inhibit_activation(self, pos) -> None:
-    if self.filter_nonneg_value == None: return
     act = self.activations
     while len(pos) != 1:
       act = act[pos[0]]
       pos = pos[1:]
-    act[pos] = self.filter_nonneg_value
+    act[pos] = self.bottom_act_value
 
 
   def _filter_out_covered_activations(self):
     for j in range(0, len(self.activations)):
       # Only keep values of non-covered activations
       self.activations[j] = np.multiply(self.activations[j], self.map)
-      if self.filter_nonneg_value != None:
-        self.activations[j][self.activations[j] >= 0] = self.filter_nonneg_value
+      self.activations[j][self.activations[j] >= 0] = self.bottom_act_value
 
 
   def append_activations(self, act):
@@ -855,6 +863,9 @@ class BoolMappedCoverableLayer (CoverableLayer):
 
 
 class LayerLocalCriterion (Criterion):
+  '''
+  Criteria whose definition involves layer-local coverage properties.
+  '''
 
   def __init__(self,
                clayers: Sequence[BoolMappedCoverableLayer] = None,
@@ -867,6 +878,15 @@ class LayerLocalCriterion (Criterion):
     super().__init__(**kwds)
     for cl in self.cover_layers:
       assert isinstance (cl, BoolMappedCoverableLayer)
+
+
+  @property
+  def _updatable_layers(self):
+    '''
+    Gives the set of all internal objects that are updated upon
+    insertion of a new test case.
+    '''
+    return self.cover_layers
 
 
   def stat_based_incremental_initializers(self):
@@ -919,8 +939,8 @@ class LayerLocalCriterion (Criterion):
     super().add_new_test_case (t)
     activations = eval (self.analyzer.dnn, t,
                         is_input_layer (self.analyzer.dnn.layers[0]))
-    for cl in self.cover_layers:
-      cl.update (activations)
+    for cl in self._updatable_layers:
+      cl.update_with_activations (activations)
 
 
   def get_max(self):
