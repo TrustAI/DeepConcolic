@@ -339,7 +339,7 @@ class Criterion:
 
 
   # True for rooted search, False for free search
-  def _rooted_search(self, prefer_rooted_search):
+  def _rooted_search(self, prefer_rooted_search = None):
     '''
     Holds if rooted-search mode is selected and the criterion and
     analyzer pair supports it.
@@ -357,11 +357,11 @@ class Criterion:
                  isinstance (self, Criterion4RootedSearch))
     free_ok = (isinstance (self.analyzer, Analyzer4FreeSearch) and
                isinstance (self, Criterion4FreeSearch))
-    if not free_ok and not rooted_ok:
+    if not (free_ok or rooted_ok):
       sys.exit ('Incompatible pair criterion/analyzer')
     if free_ok and rooted_ok and prefer_rooted_search is None:
       p1 ('Arbitrarily selecting rooted search against free search.')
-    return (prefer_rooted_search is not None and prefer_rooted_search) or not free_ok
+    return rooted_ok and (prefer_rooted_search is None or prefer_rooted_search)
 
 
   # ---
