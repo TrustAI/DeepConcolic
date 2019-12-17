@@ -27,7 +27,7 @@ class LInfPulp (LInf, PulpLinearMetric):
       # x >= x0 - d
       problem += LpConstraint(LpAffineExpression([(dist_var, +1), (x, +1)]),
                               LpConstraintGE, rhs = float(x0),
-                              name = '{}>=x0+{}'.format(var, self.dist_var_name))
+                              name = '{}>=x0-{}'.format(var, self.dist_var_name))
 
       # x<=1
       problem += LpConstraint(LpAffineExpression([(x, +1)]),
