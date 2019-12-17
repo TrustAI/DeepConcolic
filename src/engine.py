@@ -829,21 +829,16 @@ class BoolMappedCoverableLayer (CoverableLayer):
     return pos, acts.item (spos)
 
 
-  def update_with_activations(self, act) -> None:
-    act = copy.copy (act[self.layer_index])
-    # Keep only negative new activation values:
-    # TODO: parameterize this (ditto bottom_act_value)
-    act[act >= 0] = 0
-    self.map = np.logical_and (self.map, act[0])
-    # Append activations after map change
-    self.append_activations (act)
-
-
   def cover(self, pos) -> None:
     self.map[pos] = False
 
 
   def inhibit_activation(self, pos) -> None:
+    '''
+    Inhibit any activation at the given position so that it is not
+    returned by any direct subsequent call to `find` (i.e not
+    precededed by a call to `update_with_new_activations`).
+    '''
     act = self.activations
     while len(pos) != 1:
       act = act[pos[0]]
@@ -851,19 +846,31 @@ class BoolMappedCoverableLayer (CoverableLayer):
     act[pos] = self.bottom_act_value
 
 
+  def update_with_new_activations(self, act) -> None:
+    act = copy.copy (act[self.layer_index])
+    # Keep only negative new activation values:
+    # TODO: parameterize this (ditto bottom_act_value)
+    act[act >= 0] = 0
+    self.map = np.logical_and (self.map, act[0])
+    # Append activations after map change
+    self._append_activations (act)
+
+
+  def _append_activations(self, act):
+    '''
+    Append given activations into the internal buffer.
+    '''
+    if len(self.activations) >= BUFFER_SIZE:
+      self.activations.pop(-1)
+    self.activations.insert(0, act)
+    self._filter_out_covered_activations ()
+
+
   def _filter_out_covered_activations(self):
     for j in range(0, len(self.activations)):
       # Only keep values of non-covered activations
       self.activations[j] = np.multiply(self.activations[j], self.map)
       self.activations[j][self.activations[j] >= 0] = self.bottom_act_value
-
-
-  def append_activations(self, act):
-    if len(self.activations) >= BUFFER_SIZE:
-      self.activations[np.random.randint (0, BUFFER_SIZE)] = act
-    else:
-      self.activations.append (act)
-    self._filter_out_covered_activations ()
 
 
 # ---
@@ -947,10 +954,12 @@ class LayerLocalCriterion (Criterion):
     activations = eval (self.analyzer.dnn, t,
                         is_input_layer (self.analyzer.dnn.layers[0]))
     for cl in self._updatable_layers:
-      cl.update_with_activations (activations)
+      cl.update_with_new_activations (activations)
 
 
-  def get_max(self):
+  def get_max(self) -> Tuple[BoolMappedCoverableLayer, Tuple[int, ...], float, Input]:
+    '''
+    '''
     layer, pos, value = None, None, MIN
     for i, cl in enumerate(self.cover_layers):
       p, v = cl.find (np.argmax)
@@ -962,7 +971,7 @@ class LayerLocalCriterion (Criterion):
     if layer == None:
       sys.exit('incorrect layer indices specified' +
                '(the layer tested shall be either conv or dense layer)')
-    return self.cover_layers[layer], pos, value
+    return self.cover_layers[layer], pos, value, self.test_cases[-1-pos[0]]
 
 
   def get_random(self):

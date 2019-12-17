@@ -341,7 +341,7 @@ class SScLayer (BoolMappedCoverableLayer):
   #   self.ubs = np.zeros((1,) + self.layer.output.shape[1:], dtype = float)
 
 
-  def update_with_activations(self, act) -> None:
+  def update_with_new_activations(self, act) -> None:
     # if self.layer_index <= 1: return
 
     prior_act = act[self.layer_index # - 1
