@@ -289,8 +289,8 @@ def svc_search(test_object, cond_layer, cond_pos, dec_layer, dec_pos, adv_crafte
 
 
 from typing import *
-from engine import (BoolMappedCoverableLayer, TestTarget,
-                    LayerLocalCriterion,
+from engine import (Input, TestTarget,
+                    BoolMappedCoverableLayer, LayerLocalCriterion,
                     Criterion4FreeSearch, Criterion4RootedSearch,
                     Analyzer4FreeSearch, Analyzer4RootedSearch,
                     EarlyTermination)
@@ -418,7 +418,7 @@ class SScAnalyzer4FreeSearch (Analyzer4FreeSearch):
   """
 
   @abstractmethod
-  def search_close_inputs(self, target: SScTarget) -> Optional[Tuple[float, Any, Any]]:
+  def search_close_inputs(self, target: SScTarget) -> Optional[Tuple[float, Input, Input]]:
     raise NotImplementedError
 
 
@@ -432,7 +432,7 @@ class SScAnalyzer4RootedSearch (Analyzer4RootedSearch):
   """
 
   @abstractmethod
-  def search_input_close_to(self, x, target: SScTarget) -> Optional[Tuple[float, Any, Any]]:
+  def search_input_close_to(self, x, target: SScTarget) -> Optional[Tuple[float, Input, Input]]:
     raise NotImplementedError
 
 
@@ -568,7 +568,7 @@ class SScAttackBasedAnalyzer (SScAnalyzer4FreeSearch):
     return self.metric
 
 
-  def search_close_inputs(self, target: SScTarget) -> Optional[Tuple[float, Any, Any]]:
+  def search_close_inputs(self, target: SScTarget) -> Optional[Tuple[float, Input, Input]]:
     dec_layer, dec_pos, cond_pos = target.decision_layer, target.decision_position, target.condition_position
     assert dec_layer.prev_layer_index is not None
     cond_layer = self.dnn.layers[dec_layer.prev_layer_index]

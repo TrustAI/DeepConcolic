@@ -5,6 +5,13 @@ from utils import *
 # ---
 
 
+# Define an alias type for inputs
+Input = NewType("Input", np.ndarray)
+
+
+# ---
+
+
 class Oracle:
   '''
   Oracles can be used to compare any concrete input against a
@@ -190,7 +197,7 @@ class Analyzer4RootedSearch (Analyzer):
   '''
 
   @abstractmethod
-  def search_input_close_to(self, x, target: TestTarget) -> Optional[Tuple[float, Any]]:
+  def search_input_close_to(self, x, target: TestTarget) -> Optional[Tuple[float, Input]]:
     '''
     Generates a new concrete input close to `x`, that fulfills test
     target `target`.
@@ -212,7 +219,7 @@ class Analyzer4FreeSearch (Analyzer):
   '''
 
   @abstractmethod
-  def search_close_inputs(self, target: TestTarget) -> Optional[Tuple[float, Any, Any]]:
+  def search_close_inputs(self, target: TestTarget) -> Optional[Tuple[float, Input, input]]:
     '''
     Generates a new concrete input that fulfills test target `target`.
     
@@ -437,7 +444,7 @@ class Criterion:
         self.add_new_test_case (x)
 
 
-  def search_next(self) -> Tuple[Union[Tuple[Any, Any, float], None], TestTarget]:
+  def search_next(self) -> Tuple[Union[Tuple[Input, Input, float], None], TestTarget]:
     '''
     Selects a new test target based (see `Criterion4RootedSearch` and
     `Criterion4FreeSearch`), and then uses the analyzer to find a new
@@ -500,7 +507,7 @@ class Criterion4RootedSearch (Criterion):
   '''
 
   @abstractmethod
-  def find_next_rooted_test_target(self) -> Tuple[Any, TestTarget]:
+  def find_next_rooted_test_target(self) -> Tuple[Input, TestTarget]:
     '''
     Seeks a new test target associated with an existing test input
     taken from the set of recorded test cases.

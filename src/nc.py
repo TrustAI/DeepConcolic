@@ -1,7 +1,8 @@
 from typing import *
 from utils import *
-from engine import (BoolMappedCoverableLayer, TestTarget,
-                    LayerLocalCriterion, Criterion4RootedSearch,
+from engine import (Input, TestTarget,
+                    BoolMappedCoverableLayer, LayerLocalCriterion,
+                    Criterion4RootedSearch,
                     Analyzer4RootedSearch)
 import numpy as np
 
@@ -56,7 +57,7 @@ class NcAnalyzer (Analyzer4RootedSearch):
 
 
   @abstractmethod
-  def search_input_close_to(self, x, target: NcTarget) -> Optional[Tuple[float, Any]]:
+  def search_input_close_to(self, x, target: NcTarget) -> Optional[Tuple[float, Input]]:
     pass
 
 
@@ -74,7 +75,7 @@ class NcCriterion (LayerLocalCriterion, Criterion4RootedSearch):
     return "NC"
 
 
-  def find_next_rooted_test_target(self) -> Tuple[Any, NcTarget]:
+  def find_next_rooted_test_target(self) -> Tuple[Input, NcTarget]:
     cl, nc_pos, nc_value = self.get_max ()
     # ppos = (lambda p: p if len(p) > 1 else p[0])(nc_pos[2:])
     # p1 ('Targeting activation of {} in {} (value = {})'.format(ppos, cl, nc_value))
