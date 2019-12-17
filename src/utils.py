@@ -225,7 +225,7 @@ def testable_layer (dnn, idx,
                     exclude_direct_input_succ = False):
   layer = dnn.layers[idx]
   return ((is_conv_layer(layer) or is_dense_layer(layer)) and
-          (idx != len(dnn.layers)-2 or activation_is_relu (layer)) and
+          (idx != len(dnn.layers)-1 or activation_is_relu (layer)) and
           not (exclude_direct_input_succ and
                (idx == 0 or idx == 1 and is_input_layer (dnn.layers[0]))))
 
