@@ -848,6 +848,7 @@ class BoolMappedCoverableLayer (CoverableLayer):
 
   def update_with_new_activations(self, act) -> None:
     act = copy.copy (act[self.layer_index])
+    assert len (act) == 1
     # Keep only negative new activation values:
     # TODO: parameterize this (ditto bottom_act_value)
     act[act >= 0] = 0
