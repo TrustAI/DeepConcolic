@@ -321,6 +321,7 @@ class Criterion:
   def __init__(self,
                analyzer: Analyzer = None,
                prefer_rooted_search = None,
+               initial_test_cases = None,
                **kwds):
     '''
     A criterion operates based on a `test_object` (to retrieve the DNN
@@ -335,6 +336,7 @@ class Criterion:
     super().__init__(**kwds)
     self.analyzer = analyzer
     self.test_cases = []
+    self.initial_test_cases = initial_test_cases
     self.rooted_search = self._rooted_search (prefer_rooted_search)
 
 
@@ -416,16 +418,24 @@ class Criterion:
 
   def initialize_search (self, ref_data, report: Report):
     '''
-    Method called once at the begining of search.
+    Method called once at the beginning of search.
     '''
+    xl = []
+    if self.initial_test_cases is not None:
+      p1 ('Initializing with {} randomly selected test case{}.'
+          .format(self.initial_test_cases,
+                  's' if self.initial_test_cases > 1 else ''))
+      xl = np.random.default_rng().choice (a = ref_data.data, axis = 0,
+                                           size = self.initial_test_cases)
+      for x in xl:
+        self.add_new_test_case (x)
     if self.rooted_search:
       p1 ('Randomly selecting an input from test data.')
       x = np.random.default_rng().choice (a = ref_data.data, axis = 0)
       report.save_input (x, 'seed-input')
-      self.add_new_test_case (x)
-    else:
-      pass
-  
+      if x not in xl:
+        self.add_new_test_case (x)
+
 
   def search_next(self) -> Tuple[Union[Tuple[Any, Any, float], None], TestTarget]:
     '''
