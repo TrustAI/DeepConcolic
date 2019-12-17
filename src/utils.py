@@ -1,11 +1,40 @@
 #import matplotlib.pyplot as plt
-from keras import *
-from keras import backend as K
+from abc import abstractmethod
+from datetime import datetime
+
+try:
+  from tensorflow import keras
+except:
+  import keras
+
 import numpy as np
 from PIL import Image
 import copy
 import sys
+import os
 import cv2
+
+def tp1(x):
+  print ('{:<80}'.format(x), end = '\r', flush = True)
+
+def ctp1(x):
+  print ('\n{:<80}'.format(x), end = '\r', flush = True)
+
+def np1(x):
+  print (x, end = '', flush = True)
+
+def cnp1(x):
+  print ('\n', x, sep = '', end = '', flush = True)
+
+def p1(x):
+  print ('{:<80}'.format(x))
+
+def cp1(x):
+  print ('\n{:<80}'.format(x))
+
+
+def xtuple(t):
+  return t if len(t) > 1 else t[0]
 
 
 #the_dec_pos=0
@@ -14,73 +43,144 @@ DIM=50
 BUFFER_SIZE=20
 #ssc_ratio=0.005 #0.1 #0.05 #0.01
 
+# Some type for any DNN layer
+Layer = keras.layers.Layer
+
 ## some DNN model has an explicit input layer
 def is_input_layer(layer):
-  return str(layer).find('InputLayer')>=0
+  return isinstance (layer, keras.layers.InputLayer)
 
 def is_conv_layer(layer):
-  return str(layer).find('conv')>=0 or str(layer).find('Conv')>=0
+  return isinstance (layer, (keras.layers.Conv1D,
+                             keras.layers.Conv2D))
 
 def is_dense_layer(layer):
-  return str(layer).find('dense')>=0 or str(layer).find('Dense')>=0
+  return isinstance (layer, keras.layers.Dense)
 
 def is_activation_layer(layer):
-  return str(layer).find('activation')>=0 or str(layer).find('Activation')>=0
+  return isinstance (layer, keras.layers.Activation)
 
-def act_in_the_layer(layer):
-  try:
-    act=str(layer.activation)
-    if act.find('relu')>=0: return 'relu'
-    elif act.find('softmax')>=0: return 'softmax'
-    else: return ''
-  except:
-    return ''
+def is_relu_layer(layer):
+  return isinstance (layer, keras.layers.ReLU)
+
+# def act_in_the_layer(layer):
+#   try:
+#     act = str(layer.activation)
+#     if act.find('relu')>=0: return 'relu'
+#     elif act.find('softmax')>=0: return 'softmax'
+#     else: return ''
+#   except:
+#     return ''
+
+# def activation_is_relu(layer):
+#   return act_in_the_layer(layer)=='relu'
+#   # try:
+#   #   print (layer.activation)
+#   #   return isinstance (layer.activation, layers.ReLU)
+#   # except:
+#   #   return False
 
 def is_maxpooling_layer(layer):
-  return str(layer).find('MaxPooling')>=0 
+  return isinstance (layer, (keras.layers.MaxPooling1D,
+                             keras.layers.MaxPooling2D,
+                             keras.layers.MaxPooling3D))
 
 def is_flatten_layer(layer):
-  return str(layer).find('flatten')>=0 or str(layer).find('Flatten')>=0
+  return isinstance (layer, keras.layers.Flatten)
 
 def is_dropout_layer(layer):
   return False ## we do not allow dropout
 
-def get_activation(layer):
-  if str(layer.activation).find('relu')>=0: return 'relu'
-  elif  str(layer.activation).find('linear')>=0: return 'linear'
-  elif  str(layer.activation).find('softmax')>=0: return 'softmax'
-  else: return ''
+# def act_in_the_layer(layer):
+#   try:
+#     act=str(layer.activation)
+#     if act.find('relu')>=0: return 'relu'
+#     elif act.find('softmax')>=0: return 'softmax'
+#     else: return ''
+#   except:
+#     return ''
+
+def activation_is_relu(layer):
+  try: return (layer.activation == keras.activations.relu)
+  except: return False
+
+# def is_relu_layer (layer):
+#   return activation_is_relu(layer)
+
+# def get_activation(layer):
+#   if str(layer.activation).find('relu')>=0: return 'relu'
+#   elif  str(layer.activation).find('linear')>=0: return 'linear'
+#   elif  str(layer.activation).find('softmax')>=0: return 'softmax'
+#   else: return ''
+
+# ---
+
+def setup_output_dir (outs, log = True):
+  if not os.path.exists(outs):
+    os.system('mkdir -p {0}'.format(outs))
+  if not outs.endswith('/'):
+    outs+='/'
+  if log: print ('Outputs will go into: {0}'.format(outs))
+  return outs
+
+def setup_output_files (outs, ident, suff0 = '', suff = '.txt', log = True):
+  if not os.path.exists(outs):
+    sys.exit ('Output directory {0} was not initialized (internal bug)!'
+              .format (outs))
+  ident = ('{0}-{1}{2}'
+           .format (ident, str(datetime.now()).replace(' ', '-'), suff0)
+           .replace(':', '-'))
+  f = outs+ident+suff
+  if log: print ('Reporting into: {0}'.format (f))
+  return f, ident
+  
+# ---
+
+def _write_in_file (f, mode, *fmts):
+  f = open (f, mode)
+  for fmt in fmts: f.write (fmt)
+  f.close ()
+
+def write_in_file (f, *fmts):
+  _write_in_file (f, "w", *fmts)
+
+def append_in_file (f, *fmts):
+  _write_in_file (f, "a", *fmts)
+
+def save_an_image(im, name, directory = './', log = True):
+  if not directory.endswith('/'): directory += '/'
+  f = directory + name + '.png'
+  if log: print ('Outputing image into {0}'.format (f))
+  cv2.imwrite (f, im * 255)
+
+def save_adversarial_examples(adv, origin, diff, di):
+  save_an_image(adv[0], adv[1], di)
+  save_an_image(origin[0], origin[1], di)
+  if diff is not None:
+    save_an_image(diff[0], diff[1], di)
+
+
+# ---
 
 
 class cover_layert:
-  def __init__(self, layer, layer_index, is_conv):
-    self.layer=layer
-    self.layer_index=layer_index
-    self.is_conv=is_conv
-    self.activations=[]
-    self.pfactor=1.0 ## the proportional factor
-    self.actiavtions=[] ## so, we need to store neuron activations?
-    self.nc_map=None ## to count the coverage
-    self.ssc_map=None ## 
-    self.ubs=None ## 
+  def __init__(self, layer, layer_index, prev: int = None, succ: int = None):
+    self.layer = layer
+    self.layer_index = layer_index
+    self.is_conv = is_conv_layer(layer)
+    self.prev_layer_index = prev
+    self.succ_layer_index = succ
+    self.activations = []  ## so, we need to store neuron activations?
+    self.ssc_map = None ## 
+    self.ubs = None ## 
 
-  def initialize_nc_map(self, layer_feature=None):
-    sp=self.layer.output.shape
-    if self.is_conv:
-      self.nc_map = np.ones((1, sp[1], sp[2], sp[3]), dtype=bool)
-      if layer_feature==None: return
-      if layer_feature[0]==None: return
-      if layer_feature[1]==None: return
-      if self.layer_index in layer_feature[0]:
-        sp=self.nc_map.shape
-        for i in range(0, sp[3]):
-          if not i in layer_feature[1]:
-            self.nc_map[:,:,:,i]=False
-    else:
-      self.nc_map = np.ones((1, sp[1]), dtype=bool)
+  def __repr__(self):
+    return self.layer.name
 
-  def initialize_ssc_map(self, layer_feature=None):
-    sp=self.layer.output.shape
+  # ssc/svc:
+
+  def initialize_ssc_map(self, layer_feature = None):
+    sp = self.layer.output.shape
     if self.is_conv:
       self.ssc_map = np.ones((1, sp[1], sp[2], sp[3]), dtype=bool)
       if layer_feature==None: return
@@ -95,98 +195,98 @@ class cover_layert:
       self.ssc_map = np.ones((1, sp[1]), dtype=bool)
 
   def initialize_ubs(self):
-    sp=self.layer.output.shape
-    if self.is_conv:
-      self.ubs=np.zeros((1, sp[1], sp[2], sp[3]), dtype=float)
-    else:
-      self.ubs=np.zeros((1, sp[1]), dtype=float)
+    self.ubs = np.zeros((1,) + tuple(self.layer.output.shape[1:]), dtype = float)
 
-  ## to get the index of the next property to be satisfied
-  def get_nc_next(self):
-    spos = np.array(self.activations).argmax()
-    return spos, np.array(self.activations).item(spos)
+  # ---
 
-  def disable_by_pos(self, pos):
-    if self.is_conv:
-      self.activations[pos[0]][pos[1]][pos[2]][pos[3]][pos[4]]=MIN
-    else:
-      self.activations[pos[0]][pos[1]][pos[2]]=MIN
+  @abstractmethod
+  def coverage(self):
+    pass
 
-def get_nc_next(clayers, layer_indices=None):
-  nc_layer, nc_pos, nc_value = None, None, MIN
-  for i in range(0, len(clayers)):
-    if layer_indices==None or clayers[i].layer_index in layer_indices:
-      clayer=clayers[i]
-      pos, v=clayer.get_nc_next()
-      v*=clayer.pfactor
-      if v > nc_value:
-        nc_layer, nc_pos, nc_value= i, pos, v
-        if np.random.uniform(0., 1.)>=i*1./len(clayers): break
-  if nc_layer==None:
-    print ('incorrect layer index specified (the layer tested shall be either conv or dense layer)', layer_indices)
-    sys.exit(0)
-  return nc_layer, nc_pos, nc_value
+# ---
 
+# Basic helper to build more polymorphic functions
+def actual_layer(l):
+  return l.layer if isinstance (l, cover_layert) else l
+
+# ---
+
+def post_activation_layer (dnn, idx):
+  return min((i for i, layer in enumerate(dnn.layers)
+              if (i >= idx and (is_activation_layer (layer) or
+                                activation_is_relu(layer)))))
+
+
+def deepest_tested_layer (dnn, clayers):
+  return post_activation_layer (dnn, max((l.layer_index for l in clayers)))
+
+
+def testable_layer (dnn, idx,
+                    exclude_direct_input_succ = False):
+  layer = dnn.layers[idx]
+  return ((is_conv_layer(layer) or is_dense_layer(layer)) and
+          (idx != len(dnn.layers)-1 or activation_is_relu (layer)) and
+          not (exclude_direct_input_succ and
+               (idx == 0 or idx == 1 and is_input_layer (dnn.layers[0]))))
+
+def get_cover_layers(dnn, constr, layer_indices = None,
+                     exclude_direct_input_succ = False):
+  # All coverable layers:
+  cls = [ (l, layer) for l, layer in enumerate(dnn.layers[:-1])
+          if testable_layer (dnn, l) ]
+  return [ constr (layer[1], layer[0],
+                   prev = (cls[l-1][0] if l > 0 else None),
+                   succ = (cls[l+1][1] if l < len(cls) - 1 else None))
+           for l, layer in enumerate(cls)
+           if not (exclude_direct_input_succ and
+                   (layer[0] == 0 or layer[0] == 1 and is_input_layer (dnn.layers[0])))
+           and (layer_indices == None or layer[0] in layer_indices) ]
+
+# ---
+
+# Do we really manipulate many DNNs at once?
+from functools import lru_cache
+@lru_cache(4)
 def get_layer_functions(dnn):
-  layer_functions=[]
-  for l in range(0, len(dnn.layers)):
-    layer=dnn.layers[l]
-    current_layer_function=K.function([layer.input], [layer.output])
-    layer_functions.append(current_layer_function)
-  return layer_functions
+  return ([ keras.backend.function([layer.input], [layer.output])
+            for layer in dnn.layers ],
+          is_input_layer (dnn.layers[0]))
 
-def get_cover_layers(dnn, criterion):
-  cover_layers=[]
-  for l in range(0, len(dnn.layers)):
-    if l==len(dnn.layers)-1: continue
-    layer=dnn.layers[l]
-    if is_conv_layer(layer) or is_dense_layer(layer):
-      if l==len(dnn.layers)-2 and get_activation(layer)!='relu': continue
-      sp=layer.output.shape
-      clayer=cover_layert(layer, l, is_conv_layer(layer))
-      cover_layers.append(clayer)
-  return cover_layers
+# ---
 
-
-### given an input image, to evaluate activations
-def eval(layer_functions, im, having_input_layer=False):
-  activations=[]
-  for l in range(0, len(layer_functions)):
+### given input images, evaluate activations
+def eval_batch(o, ims, allow_input_layer = False):
+  layer_functions, has_input_layer = (
+    get_layer_functions (o) if isinstance (o, (keras.Sequential, keras.Model))
+    # TODO: Check it's sequential? --------------------------------------^
+    else o)
+  having_input_layer = allow_input_layer and has_input_layer
+  activations = []
+  for l, func in enumerate(layer_functions):
     if not having_input_layer:
       if l==0:
-        activations.append(layer_functions[l]([[im]])[0])
+        activations.append(func([ims])[0])
       else:
-        activations.append(layer_functions[l]([activations[l-1]])[0])
+        activations.append(func([activations[l-1]])[0])
     else:
       if l==0:
-        activations.append([]) #activations.append(layer_functions[l]([ims])[0])
+        activations.append([]) #activations.append(func([ims])[0])
       elif l==1:
-        activations.append(layer_functions[l]([[im]])[0])
+        activations.append(func([ims])[0])
       else:
-        activations.append(layer_functions[l]([activations[l-1]])[0])
+        activations.append(func([activations[l-1]])[0])
   return activations
 
-def eval_batch(layer_functions, ims, having_input_layer=False):
-  activations=[]
-  for l in range(0, len(layer_functions)):
-    if not having_input_layer:
-      if l==0:
-        activations.append(layer_functions[l]([ims])[0])
-      else:
-        activations.append(layer_functions[l]([activations[l-1]])[0])
-    else:
-      if l==0:
-        activations.append([]) #activations.append(layer_functions[l]([ims])[0])
-      elif l==1:
-        activations.append(layer_functions[l]([ims])[0])
-      else:
-        activations.append(layer_functions[l]([activations[l-1]])[0])
-  return activations
+def eval(o, im, having_input_layer = False):
+  return eval_batch (o, np.array([im]), having_input_layer)
+
+# ---
 
 class raw_datat:
   def __init__(self, data, labels):
     self.data=data
     self.labels=labels
+    
 
 
 class test_objectt:
@@ -196,7 +296,6 @@ class test_objectt:
     ## test config
     self.norm=norm
     self.criterion=criterion
-    self.channels_last=True
     self.cond_ratio=None
     self.top_classes=None
     self.inp_ub=None
@@ -205,122 +304,92 @@ class test_objectt:
     self.trace_flag=None
     self.layer_indices=None
     self.feature_indices=None
+    self.save_input_func = None
 
-def calculate_pfactors(activations, cover_layers):
-  fks=[]
-  for clayer in cover_layers:
-    layer_index=clayer.layer_index
-    sub_acts=np.abs(activations[layer_index])
-    fks.append(np.average(sub_acts))
-  av=np.average(fks)
-  for i in range(0, len(fks)):
-    cover_layers[i].pfactor=av/fks[i]
+  def __repr__(self):
+    return 'criterion {0} with norm {1}'.format (self.criterion, self.norm)
 
-def update_nc_map_via_inst(clayers, activations, layer_feature=None):
-  for i in range(0, len(clayers)):
-    ## to get the act of layer 'i'
-    act=copy.copy(activations[clayers[i].layer_index])
-    ## TODO
-    if act_in_the_layer(clayers[i].layer)=='relu':
-      act[act==0]=MIN/10
-    act[act>=0]=0
-    if clayers[i].nc_map is None: ## not initialized yet
-      clayers[i].initialize_nc_map(layer_feature)
-      clayers[i].nc_map=np.logical_and(clayers[i].nc_map, act)
-    else:
-      clayers[i].nc_map=np.logical_and(clayers[i].nc_map, act)
-    ## update activations after nc_map change
-    if len(clayers[i].activations)>=BUFFER_SIZE:
-      ind=np.random.randint(0,BUFFER_SIZE)
-      clayers[i].activations[ind]=(act)
-    else:
-      clayers[i].activations.append(act)
-    ## clayers[i].update_activations() 
-    for j in range(0, len(clayers[i].activations)):
-      clayers[i].activations[j]=np.multiply(clayers[i].activations[j], clayers[i].nc_map)
-      clayers[i].activations[j][clayers[i].activations[j]>=0]=MIN
+  def eval(self, im, allow_input_layer = False):
+    return eval(self.dnn, im, allow_input_layer)
 
-def nc_report(clayers, layer_indices=None, feature_indices=None):
-  covered = 0
-  non_covered = 0
-  for layer in clayers:
-    if layer_indices==None or layer.layer_index in layer_indices:
-      if feature_indices==None or not layer.is_conv:
-        c = np.count_nonzero(layer.nc_map)
-        sp = layer.nc_map.shape
-        tot = 0
-        if layer.is_conv:
-          tot = sp[0] * sp[1] * sp[2] * sp[3]
-        else:
-          tot = sp[0] * sp[1]
-      else:
-        sp=layer.nc_map.shape
-        for i in range(0, sp[3]):
-          if not i in feature_indices: continue
-          c = np.count_nonzero(layer.nc_map[:,:,:,i])
-          tot = layer.nc_map[:,:,:,i].size
-      non_covered += c
-      covered += (tot - c)
-  return covered, non_covered
+  def eval_batch(self, ims, allow_input_layer = False):
+    return eval_batch(self.dnn, ims, allow_input_layer)
 
-def save_an_image(im, title, di='./'):
-  if not di.endswith('/'):
-    di+='/'
-  cv2.imwrite((di+title+'.png'), im*255)
+  # ---
 
-def save_adversarial_examples(adv, origin, diff, di):
-  save_an_image(adv[0], adv[1], di)
-  save_an_image(origin[0], origin[1], di)
-  if diff is not None:
-    save_an_image(diff[0], diff[1], di)
+  def save_input(self, im, name, directory, log = None, fit = False):
+    if self.save_input_func != None:
+      self.save_input_func (self.inp_ub * 0.5 + (im / self.inp_ub * 0.5) if fit
+                            else (im / self.inp_ub * 1.0),
+                            name, directory, log)
 
-def is_padding(dec_pos, dec_layer, cond_layer, post=True):
+
+  def save_adversarial_example(self, adv, origin, directory = '/tmp',
+                               diff = None, diff_amplified = False,
+                               log = None):
+    self.save_input (adv[0], adv[1], directory, log)
+    self.save_input (origin[0], origin[1], directory, log)
+    if diff is not None:
+      self.save_input (diff[0], diff[1], directory, log, fit = False)
+  
+
+  def tests_layer(self, cl):
+    return self.layer_indices == None or cl.layer_index in self.layer_indices
+
+
+  def check_layer_indices (self):
+    if self.layer_indices == None: return
+    mcdc = self.criterion in ('ssc', 'ssclp')
+    testable = lambda l: testable_layer (self.dnn, l, exclude_direct_input_succ = mcdc)
+    testable_layers_indices = [ l for l in range(0, len(self.dnn.layers)) if testable (l) ]
+    wrong_layer_indices = [ i for i in self.layer_indices if i not in testable_layers_indices ]
+    if wrong_layer_indices != []:
+      sys.exit ('Untestable layers: {}'
+                .format([self.dnn.layers[l].name for l in wrong_layer_indices]))
+
+# ---
+
+# TODO: generalize to n-dimensional convolutional layers:
+def is_padding(dec_pos, dec_layer, cond_layer, post = True, unravel_pos = True):
   ## to check if dec_pos is a padding
-  dec_pos_unravel=None
-  osp=dec_layer.ssc_map.shape
-  dec_pos_unravel=np.unravel_index(dec_pos, osp)
-  #print (osp, dec_pos_unravel)
-  if is_conv_layer(dec_layer.layer):
-    Weights=dec_layer.layer.get_weights()
-    weights=Weights[0]
-    biases=Weights[1]
-    I=0
-    J=dec_pos_unravel[1]
-    K=dec_pos_unravel[2]
-    L=dec_pos_unravel[3]
-    kernel_size=dec_layer.layer.kernel_size
-    try:
-      if post:
-        for II in range(0, kernel_size[0]):
-          for JJ in range(0, kernel_size[1]):
-            for KK in range(0, weights.shape[2]):
-              try_tmp=cond_layer.ssc_map[0][J+II][K+JJ][KK]
-      else:
-        for II in range(0, weights.shape[0]):
-          for JJ in range(0, kernel_size[0]):
-            for KK in range(0, kernel_size[1]):
-              try_tmp=cond_layer.ssc_map[0][II][K+JJ][L+KK]
-    except:
-      return True
+  dec_layer = actual_layer (dec_layer)
+  if is_conv_layer (dec_layer):
+    cond_layer = actual_layer (cond_layer)
+    kernel_size = dec_layer.kernel_size
+    weights = dec_layer.get_weights()[0]
+    (I, J, K) = (np.unravel_index(dec_pos, dec_layer.output.shape[1:])
+                 if unravel_pos else dec_pos)
+    # z = (zip ((I, J) pos_idx[:-1], cond_layer.output.shape[1:-1]) if post else
+    #      zip ((J, K) pos_idx[1: ], cond_layer.output.shape[2:  ]))
+    return ((I - kernel_size[0] < 0 or
+             I + kernel_size[0] > cond_layer.output.shape[1] or
+             J - kernel_size[1] < 0 or
+             J + kernel_size[1] > cond_layer.output.shape[2] or
+             weights.shape[1]   > cond_layer.output.shape[3]) if post else
+            (J - kernel_size[0] < 0 or
+             J + kernel_size[0] > cond_layer.output.shape[2] or
+             K - kernel_size[1] < 0 or
+             K + kernel_size[1] > cond_layer.output.shape[3] or
+             weights.shape[0]   > cond_layer.output.shape[1]))
   return False
 
 
 def get_ssc_next(clayers, layer_indices=None, feature_indices=None):
   #global the_dec_pos
-  clayers2=[]
-  if layer_indices==None:
-    clayers2=clayers
-  else:
-    for i in range(1, len(clayers)):
-      if clayers[i].layer_index in layer_indices:
-        clayers2.append(clayers[i])
-  if clayers2==[]:
-    print ('incorrect layer index specified (the layer tested shall be either conv or dense layer)', layer_indices)
-    sys.exit(0)
+  # clayers2=[]
+  # if layer_indices==None:
+  clayers2=clayers
+  # else:
+  #   for i in range(1, len(clayers)):
+  #     if clayers[i].layer_index in layer_indices:
+  #       clayers2.append(clayers[i])
+  # if clayers2==[]:
+  #   sys.exit('incorrect layer index specified (the layer tested shall be either conv or dense layer) {}'
+  #            .format(layer_indices))
   #print (clayers2[0].layer_index)
   dec_layer_index_ret=None
   dec_pos_ret=None
-    
+
   while True:
     dec_layer_index=np.random.randint(0, len(clayers2))
     ## todo: this is a shortcut
@@ -330,15 +399,14 @@ def get_ssc_next(clayers, layer_indices=None, feature_indices=None):
       continue
       #sys.exit(0)
 
-    sp=clayers2[dec_layer_index].ssc_map.shape
-    tot_s=1
-    for s in sp:
-      tot_s*=s
-    the_dec_pos=np.random.randint(0, tot_s)
+    tot_s = np.prod (clayers2[dec_layer_index].ssc_map.shape)
+    
+    the_dec_pos = np.random.randint(0, tot_s)
     if not feature_indices==None:
       the_dec_pos=np.argmax(clayers2[dec_layer_index].ssc_map.shape)
+    # print (the_dec_pos, tot_s, np.count_nonzero (clayers2[dec_layer_index].ssc_map))
     found=False
-    while the_dec_pos<tot_s:
+    while the_dec_pos < tot_s:
       if not clayers2[dec_layer_index].ssc_map.item(the_dec_pos):
         the_dec_pos+=1
         continue
@@ -361,44 +429,74 @@ def get_ssc_next(clayers, layer_indices=None, feature_indices=None):
   return dec_layer_index_ret, dec_pos_ret
 
 def print_adversarial_distribution(advs, fname, int_flag=False):
-  advs=np.sort(advs)
+  advs = np.sort(advs)
   ## average and std
-  ave=np.mean(advs)
-  std=np.std(advs)
-  d_max=advs[len(advs)-1]
-  xs=None
-  if not int_flag:
-    xs=np.arange(0.001, d_max+0.001, 0.001)
-  else:
-    xs=np.arange(1, d_max+1, 1)
-  ys=np.zeros(len(xs))
+  ave = np.mean(advs)
+  std = np.std(advs)
+  d_max = advs[len(advs)-1]
+  xs = np.arange(1, d_max+1, 1) if int_flag else np.arange(0.001, d_max+0.001, 0.001)
+  ys = np.zeros(len(xs))
   for i in range(0, len(xs)):
     for d in advs:
-      if d<=xs[i]: ys[i]+=1
-    ys[i]=ys[i]*1.0/len(advs)
+      if d <= xs[i]: ys[i] += 1
+    ys[i] = ys[i] * 1.0 / len(advs)
 
-  f=open(fname, "w")
-  f.write('adversarial examples:  (average distance, {0}), (standard variance, {1})\n'.format(ave, std))
-  f.write('#distance #accumulated adversarial examples fall into this distance\n')
-  for i in range(0, len(xs)):
-    f.write('{0} {1}\n'.format(xs[i], ys[i]))
-  f.close()
-  
-def l0_filtered(data_set, x, factor=0.25):
-  size=data_set.size*factor
-  diffs=data_set-x
-  for diff in diffs:
-    if np.count_nonzero(diff)<size:
-      return False
-  return True
+  write_in_file (fname,
+                 'adversarial examples:  (average distance, {0}), (standard variance, {1})\n'
+                 .format(ave, std),
+                 '#distance #accumulated adversarial examples fall into this distance\n',
+                 *['{0} {1}\n'.format(xs[i], ys[i]) for i in range(0, len(xs))])
 
-def linf_filtered(data_set, x, factor=0.25):
-  size=data_set.size*factor
-  diffs=data_set-x
-  for index, diff in np.ndenumerate(diffs):
-    diff_abs=np.abs(diff)
-    diff_abs=np.array(diff_abs)
-    diff_abs[diff_abs<=factor]=0.
-    if np.count_nonzero(diff)<size:
-      return False
-  return True
+
+# ---
+
+
+class Coverage:
+  """Basic helper class to manipulate and type-annotate coverage measures."""
+
+  def __init__(self, covered = None, total = None, non_covered = None):
+    if total != None:
+      self.total = total
+    elif covered != None and non_covered != None:
+      self.total = covered + non_covered
+    elif covered != None:
+      self.total = covered
+    elif non_covered != None:
+      self.total = non_covered
+    else:
+      self.total = 0
+
+    if covered != None:
+      self.c = covered
+    elif non_covered != None and self.total > 0:
+      self.c = self.total - non_covered
+    else:
+      self.c = 0
+
+
+  def __add__(self, x):
+    return Coverage (covered = self.c + x.c,
+                     total = self.total + x.total)
+
+
+  @property
+  def covered(self) -> int:
+    return self.c
+
+
+  @property
+  def not_covered(self) -> int:
+    return self.total - self.c
+
+
+  @property
+  def as_prop(self) -> float:
+    return (((1.0 * self.c) / (1.0 * self.total))
+            if self.total != 0 else 0.0)
+
+
+  def __repr__(self):
+    return str(self.as_prop)
+
+
+# ---

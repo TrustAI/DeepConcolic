@@ -2,43 +2,56 @@ import argparse
 import sys
 import os
 import cv2
-from datetime import datetime
+import warnings
 
-import keras
-from keras.models import *
-from keras.datasets import cifar10
-from keras.datasets import mnist
-from keras.applications.vgg16 import VGG16
-from keras.preprocessing.image import load_img
-from keras.layers import *
-from keras import *
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+try:
+  import tensorflow as tf
+  from tensorflow import keras
+  # NB: Eager execution needs to be disabled before any model loading.
+  tf.compat.v1.disable_eager_execution ()
+except:
+  import keras
 
 from utils import *
-#from nc_lp import *
-#from lp_encoding import *
-from run_nc_pulp import run_nc_linf
-#from run_nc_linf import run_nc_linf
-from run_nc_l0 import run_nc_l0
-from run_ssc import *
-
 
 def deepconcolic(test_object, outs):
-  print('\n== Start DeepConcolic testing ==\n')
-  if test_object.criterion=='nc': ## neuron cover
+  report_args = { 'save_input_func': test_object.save_input_func,
+                  'inp_ub': test_object.inp_ub,
+                  'outs': outs}
+  if test_object.criterion=='nc':       ## neuron cover
+    from nc import setup as nc_setup
     if test_object.norm=='linf':
-      run_nc_linf(test_object, outs)
+      from pulp_norms import LInfPulp
+      from nc_pulp import NcPulpAnalyzer
+      engine = nc_setup (test_object = test_object,
+                         setup_analyzer = NcPulpAnalyzer,
+                         input_metric = LInfPulp ())
     elif test_object.norm=='l0':
-      run_nc_l0(test_object, outs)
+      from nc_l0 import NcL0Analyzer
+      engine = nc_setup (test_object = test_object,
+                         setup_analyzer = NcL0Analyzer,
+                         input_shape = test_object.raw_data.data[0].shape,
+                         eval_batch = test_object.eval_batch)
     else:
       print('\n not supported norm... {0}\n'.format(test_object.norm))
       sys.exit(0)
+    engine.run (**report_args)
   elif test_object.criterion=='ssc':
-    run_ssc(test_object, outs)
+    from ssc import SScAttackBasedAnalyzer, setup as ssc_setup
+    engine = ssc_setup (test_object = test_object,
+                        setup_analyzer = SScAttackBasedAnalyzer,
+                        ref_data = test_object.raw_data)
+    engine.run (**report_args)
   elif test_object.criterion=='svc':
+    outs = setup_output_dir (outs)
+    from run_ssc import run_svc
+    print('\n== Starting DeepConcolic tests for {0} =='.format (test_object))
     run_svc(test_object, outs)
   else:
-      print('\n not supported coverage criterion... {0}\n'.format(test_object.criterion))
-      sys.exit(0)
+    print('\n not supported coverage criterion... {0}\n'.format(test_object.criterion))
+    sys.exit(0)
 
 
 def main():
@@ -71,8 +84,9 @@ def main():
                     help="the condition feature size parameter (0, 1]", metavar="FLOAT")
   parser.add_argument("--top-classes", dest="top_classes", default="1",
                     help="check the top-xx classifications", metavar="INT")
-  parser.add_argument("--layer-index", dest="layer_index", default="-1",
-                    help="to test a particular layer", metavar="INT")
+  parser.add_argument("--layer-index", dest="layer_indexes",
+                      nargs="+", type=int,
+                      help="to test a particular layer", metavar="INT")
   parser.add_argument("--feature-index", dest="feature_index", default="-1",
                     help="to test a particular feature map", metavar="INT")
 
@@ -87,15 +101,18 @@ def main():
   raw_data=None
   img_rows, img_cols, img_channels = int(args.img_rows), int(args.img_cols), int(args.img_channels)
 
-  dnn=None
-  inp_ub=1
+  dnn = None
+  inp_ub = 1
+  save_input = None
   if args.model!='-1':
-    dnn=load_model(args.model)
+    dnn = keras.models.load_model (args.model)
     dnn.summary()
+    save_input = save_an_image
   elif args.vgg16:
-    dnn=VGG16()
-    inp_ub=255
+    dnn = keras.applications.VGG16 ()
+    inp_ub = 255
     dnn.summary()
+    save_input = save_an_image
   else:
     print (' \n == Please specify the input neural network == \n')
     sys.exit(0)
@@ -103,7 +120,7 @@ def main():
   if args.inputs!='-1':
     
     xs=[]
-    print ('To load input data...')
+    print ('Loading input data... ', end = '', flush = True)
     for path, subdirs, files in os.walk(args.inputs):
       for name in files:
         fname=(os.path.join(path, name))
@@ -111,28 +128,34 @@ def main():
           try:
             image = cv2.imread(fname)
             image = cv2.resize(image, (img_rows, img_cols))
-            image=image.astype('float')
+            image = image.astype('float')
             xs.append((image))
           except: pass
-    print ('Total data loaded: ', len(xs))
-    x_test=np.asarray(xs)
+    x_test = np.asarray(xs)
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
-    raw_data=raw_datat(x_test, None)
+    raw_data = raw_datat(x_test, None)
+    print (len(xs), 'loaded.')
   elif args.mnist:
+    from keras.datasets import mnist
+    print ('Loading MNIST data... ', end = '', flush = True)
     img_rows, img_cols, img_channels = 28, 28, 1
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
     x_test = x_test.astype('float32')
     x_test /= 255
-    raw_data=raw_datat(x_test, y_test)
+    raw_data = raw_datat(x_test, y_test)
+    print ('done.')
   elif args.cifar10:
+    from keras.datasets import cifar10
+    print ('Loading CIFAR10 data... ', end='', flush = True)
     img_rows, img_cols, img_channels = 32, 32, 3
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
     x_test=x_test[0:3000]
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
     x_test = x_test.astype('float32')
     x_test /= 255
-    raw_data=raw_datat(x_test, y_test)
+    raw_data = raw_datat(x_test, y_test)
+    print ('done.')
   else:
     print (' \n == Please input dataset == \n')
     sys.exit(0)
@@ -146,12 +169,18 @@ def main():
 
 
   test_object=test_objectt(dnn, raw_data, criterion, norm)
-  test_object.cond_ratio=cond_ratio
-  test_object.top_classes=top_classes
-  test_object.inp_ub=inp_ub
-  if args.layer_index!='-1':
-    test_object.layer_indices=[]
-    test_object.layer_indices.append(int(args.layer_index))
+  test_object.cond_ratio = cond_ratio
+  test_object.top_classes = top_classes
+  test_object.inp_ub = inp_ub
+  test_object.save_input_func = save_input
+  if args.layer_indexes is not None:
+    try:
+      test_object.layer_indices=[]
+      for layer_index in tuple(args.layer_indexes):
+        layer = dnn.get_layer (index = int (layer_index))
+        test_object.layer_indices.append (dnn.layers.index (layer))
+    except ValueError as e:
+      sys.exit (e)
     if args.feature_index!='-1':
       test_object.feature_indices=[]
       test_object.feature_indices.append(int(args.feature_index))
@@ -179,7 +208,12 @@ def main():
       for l in line.split():
         labels.append(int(l))
     test_object.labels=labels
+
+  test_object.check_layer_indices ()
   deepconcolic(test_object, outs)
 
 if __name__=="__main__":
-  main()
+  try:
+    main ()
+  except KeyboardInterrupt:
+    sys.exit('Interrupted.')
