@@ -511,6 +511,23 @@ class SScCriterion (LayerLocalCriterion, Criterion4FreeSearch, Criterion4RootedS
     # return cl, ssc_pos[1:]
 
 
+  def find_next_rooted_test_target(self) -> Tuple[Input, SScTarget]:
+    # Find a target decision at random:
+    decision_search_attempt = self.get_random ()
+    if decision_search_attempt == None:
+      raise EarlyTermination ('All decision features have been covered.')
+    dec_cl, dec_pos = decision_search_attempt
+    cond_cl = self.layer_imap[dec_cl.prev_layer_index]
+    assert not (is_padding (dec_pos, dec_cl, cond_cl,
+                            post = True, unravel_pos = False))
+    # Try and find an appropriate condition neuron (i.e. based on
+    # Eq. (18)).
+    cond_pos, cond_val = cond_cl.find (np.argmax)
+    cond_cl.inhibit_activation (cond_pos)
+    return (self.test_cases[-1-cond_pos[0]],
+            SScTarget (dec_cl, dec_pos, cond_cl, cond_pos[1:]))
+
+
   # ---
 
   # XXX: To be used when implementing SVcCriterion:

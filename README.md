@@ -83,6 +83,12 @@ To run MC/DC for DNNs on the VGG16 model
 python  deepconcolic.py --vgg16-model --inputs data/ --outputs outs --cond-ratio 0.1 --top-classes 5 --labels labels.txt --criterion ssc
 ```
 
+To run Concolic Sign-sign-coverage (MC/DC) for DNNs on the MNIST model
+
+```
+python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --criterion ssclp --mnist-data --outputs outs
+```
+
 ### Concolic Testing on Lipschitz Constants for DNNs
 
 To run Lipschitz Constant Testing, please refer to instructions in folder "Lipschitz Constant Testing".

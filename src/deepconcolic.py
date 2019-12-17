@@ -44,6 +44,14 @@ def deepconcolic(test_object, outs):
                         setup_analyzer = SScAttackBasedAnalyzer,
                         ref_data = test_object.raw_data)
     engine.run (**report_args)
+  elif test_object.criterion=='ssclp':
+    from pulp_norms import LInfPulp
+    from mcdc_pulp import SScPulpAnalyzer
+    from ssc import setup as ssc_setup
+    engine = ssc_setup (test_object = test_object,
+                        setup_analyzer = SScPulpAnalyzer,
+                        input_metric = LInfPulp ())
+    engine.run (**report_args)
   elif test_object.criterion=='svc':
     outs = setup_output_dir (outs)
     from run_ssc import run_svc
