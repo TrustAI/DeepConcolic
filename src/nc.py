@@ -1,7 +1,8 @@
 from typing import *
 from utils import *
-from engine import (BoolMappedCoverableLayer, TestTarget,
-                    LayerLocalCriterion, Criterion4RootedSearch,
+from engine import (Input, TestTarget,
+                    BoolMappedCoverableLayer, LayerLocalCriterion,
+                    Criterion4RootedSearch,
                     Analyzer4RootedSearch)
 import numpy as np
 
@@ -14,10 +15,10 @@ class NcLayer (BoolMappedCoverableLayer):
   Covered layer that tracks per-neuron activation.
   '''
 
-  def update_with_activations(self, act) -> None:
+  def update_with_new_activations(self, act) -> None:
     if activation_is_relu (self.layer): # todo (???)
       sys.exit ('Unsupported NC-update for activation layer (bug/todo?)')
-    super().update_with_activations (act)
+    super().update_with_new_activations (act)
 
 
 # ---
@@ -56,7 +57,7 @@ class NcAnalyzer (Analyzer4RootedSearch):
 
 
   @abstractmethod
-  def search_input_close_to(self, x, target: NcTarget) -> Optional[Tuple[float, Any]]:
+  def search_input_close_to(self, x, target: NcTarget) -> Optional[Tuple[float, Input]]:
     pass
 
 
@@ -74,12 +75,12 @@ class NcCriterion (LayerLocalCriterion, Criterion4RootedSearch):
     return "NC"
 
 
-  def find_next_rooted_test_target(self) -> Tuple[Any, NcTarget]:
-    cl, nc_pos, nc_value = self.get_max ()
+  def find_next_rooted_test_target(self) -> Tuple[Input, NcTarget]:
+    cl, nc_pos, nc_value, test_case = self.get_max ()
     # ppos = (lambda p: p if len(p) > 1 else p[0])(nc_pos[2:])
     # p1 ('Targeting activation of {} in {} (value = {})'.format(ppos, cl, nc_value))
     cl.inhibit_activation (nc_pos)
-    return self.test_cases[nc_pos[0]], NcTarget(cl, nc_pos[1:])
+    return test_case, NcTarget(cl, nc_pos[1:])
 
 
 # ---

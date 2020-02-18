@@ -117,7 +117,7 @@ def activation_is_relu(layer):
 
 def setup_output_dir (outs, log = True):
   if not os.path.exists(outs):
-    os.system('mkdir -p {0}'.format(outs))
+    os.makedirs(outs)
   if not outs.endswith('/'):
     outs+='/'
   if log: print ('Outputs will go into: {0}'.format(outs))

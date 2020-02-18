@@ -5,6 +5,13 @@ from utils import *
 # ---
 
 
+# Define an alias type for inputs
+Input = NewType("Input", np.ndarray)
+
+
+# ---
+
+
 class Oracle:
   '''
   Oracles can be used to compare any concrete input against a
@@ -190,7 +197,7 @@ class Analyzer4RootedSearch (Analyzer):
   '''
 
   @abstractmethod
-  def search_input_close_to(self, x, target: TestTarget) -> Optional[Tuple[float, Any]]:
+  def search_input_close_to(self, x, target: TestTarget) -> Optional[Tuple[float, Input]]:
     '''
     Generates a new concrete input close to `x`, that fulfills test
     target `target`.
@@ -212,7 +219,7 @@ class Analyzer4FreeSearch (Analyzer):
   '''
 
   @abstractmethod
-  def search_close_inputs(self, target: TestTarget) -> Optional[Tuple[float, Any, Any]]:
+  def search_close_inputs(self, target: TestTarget) -> Optional[Tuple[float, Input, input]]:
     '''
     Generates a new concrete input that fulfills test target `target`.
     
@@ -321,7 +328,6 @@ class Criterion:
   def __init__(self,
                analyzer: Analyzer = None,
                prefer_rooted_search = None,
-               initial_test_cases = None,
                **kwds):
     '''
     A criterion operates based on a `test_object` (to retrieve the DNN
@@ -336,7 +342,6 @@ class Criterion:
     super().__init__(**kwds)
     self.analyzer = analyzer
     self.test_cases = []
-    self.initial_test_cases = initial_test_cases
     self.rooted_search = self._rooted_search (prefer_rooted_search)
 
 
@@ -416,17 +421,16 @@ class Criterion:
     self.test_cases.append (t)
 
 
-  def initialize_search (self, ref_data, report: Report):
+  def initialize_search (self, ref_data, report: Report, initial_test_cases = None):
     '''
     Method called once at the beginning of search.
     '''
     xl = []
-    if self.initial_test_cases is not None:
+    if initial_test_cases is not None:
       p1 ('Initializing with {} randomly selected test case{}.'
-          .format(self.initial_test_cases,
-                  's' if self.initial_test_cases > 1 else ''))
+          .format(initial_test_cases, 's' if initial_test_cases > 1 else ''))
       xl = np.random.default_rng().choice (a = ref_data.data, axis = 0,
-                                           size = self.initial_test_cases)
+                                           size = initial_test_cases)
       for x in xl:
         self.add_new_test_case (x)
     if self.rooted_search:
@@ -437,7 +441,7 @@ class Criterion:
         self.add_new_test_case (x)
 
 
-  def search_next(self) -> Tuple[Union[Tuple[Any, Any, float], None], TestTarget]:
+  def search_next(self) -> Tuple[Union[Tuple[Input, Input, float], None], TestTarget]:
     '''
     Selects a new test target based (see `Criterion4RootedSearch` and
     `Criterion4FreeSearch`), and then uses the analyzer to find a new
@@ -500,7 +504,7 @@ class Criterion4RootedSearch (Criterion):
   '''
 
   @abstractmethod
-  def find_next_rooted_test_target(self) -> Tuple[Any, TestTarget]:
+  def find_next_rooted_test_target(self) -> Tuple[Input, TestTarget]:
     '''
     Seeks a new test target associated with an existing test input
     taken from the set of recorded test cases.
@@ -577,6 +581,7 @@ class Engine:
 
   def run(self,
           setup_report: Callable[[Criterion], Report] = setup_basic_report,
+          initial_test_cases = None,
           max_iterations = None,
           **kwds):
     '''
@@ -595,7 +600,7 @@ class Engine:
                  ' ({} max iterations)'.format (max_iterations)))
     report = setup_report (criterion, **kwds)
 
-    criterion.initialize_search (self.ref_data, report)
+    criterion.initialize_search (self.ref_data, report, initial_test_cases)
 
     coverage = criterion.coverage ()
     p1 ('#0 {}: {.as_prop:10.8%}'.format(criterion, coverage))
@@ -822,21 +827,16 @@ class BoolMappedCoverableLayer (CoverableLayer):
     return pos, acts.item (spos)
 
 
-  def update_with_activations(self, act) -> None:
-    act = copy.copy (act[self.layer_index])
-    # Keep only negative new activation values:
-    # TODO: parameterize this (ditto bottom_act_value)
-    act[act >= 0] = 0
-    self.map = np.logical_and (self.map, act[0])
-    # Append activations after map change
-    self.append_activations (act)
-
-
   def cover(self, pos) -> None:
     self.map[pos] = False
 
 
   def inhibit_activation(self, pos) -> None:
+    '''
+    Inhibit any activation at the given position so that it is not
+    returned by any direct subsequent call to `find` (i.e not
+    precededed by a call to `update_with_new_activations`).
+    '''
     act = self.activations
     while len(pos) != 1:
       act = act[pos[0]]
@@ -844,19 +844,32 @@ class BoolMappedCoverableLayer (CoverableLayer):
     act[pos] = self.bottom_act_value
 
 
+  def update_with_new_activations(self, act) -> None:
+    act = copy.copy (act[self.layer_index])
+    assert len (act) == 1
+    # Keep only negative new activation values:
+    # TODO: parameterize this (ditto bottom_act_value)
+    act[act >= 0] = 0
+    self.map = np.logical_and (self.map, act[0])
+    # Append activations after map change
+    self._append_activations (act)
+
+
+  def _append_activations(self, act):
+    '''
+    Append given activations into the internal buffer.
+    '''
+    if len(self.activations) >= BUFFER_SIZE:
+      self.activations.pop(-1)
+    self.activations.insert(0, act)
+    self._filter_out_covered_activations ()
+
+
   def _filter_out_covered_activations(self):
     for j in range(0, len(self.activations)):
       # Only keep values of non-covered activations
       self.activations[j] = np.multiply(self.activations[j], self.map)
       self.activations[j][self.activations[j] >= 0] = self.bottom_act_value
-
-
-  def append_activations(self, act):
-    if len(self.activations) >= BUFFER_SIZE:
-      self.activations[np.random.randint (0, BUFFER_SIZE)] = act
-    else:
-      self.activations.append (act)
-    self._filter_out_covered_activations ()
 
 
 # ---
@@ -940,10 +953,12 @@ class LayerLocalCriterion (Criterion):
     activations = eval (self.analyzer.dnn, t,
                         is_input_layer (self.analyzer.dnn.layers[0]))
     for cl in self._updatable_layers:
-      cl.update_with_activations (activations)
+      cl.update_with_new_activations (activations)
 
 
-  def get_max(self):
+  def get_max(self) -> Tuple[BoolMappedCoverableLayer, Tuple[int, ...], float, Input]:
+    '''
+    '''
     layer, pos, value = None, None, MIN
     for i, cl in enumerate(self.cover_layers):
       p, v = cl.find (np.argmax)
@@ -955,7 +970,7 @@ class LayerLocalCriterion (Criterion):
     if layer == None:
       sys.exit('incorrect layer indices specified' +
                '(the layer tested shall be either conv or dense layer)')
-    return self.cover_layers[layer], pos, value
+    return self.cover_layers[layer], pos, value, self.test_cases[-1-pos[0]]
 
 
   def get_random(self):

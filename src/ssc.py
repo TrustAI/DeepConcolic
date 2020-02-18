@@ -13,12 +13,11 @@ EPS_MAX=0.3
 
 class ssc_pairt:
 
-  def __init__(self, cond_flags, dec_flag, test_object, cond_layer, cond_pos, dec_layer, dec_pos):
+  def __init__(self, cond_flags, dec_flag, test_object, cond_layer, dec_layer, dec_pos):
     self.cond_flags=cond_flags
     self.dec_flag=dec_flag
     self.test_object=test_object
     self.cond_layer=cond_layer
-    self.cond_pos=cond_pos
     self.dec_layer=dec_layer
     self.dec_pos=dec_pos
 
@@ -72,7 +71,7 @@ def local_search(eval_batch, local_input, ssc_pair, adv_crafter, e_max_input, ss
 
   return d_min, x_ret, diff_map
 
-def ssc_search(eval_batch, raw_data, cond_ratio, cond_layer, cond_pos, dec_layer, dec_pos, adv_crafter, adv_object=None):
+def ssc_search(eval_batch, raw_data, cond_ratio, cond_layer, dec_layer, dec_pos, adv_crafter, adv_object=None):
 
   # NB: What's this for?
   keras.backend.set_learning_phase(False)
@@ -121,7 +120,7 @@ def ssc_search(eval_batch, raw_data, cond_ratio, cond_layer, cond_pos, dec_layer
     cond_flags=acts[dec_layer.prev_layer_index][0]
     cond_flags[cond_flags<=0]=0
     cond_flags=cond_flags.astype(bool)
-    ssc_pair = ssc_pairt(cond_flags, acts[dec_layer.layer_index][0].item(dec_pos)>0, None, cond_layer, cond_pos, dec_layer, dec_pos)
+    ssc_pair = ssc_pairt(cond_flags, acts[dec_layer.layer_index][0].item(dec_pos)>0, None, cond_layer, dec_layer, dec_pos)
 
     diff, x_ret, diff_map_ret = local_search(eval_batch, data[i], ssc_pair, adv_crafter, e_max_input, ssc_ratio)
 
@@ -186,7 +185,7 @@ def local_v_search(dnn, local_input, ssc_pair, adv_crafter, e_max_input, ssc_rat
 
   return d_min, x_ret
 
-def svc_search(test_object, cond_layer, cond_pos, dec_layer, dec_pos, adv_crafter, dec_ub):
+def svc_search(test_object, cond_layer, dec_layer, dec_pos, adv_crafter, dec_ub):
 
   data=test_object.raw_data.data
   dnn=test_object.dnn
@@ -208,7 +207,6 @@ def svc_search(test_object, cond_layer, cond_pos, dec_layer, dec_pos, adv_crafte
     if dec1<=0: continue
     if dec_ub>2*dec1: continue
 
-    #cond1=(acts[cond_layer.layer_index][0].item(cond_pos))
     cond_flags=acts[cond_layer.layer_index][0]
     cond_flags[cond_flags<=0]=0
     cond_flags=cond_flags.astype(bool)
@@ -242,7 +240,6 @@ def svc_search(test_object, cond_layer, cond_pos, dec_layer, dec_pos, adv_crafte
       #if not np.logical_xor(dec1>0, dec2>0): continue
       print ('****', e_max_input, dec1, dec2, dec_ub, dec2>dec_ub)
       if dec2<=dec_ub: continue
-      #cond2=(adv_acts[cond_layer.layer_index][0].item(cond_pos))
       count+=1
 
       adv_cond_flags=adv_acts[cond_layer.layer_index][0]
@@ -257,7 +254,7 @@ def svc_search(test_object, cond_layer, cond_pos, dec_layer, dec_pos, adv_crafte
         to_stop=True
         break
 
-      ssc_pair = ssc_pairt(cond_flags, acts[dec_layer.layer_index][0].item(dec_pos)>0, test_object, cond_layer, cond_pos, dec_layer, dec_pos)
+      ssc_pair = ssc_pairt(cond_flags, acts[dec_layer.layer_index][0].item(dec_pos)>0, test_object, cond_layer, dec_layer, dec_pos)
 
       print ('start local v search')
       diff, x_ret=local_v_search(test_object.dnn, data[i], ssc_pair, adv_crafter, e_max_input, ssc_ratio, dec_ub)
@@ -289,8 +286,8 @@ def svc_search(test_object, cond_layer, cond_pos, dec_layer, dec_pos, adv_crafte
 
 
 from typing import *
-from engine import (BoolMappedCoverableLayer, TestTarget,
-                    LayerLocalCriterion,
+from engine import (Input, TestTarget,
+                    BoolMappedCoverableLayer, LayerLocalCriterion,
                     Criterion4FreeSearch, Criterion4RootedSearch,
                     Analyzer4FreeSearch, Analyzer4RootedSearch,
                     EarlyTermination)
@@ -341,18 +338,9 @@ class SScLayer (BoolMappedCoverableLayer):
   #   self.ubs = np.zeros((1,) + self.layer.output.shape[1:], dtype = float)
 
 
-  def update_with_activations(self, act) -> None:
-    # if self.layer_index <= 1: return
 
-    prior_act = act[self.layer_index # - 1
-                    ] # ????
 
-    new_act = -1.0 * np.abs(np.array(prior_act))
-    new_act[new_act == 0] = -0.0000001
-    new_act = np.multiply(new_act, self.map)
-    new_act[new_act == 0] = MIN
 
-    self.append_activations (new_act)
 
 
 
@@ -380,11 +368,35 @@ class SScTarget (NamedTuple, TestTarget):
 
   @property
   def decision_position(self):
+    '''
+    This property identifies one particular activation (within a list
+    of activations).
+    '''
     return self.decision_pos
 
 
   @property
   def condition_position(self):
+    '''
+    This property identifies one particular activation (within a list
+    of activations).
+    '''
+    return self.condition_pos
+
+
+  @property
+  def decision_neuron(self):
+    '''
+    Decision neuron
+    '''
+    return self.decision_pos[0]
+
+
+  @property
+  def condition_neuron(self):
+    '''
+    Condition neuron.
+    '''
     return self.condition_pos[0] if self.condition_pos is not None else None
 
 
@@ -418,7 +430,7 @@ class SScAnalyzer4FreeSearch (Analyzer4FreeSearch):
   """
 
   @abstractmethod
-  def search_close_inputs(self, target: SScTarget) -> Optional[Tuple[float, Any, Any]]:
+  def search_close_inputs(self, target: SScTarget) -> Optional[Tuple[float, Input, Input]]:
     raise NotImplementedError
 
 
@@ -432,7 +444,7 @@ class SScAnalyzer4RootedSearch (Analyzer4RootedSearch):
   """
 
   @abstractmethod
-  def search_input_close_to(self, x, target: SScTarget) -> Optional[Tuple[float, Any, Any]]:
+  def search_input_close_to(self, x, target: SScTarget) -> Optional[Tuple[float, Input, Input]]:
     raise NotImplementedError
 
 
@@ -497,6 +509,23 @@ class SScCriterion (LayerLocalCriterion, Criterion4FreeSearch, Criterion4RootedS
     # ppos = (lambda p: p if len(p) > 1 else p[0])(ssc_pos[1:])
     # tp1 ('Targeting decision {} in {}'.format(ppos, cl))
     # return cl, ssc_pos[1:]
+
+
+  def find_next_rooted_test_target(self) -> Tuple[Input, SScTarget]:
+    # Find a target decision at random:
+    decision_search_attempt = self.get_random ()
+    if decision_search_attempt == None:
+      raise EarlyTermination ('All decision features have been covered.')
+    dec_cl, dec_pos = decision_search_attempt
+    cond_cl = self.layer_imap[dec_cl.prev_layer_index]
+    assert not (is_padding (dec_pos, dec_cl, cond_cl,
+                            post = True, unravel_pos = False))
+    # Try and find an appropriate condition neuron (i.e. based on
+    # Eq. (18)).
+    cond_pos, cond_val = cond_cl.find (np.argmax)
+    cond_cl.inhibit_activation (cond_pos)
+    return (self.test_cases[-1-cond_pos[0]],
+            SScTarget (dec_cl, dec_pos, cond_cl, cond_pos[1:]))
 
 
   # ---
@@ -568,13 +597,13 @@ class SScAttackBasedAnalyzer (SScAnalyzer4FreeSearch):
     return self.metric
 
 
-  def search_close_inputs(self, target: SScTarget) -> Optional[Tuple[float, Any, Any]]:
-    dec_layer, dec_pos, cond_pos = target.decision_layer, target.decision_position, target.condition_position
+  def search_close_inputs(self, target: SScTarget) -> Optional[Tuple[float, Input, Input]]:
+    dec_layer, dec_pos = target.decision_layer, target.decision_position
     assert dec_layer.prev_layer_index is not None
     cond_layer = self.dnn.layers[dec_layer.prev_layer_index]
     d_min, d_norm, new_image, old_image, old_labels, cond_diff_map = (
       ssc_search (self.eval_batch, self.ref_data, self.cond_ratio,
-                  cond_layer, cond_pos, dec_layer, dec_pos, self.adv_crafter))
+                  cond_layer, dec_layer, dec_pos, self.adv_crafter))
     tp1 ('#Condition changes: {0}, norm distance: {1}'.format(d_min, d_norm))
     feasible = (d_min <= self.cond_ratio * np.prod(cond_layer.output.shape[1:]) or
                 d_min == 1)             # ???
