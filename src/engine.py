@@ -1,5 +1,6 @@
 from typing import *
 from utils import *
+from sklearn.model_selection import train_test_split
 
 
 # ---
@@ -151,8 +152,8 @@ class Analyzer:
 
     - name: short description of what's computed;
 
-    - layer_indexes: a list of indexes for layers whose activations
-      values are needed;
+    - layer_indexes: a list or set of indexes for layers whose
+      activations values are needed;
     
     - once: a callable taking a mapping (as a dictionary) from each
       layer index given in `layer_indexes` to activation values for
@@ -184,6 +185,43 @@ class Analyzer:
 
     - print (optional): a function that prints a summary of results.
     """
+    return None
+
+
+  def stat_based_cv_initializers(self):
+    """
+    Stat-based initialization steps with basic cross-validation.
+
+    Returns a list of dictionaries (or `None`) with the following
+    entries:
+
+    - name: short description of what's computed;
+
+    - layer_indexes: a list or set of indexes for layers whose
+      activations values are needed;
+
+    - test_size & train_size: (as in
+      `sklearn.model_selection.train_test_split`)
+
+    - train: a callable taking some training data as mapping (as a
+      dictionary) from each layer index given in `layer_indexes` to
+      activation values for the corresponding layer, and returns some
+      arbitrary object; this is to be called only once during
+      initialization;
+
+    - test: a callable taking some test data and associated labels as
+      two separate mappings (as a dictionary) from each layer index
+      given in `layer_indexes` to activation values for the
+      corresponding layer.
+    """
+    # - accum_test: a callable that is called with the object returned
+    #   by `train`, along with batched activation values for every layer
+    #   on the test data, and returns a new or updated accumulator.
+    #   This is called at least once.
+    #
+    # - final_test: optional function that is called with the final test
+    #   accumulator once all batched test activations have been passed
+    #   to  `accum_test`.
     return None
 
 
@@ -492,6 +530,13 @@ class Criterion:
     return None
 
 
+  def stat_based_cv_initializers(self):
+    '''
+    Ditto `Analyzer.stat_based_cv_initializers`.
+    '''
+    return None
+
+
 
 # ---
 
@@ -661,49 +706,66 @@ class Engine:
     
     ggi = self.criterion.stat_based_basic_initializers () or []
     gi = self.criterion.stat_based_incremental_initializers () or []
+    cv = self.criterion.stat_based_cv_initializers () or []
 
     # Run stats on batched activations, and/or accumulate for layers
     # that require full activations for their stats.
 
-    if gi == [] and ggi == []:
+    if gi == [] and ggi == [] and cv == []:
       return
 
-    if gi != []:
+    if gi != [] and ggi != []:
+      if gi != []:
+        np1 ('Computing {}... '
+             .format(' & '.join((map ((lambda gi: gi['name']), gi)))))
+      else:
+        np1 ('Aggregating activations required for {}... '
+             .format(' & '.join((map ((lambda gg: gg['name']), ggi)))))
+      acc = [ None for _ in gi ]
+      gacc_indexes = set().union (*(gg['layer_indexes'] for gg in ggi))
+      gacc = dict.fromkeys (gacc_indexes, np.array([]))
+      for act in self._batched_activations_on_raw_data ():
+        acc = [ g['accum'](act, acc) for g, acc in zip(gi, acc) ]
+        if ggi != []:
+          for j in gacc_indexes:
+            gacc[j] = (np.concatenate ((gacc[j], act[j]), axis = 0)
+                       if gacc[j].any () else np.copy (act[j]))
+      for g, acc in zip(gi, acc):
+        if 'final' in g: g['final'](acc)
+      print ('done.')
+      for g in gi:
+        if 'print' in g: print (g['print']())
+      print ('', end = '', flush = True)
+  
+      # Now we can pass the aggregated activations to basic stat
+      # initializers.
+
+      if ggi == []:
+        return
+
       np1 ('Computing {}... '
-           .format(' & '.join((map ((lambda gi: gi['name']), gi)))))
-    else:
-      np1 ('Aggregating activations required for {}... '
            .format(' & '.join((map ((lambda gg: gg['name']), ggi)))))
-    acc = [ None for _ in gi ]
-    gacc_indexes = set().union (*(gg['layer_indexes'] for gg in ggi))
-    gacc = dict.fromkeys (gacc_indexes, np.array([]))
-    for act in self._batched_activations_on_raw_data ():
-      acc = [ g['accum'](act, acc) for g, acc in zip(gi, acc) ]
-      if ggi != []:
-        for j in gacc_indexes:
-          gacc[j] = (np.concatenate ((gacc[j], act[j]), axis = 0)
-                     if gacc[j].any () else np.copy (act[j]))
-    for g, acc in zip(gi, acc):
-      if 'final' in g: g['final'](acc)
-    print ('done.')
-    for g in gi:
-      if 'print' in g: print (g['print']())
-    print ('', end = '', flush = True)
+      for gg in ggi:
+        gg['once']({ j: gacc[j] for j in gg['layer_indexes']})
+      print ('done.')
+      for gg in ggi:
+        if 'print' in gg: print (gg['print']())
+      print (end = '', flush = True)
 
-    # Now we can pass the aggregated activations to basic stat
-    # initializers.
+    if cv != []:
+      idxs = np.arange (len (self.ref_data.data))
+      for x in cv:
+        np1 ('Computing {}... ' .format(x['name']))
+        train_idxs, test_idxs = train_test_split (idxs,
+                                                  test_size = x['test_size'],
+                                                  train_size = x['train_size'])
+        acts = self._activations_on_indexed_data (train_idxs)
+        acc = x['train']({ j: acts[j] for j in x['layer_indexes'] })
 
-    if ggi == []:
-      return
-
-    np1 ('Computing {}... '
-         .format(' & '.join((map ((lambda gg: gg['name']), ggi)))))
-    for gg in ggi:
-      gg['once']({ j: gacc[j] for j in gg['layer_indexes']})
-    print ('done.')
-    for gg in ggi:
-      if 'print' in gg: print (gg['print']())
-    print (end = '', flush = True)
+        if 'test' in x:
+          acts = self._activations_on_indexed_data (test_idxs)
+          lbls = self.ref_data.labels[test_idxs]
+          x['test']({ j: acts[j] for j in x['layer_indexes'] }, lbls)
 
 
   def _batched_activations_on_raw_data(self):
@@ -711,6 +773,10 @@ class Engine:
                               len (self.ref_data.data) // 1000 + 1)
     for batch in batches:
       yield (self.criterion.analyzer.eval_batch (batch, allow_input_layer = True))
+
+  def _activations_on_indexed_data(self, indexes):
+    batch = self.ref_data.data[indexes]
+    return self.criterion.analyzer.eval_batch (batch, allow_input_layer = True)
 
 
   # ---
