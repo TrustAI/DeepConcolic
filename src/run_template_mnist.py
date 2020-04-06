@@ -1,5 +1,3 @@
-#!/home/syc/anaconda3/envs/shap/bin/python
-#print ('hello')
 import argparse
 import sys
 import os
@@ -60,11 +58,11 @@ def main():
   except:
       print ('corrupt input...to exit...')
       #os.system('rm {0}'.format(args.mutants[0])) ## remove corrupted mutants
-      sys.exit()
+      sys.exit(0)
 
   if flag_diff(origins, mutants) or not flag_coverage(origins, mutants):
       #os.system('rm {0}'.format(args.mutants[0])) ## remove corrupted mutants
-      sys.exit()
+      sys.exit(0)
 
   dnn = keras.models.load_model(args.model)
   #dnn.summary()
@@ -77,7 +75,7 @@ def main():
   if not ys1==ys2: raise
   else:
       #os.system('rm {0}'.format(args.mutants[0])) ## remove corrupted mutants
-      sys.exit()
+      sys.exit(1)
 
 if __name__=="__main__":
     main()
