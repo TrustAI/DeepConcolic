@@ -3,6 +3,7 @@ import sys
 import os
 import cv2
 import warnings
+from deepconcolic_fuzz import deepconcolic_fuzz
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -98,6 +99,13 @@ def main():
   parser.add_argument("--feature-index", dest="feature_index", default="-1",
                     help="to test a particular feature map", metavar="INT")
 
+  # fuzzing params
+  parser.add_argument("--fuzzing", dest='fuzzing', help="to start fuzzing", action="store_true")
+  parser.add_argument("--num-tests", dest="num_tests", default="1000",
+                    help="number of tests to generate", metavar="INT")
+  parser.add_argument("--num-processes", dest="num_processes", default="1",
+                    help="number of processes to use", metavar="INT")
+
   args=parser.parse_args()
 
 
@@ -127,11 +135,13 @@ def main():
 
   if args.inputs!='-1':
     
+    file_list = [] # fuzzing_params
     xs=[]
     print ('Loading input data... ', end = '', flush = True)
     for path, subdirs, files in os.walk(args.inputs):
       for name in files:
         fname=(os.path.join(path, name))
+        file_list.append(fname) # fuzzing params
         if fname.endswith('.jpg') or fname.endswith('.png'):
           try:
             image = cv2.imread(fname)
@@ -216,6 +226,14 @@ def main():
       for l in line.split():
         labels.append(int(l))
     test_object.labels=labels
+
+  # fuzzing params
+  test_object.num_tests, test_object.num_processes = int(args.num_tests), int(args.num_processes)
+  test_object.file_list = file_list
+  test_object.model_name = args.model
+  if args.fuzzing:
+    deepconcolic_fuzz(test_object, outs)
+    sys.exit(0)
 
   test_object.check_layer_indices ()
   deepconcolic(test_object, outs)

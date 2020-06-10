@@ -305,6 +305,11 @@ class test_objectt:
     self.layer_indices=None
     self.feature_indices=None
     self.save_input_func = None
+    # fuzzing params
+    self.num_tests = None
+    self.num_processes = None
+    self.file_list = None
+    self.model_name = None
 
   def __repr__(self):
     return 'criterion {0} with norm {1}'.format (self.criterion, self.norm)
