@@ -232,11 +232,12 @@ def testable_layer (dnn, idx,
           not (exclude_direct_input_succ and
                (idx == 0 or idx == 1 and is_input_layer (dnn.layers[0]))))
 
-def get_cover_layers(dnn, constr, layer_indices = None,
-                     exclude_direct_input_succ = False):
+def get_cover_layers (dnn, constr, layer_indices = None,
+                      exclude_direct_input_succ = False,
+                      exclude_output_layer = True):
   # All coverable layers:
-  cls = [ (l, layer) for l, layer in enumerate(dnn.layers[:-1])
-          if testable_layer (dnn, l) ]
+  layers = dnn.layers[:-1] if exclude_output_layer else dnn.layers
+  cls = [ (l, layer) for l, layer in enumerate (layers) if testable_layer (dnn, l) ]
   return [ constr (layer[1], layer[0],
                    prev = (cls[l-1][0] if l > 0 else None),
                    succ = (cls[l+1][1] if l < len(cls) - 1 else None))

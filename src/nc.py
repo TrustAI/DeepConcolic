@@ -16,8 +16,8 @@ class NcLayer (BoolMappedCoverableLayer):
   '''
 
   def update_with_new_activations(self, act) -> None:
-    if activation_is_relu (self.layer): # todo (???)
-      sys.exit ('Unsupported NC-update for activation layer (bug/todo?)')
+    # if activation_is_relu (self.layer): # todo (???)
+    #   sys.exit ('Unsupported NC-update for activation layer (bug/todo?)')
     super().update_with_new_activations (act)
 
 
