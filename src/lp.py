@@ -33,8 +33,7 @@ class LpLinearMetric:
 
 class LpSolver4DNN:
 
-  def __init__(self, # setup_layer_encoders, create_base_problem, lp_dnn = None, first = 0, upto = None,
-               **kwds):
+  def __init__(self, **kwds):
     super().__init__(**kwds)
 
   def build_lp(self, dnn, build_encoder, link_encoders, create_base_problem,
@@ -64,6 +63,7 @@ class LpSolver4DNN:
   def find_constrained_input(self, problem,
                              metric: LpLinearMetric,
                              x: np.ndarray,
+                             extra_constrs = [],
                              name_prefix = None) -> Tuple[float, np.ndarray]:
     raise NotImplementedError
 
@@ -88,8 +88,8 @@ class PulpLinearMetric (LpLinearMetric):
 
 
   @abstractmethod
-  def pulp_constrain(self, problem, dist_var, in_vars, values,
-                     name_prefix = 'input_activations_constraint') -> None:
+  def pulp_constrain(self, dist_var, in_vars, values,
+                     name_prefix = 'input_activations_constraint') -> Sequence[LpConstraint]:
     raise NotImplementedError
 
 
@@ -127,39 +127,47 @@ class PulpSolver4DNN (LpSolver4DNN):
                create_problem = pulp_encoding.create_base_problem,
                first = 0, upto = None):
     super().build_lp (dnn, build_encoder, link_encoders, create_problem, first, upto)
+    # That's the objective:
+    self.d_var = LpVariable(metric.dist_var_name,
+                            lowBound = metric.draw_lower_bound (),
+                            upBound = metric.upper_bound)
+    for _, p in self.base_constraints.items ():
+      p += self.d_var
 
 
   def for_layer(self, cl) -> Tuple[pulp.LpProblem, PulpVarMap]:
     index = cl.layer_index + (0 if activation_is_relu (cl.layer) else 1)
-    return self.base_constraints[index].copy ()
+    return self.base_constraints[index]
 
 
   def find_constrained_input(self, problem: pulp.LpProblem,
                              metric: PulpLinearMetric,
                              x: np.ndarray,
+                             extra_constrs = [],
                              name_prefix = 'x_0_0'):
-
-    d_var = LpVariable(metric.dist_var_name,
-                       lowBound = metric.draw_lower_bound (),
-                       upBound = metric.upper_bound)
-    problem += d_var
-
     in_vars = self.input_layer_encoder.pulp_in_vars ()
     assert (in_vars.shape == x.shape)
-    metric.pulp_constrain (problem, d_var, in_vars, x, name_prefix)
+    cstrs = extra_constrs
+    cstrs.extend(metric.pulp_constrain (self.d_var, in_vars, x, name_prefix))
 
-    tp1 ('LP solving: {} constraints'.format(len(problem.constraints)))
+    for c in cstrs: problem += c
+
+    ctp1 ('LP solving: {} constraints'.format(len(problem.constraints)))
+    assert (problem.objective is not None)
     problem.solve (self.solver)
     tp1 ('Solved!')
 
-    if LpStatus[problem.status] != 'Optimal':
-      return None
+    result = None
+    if LpStatus[problem.status] == 'Optimal':
+      res = np.zeros (in_vars.shape)
+      for idx, var in np.ndenumerate (in_vars):
+        res[idx] = pulp.value (var)
+      val = pulp.value(problem.objective)
+      result = val, res
 
-    res = np.zeros(in_vars.shape)
-    for idx, var in np.ndenumerate (in_vars):
-      res[idx] = pulp.value (var)
-
-    return pulp.value(problem.objective), res
+    for c in cstrs: del problem.constraints[c.name]
+    del cstrs, extra_constrs
+    return result
 
 
 # ---

@@ -37,23 +37,26 @@ class SScPulpAnalyzer (SScAnalyzer4RootedSearch, LayerLocalAnalyzer, PulpSolver4
     assert cond_layer is not None
     
     problem = self.for_layer (dec_layer)
+    cstrs = []
 
     # Augment problem with activation constraints up to condition
     # layer:
     prev = self.input_layer_encoder
     for lc in self.layer_encoders:
       if lc.layer_index < cond_layer.layer_index: # < k
-        lc.pulp_replicate_activations (problem, activations, prev)
+        cstrs.extend(lc.pulp_replicate_activations (problem, activations, prev))
       elif lc.layer_index == cond_layer.layer_index: # == k
-        lc.pulp_replicate_activations (problem, activations, prev,
-                                       exclude = (lambda nidx: nidx == cond_neuron))
-        lc.pulp_negate_activation (problem, activations, cond_neuron, prev)
+        cstrs.extend(lc.pulp_replicate_activations (problem, activations, prev,
+                                                    exclude = (lambda nidx: nidx == cond_neuron)))
+        cstrs.extend(lc.pulp_negate_activation (problem, activations, cond_neuron, prev))
       elif lc.layer_index == dec_layer.layer_index:  # == k + 1
-        lc.pulp_negate_activation (problem, activations, dec_neuron, prev)
+        cstrs.extend(lc.pulp_negate_activation (problem, activations, dec_neuron, prev))
         break
       prev = lc
 
-    res = self.find_constrained_input (problem, self.metric, x)
+    res = self.find_constrained_input (problem, self.metric, x,
+                                       extra_constrs = cstrs)
+
     if not res:
       return None
     else:

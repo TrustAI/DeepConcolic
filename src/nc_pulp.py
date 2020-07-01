@@ -31,6 +31,7 @@ class NcPulpAnalyzer (NcAnalyzer, LayerLocalAnalyzer, PulpSolver4DNN):
   def search_input_close_to(self, x, target: NcTarget):
     problem = self.for_layer (target.layer)
     activations = eval_batch (self.dnn, np.array([x]))
+    cstrs = []
 
     # Augment problem with activation constraints up to layer of
     # target:
@@ -38,15 +39,17 @@ class NcPulpAnalyzer (NcAnalyzer, LayerLocalAnalyzer, PulpSolver4DNN):
     prev = self.input_layer_encoder
     for lc in self.layer_encoders:
       if lc.layer_index < target.layer.layer_index:
-        lc.pulp_replicate_activations (problem, activations, prev)
+        cstrs.extend(lc.pulp_replicate_activations (activations, prev))
         prev = lc
       else:
-        lc.pulp_replicate_activations (problem, activations, prev,
-                                       exclude = (lambda nidx: nidx == target_neuron))
-        lc.pulp_negate_activation (problem, activations, target_neuron, prev)
+        cstrs.extend(lc.pulp_replicate_activations (activations, prev,
+                                                    exclude = (lambda nidx: nidx == target_neuron)))
+        cstrs.extend(lc.pulp_negate_activation (activations, target_neuron, prev))
         break
 
-    res = self.find_constrained_input (problem, self.metric, x)
+    res = self.find_constrained_input (problem, self.metric, x,
+                                       extra_constrs = cstrs)
+
     if not res:
       return None
     else:
