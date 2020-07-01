@@ -3,7 +3,7 @@ from typing import *
 import pulp
 import pulp_encoding
 from pulp import *
-from utils import tp1, p1, activation_is_relu
+from utils import *
 import numpy as np
 
 
@@ -33,11 +33,14 @@ class LpLinearMetric:
 
 class LpSolver4DNN:
 
-  def __init__(self, setup_layer_encoders, create_base_problem, lp_dnn = None, first = 0, upto = None, **kwds):
+  def __init__(self, # setup_layer_encoders, create_base_problem, lp_dnn = None, first = 0, upto = None,
+               **kwds):
     super().__init__(**kwds)
-    dnn = lp_dnn
 
-    layer_encoders, input_layer_encoder, var_names = setup_layer_encoders (dnn, first, upto)
+  def build_lp(self, dnn, build_encoder, link_encoders, create_base_problem,
+               first = 0, upto = None):
+
+    layer_encoders, input_layer_encoder, var_names = link_encoders (dnn, build_encoder, first, upto)
     tp1 ('{} LP variables have been collected.'
          .format(sum(x.size for x in var_names)))
     self.input_layer_encoder = input_layer_encoder
@@ -99,20 +102,31 @@ PulpVarMap = NewType('PulpVarMap', Sequence[np.ndarray])
 class PulpSolver4DNN (LpSolver4DNN):
 
   def __init__(self, **kwds):
+    # if solvers.CPLEX_PY ().available ():
+    #   self.solver = CPLEX_PY (timeLimit = 10 * 60, msg = False)
+    #   print ('PuLP: CPLEX_PY backend selected (with 10 minutes time limit).')
+    # el
     if solvers.CPLEX ().available ():
-      self.solver = CPLEX (timeLimit = 5 * 60, msg = False)
-      print ('PuLP: CPLEX backend selected (with 5 hours time limit).')
-    elif solvers.GLPK ().available ():
-      self.solver = GLPK ()
-      print ('PuLP: GLPK backend selected.')
-      print ('PuLP: WARNING: GLPK does not support time limit.')
+      self.solver = CPLEX (timeLimit = 10 * 60, msg = False)
+      print ('PuLP: CPLEX backend selected (with 10 minutes time limit).')
+    # elif solvers.GLPK ().available ():
+    #   self.solver = GLPK ()
+    #   print ('PuLP: GLPK backend selected.')
+    #   print ('PuLP: WARNING: GLPK does not support time limit.')
     else:
       self.solver = None
       print ('PuLP: CBC backend selected.')
       print ('PuLP: WARNING: CBC does not support time limit.')
 
-    super().__init__(pulp_encoding.setup_layer_encoders,
-                     pulp_encoding.create_base_problem, **kwds)
+    super().__init__(**kwds)
+
+
+  def build_lp(self, dnn, metric: PulpLinearMetric,
+               build_encoder = pulp_encoding.strict_encoder,
+               link_encoders = pulp_encoding.setup_layer_encoders,
+               create_problem = pulp_encoding.create_base_problem,
+               first = 0, upto = None):
+    super().build_lp (dnn, build_encoder, link_encoders, create_problem, first, upto)
 
 
   def for_layer(self, cl) -> Tuple[pulp.LpProblem, PulpVarMap]:

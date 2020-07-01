@@ -106,7 +106,8 @@ def main():
   cond_ratio=float(args.cond_ratio)
   top_classes=int(args.top_classes)
 
-  raw_data=None
+  test_data=None
+  train_data = None
   img_rows, img_cols, img_channels = int(args.img_rows), int(args.img_cols), int(args.img_channels)
 
   dnn = None
@@ -141,7 +142,7 @@ def main():
           except: pass
     x_test = np.asarray(xs)
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
-    raw_data = raw_datat(x_test, None)
+    test_data = raw_datat(x_test, None)
     print (len(xs), 'loaded.')
   elif args.mnist:
     from keras.datasets import mnist
@@ -151,18 +152,24 @@ def main():
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
     x_test = x_test.astype('float32')
     x_test /= 255
-    raw_data = raw_datat(x_test, y_test)
+    test_data = raw_datat(x_test, y_test, 'mnist')
+    x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, img_channels)
+    x_train = x_train.astype('float32')
+    x_train /= 255
+    train_data = raw_datat(x_train, y_train, 'mnist')
     print ('done.')
   elif args.cifar10:
     from keras.datasets import cifar10
     print ('Loading CIFAR10 data... ', end='', flush = True)
     img_rows, img_cols, img_channels = 32, 32, 3
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-    x_test=x_test[0:3000]
+    x_test = x_test[0:3000]             # select only a few...
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
-    x_test = x_test.astype('float32')
-    x_test /= 255
-    raw_data = raw_datat(x_test, y_test)
+    x_test = x_test.astype('float32')  / 255.
+    test_data = raw_datat(x_test, y_test[0:3000], 'cifar10')
+    x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, img_channels)
+    x_train = x_train.astype('float32') / 255.
+    train_data = raw_datat(x_train, y_train, 'cifar10')
     print ('done.')
   else:
     print (' \n == Please input dataset == \n')
@@ -176,7 +183,7 @@ def main():
     sys.exit(0)
 
 
-  test_object=test_objectt(dnn, raw_data, criterion, norm)
+  test_object=test_objectt(dnn, test_data, train_data, criterion, norm)
   test_object.cond_ratio = cond_ratio
   test_object.top_classes = top_classes
   test_object.inp_ub = inp_ub

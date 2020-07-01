@@ -283,16 +283,18 @@ def eval(o, im, having_input_layer = False):
 # ---
 
 class raw_datat:
-  def __init__(self, data, labels):
+  def __init__(self, data, labels, name = 'unknown'):
     self.data=data
     self.labels=labels
+    self.name = name
     
 
 
 class test_objectt:
-  def __init__(self, dnn, raw_data, criterion, norm):
+  def __init__(self, dnn, test_data, train_data, criterion, norm):
     self.dnn=dnn
-    self.raw_data=raw_data
+    self.raw_data=test_data
+    self.train_data = train_data
     ## test config
     self.norm=norm
     self.criterion=criterion
@@ -480,13 +482,8 @@ class Coverage:
 
 
   @property
-  def covered(self) -> int:
-    return self.c
-
-
-  @property
-  def not_covered(self) -> int:
-    return self.total - self.c
+  def done(self) -> bool:
+    return self.total == self.c
 
 
   @property

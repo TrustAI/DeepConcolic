@@ -565,7 +565,8 @@ def setup (test_object = None, criterion_args: dict = {}, **kwds):
   return engine_setup (test_object = test_object,
                        cover_layers = cover_layers,
                        setup_criterion = SScCriterion,
-                       criterion_args = criterion_args,
+                       criterion_args = { 'feature_indices': test_object.feature_indices,
+                                          **criterion_args },
                        **kwds)
 
 
@@ -583,7 +584,7 @@ from norms import LInf
 
 class SScAttackBasedAnalyzer (SScAnalyzer4FreeSearch):
 
-  def __init__(self, _clayers, linf_args = {}, cond_ratio = 0.01, ref_data = None, **kwds):
+  def __init__(self, linf_args = {}, cond_ratio = 0.01, ref_data = None, **kwds):
     super().__init__(**kwds)
     self.metric = LInf (**linf_args)
     self.cond_ratio = cond_ratio

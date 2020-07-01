@@ -6,21 +6,22 @@ import numpy as np
 
 # ---
 
+from engine import LayerLocalAnalyzer
 from nc import NcAnalyzer, NcTarget
 from lp import PulpLinearMetric, PulpSolver4DNN
 
 
-class NcPulpAnalyzer (NcAnalyzer, PulpSolver4DNN):
+class NcPulpAnalyzer (NcAnalyzer, LayerLocalAnalyzer, PulpSolver4DNN):
 
-  def __init__(self, clayers,
-               input_metric: PulpLinearMetric = None,
-               analyzed_dnn = None,
-               **kwds):
+  def __init__(self, input_metric: PulpLinearMetric = None, **kwds):
     assert isinstance (input_metric, PulpLinearMetric)
+    super().__init__(**kwds)
     self.metric = input_metric
-    super().__init__(analyzed_dnn = analyzed_dnn, lp_dnn = analyzed_dnn,
-                     upto = deepest_tested_layer (analyzed_dnn, clayers),
-                     **kwds)
+
+
+  def finalize_setup(self, clayers):
+    super().build_lp (self.dnn, self.metric,
+                      upto = deepest_tested_layer (self.dnn, clayers))
 
 
   def input_metric(self):

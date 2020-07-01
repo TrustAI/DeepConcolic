@@ -52,13 +52,9 @@ class NcAnalyzer (Analyzer4RootedSearch):
   designated layer.
   '''
 
-  def __init__(self, **kwds):
-    super().__init__(**kwds)
-
-
   @abstractmethod
-  def search_input_close_to(self, x, target: NcTarget) -> Optional[Tuple[float, Input]]:
-    pass
+  def search_input_close_to(self, x: Input, target: NcTarget) -> Optional[Tuple[float, Input]]:
+    raise NotImplementedError
 
 
 # ---
@@ -88,8 +84,7 @@ class NcCriterion (LayerLocalCriterion, Criterion4RootedSearch):
 
 from engine import setup as engine_setup
 
-def setup (test_object = None,
-           **kwds):
+def setup (test_object = None, criterion_args: dict = {}, **kwds):
 
   setup_layer = (
     lambda l, i, **kwds: NcLayer (layer = l, layer_index = i,
@@ -101,6 +96,8 @@ def setup (test_object = None,
   return engine_setup (test_object = test_object,
                        cover_layers = cover_layers,
                        setup_criterion = NcCriterion,
+                       criterion_args = { 'feature_indices': test_object.feature_indices,
+                                          **criterion_args },
                        **kwds)
 
 

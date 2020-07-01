@@ -13,7 +13,7 @@ class NcL0Analyzer (NcAnalyzer, L0Analyzer):
   L0 norm.
   '''
 
-  def __init__(self, _clayers, l0_args = {}, **kwds):
+  def __init__(self, l0_args = {}, **kwds):
     super().__init__(**kwds)
     self.norm = L0 (**l0_args)
 
