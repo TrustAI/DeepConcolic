@@ -8,17 +8,20 @@ except:
   import keras
 
 import numpy as np
-from PIL import Image
 import copy
 import sys
 import os
 import cv2
 
+COLUMNS = os.getenv ('COLUMNS', default = '80')
+P1F = '{:<' + COLUMNS + '}'
+N1F = '\n{:<' + COLUMNS + '}'
+
 def tp1(x):
-  print ('{:<80}'.format(x), end = '\r', flush = True)
+  print (P1F.format(x), end = '\r', flush = True)
 
 def ctp1(x):
-  print ('\n{:<80}'.format(x), end = '\r', flush = True)
+  print (N1F.format(x), end = '\r', flush = True)
 
 def np1(x):
   print (x, end = '', flush = True)
@@ -27,10 +30,10 @@ def cnp1(x):
   print ('\n', x, sep = '', end = '', flush = True)
 
 def p1(x):
-  print ('{:<80}'.format(x))
+  print (P1F.format(x))
 
 def cp1(x):
-  print ('\n{:<80}'.format(x))
+  print (N1F.format(x))
 
 
 def xtuple(t):
