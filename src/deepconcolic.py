@@ -38,24 +38,34 @@ def deepconcolic(test_object, outs):
       print('\n not supported norm... {0}\n'.format(test_object.norm))
       sys.exit(0)
     engine.run (**report_args)
-  if test_object.criterion=='fc':       ## feature cover
-    from fc import setup as fc_setup
+  elif test_object.criterion=='bfc':    ## feature cover
+    from dbnc import setup as dbnc_setup
+    from dbnc import BFcCriterion
     if test_object.norm == 'linf':
       from pulp_norms import LInfPulp
-      from nc_pulp import NcPulpAnalyzer
-      engine = fc_setup (test_object = test_object,
-                         setup_analyzer = NcPulpAnalyzer,
-                         input_metric = LInfPulp ())
-    elif test_object.norm=='l0':
-      from nc_l0 import NcL0Analyzer
-      engine = fc_setup (test_object = test_object,
-                         setup_analyzer = NcL0Analyzer,
-                         input_shape = test_object.raw_data.data[0].shape,
-                         eval_batch = test_object.eval_batch)
+      from dbnc_pulp import BFcPulpAnalyzer
+      engine = dbnc_setup (test_object = test_object,
+                           setup_criterion = BFcCriterion,
+                           setup_analyzer = BFcPulpAnalyzer,
+                           input_metric = LInfPulp ())
     else:
       print('\n not supported norm... {0}\n'.format(test_object.norm))
       sys.exit(0)
-    engine.run (**report_args)
+    engine.run (**report_args, initial_test_cases = 20)
+  elif test_object.criterion=='bfdc':   ## feature-dependence cover
+    from dbnc import setup as dbnc_setup
+    from dbnc import BFDcCriterion
+    if test_object.norm == 'linf':
+      from pulp_norms import LInfPulp
+      from dbnc_pulp import BFDcPulpAnalyzer
+      engine = dbnc_setup (test_object = test_object,
+                           setup_criterion = BFDcCriterion,
+                           setup_analyzer = BFDcPulpAnalyzer,
+                           input_metric = LInfPulp ())
+    else:
+      print('\n not supported norm... {0}\n'.format(test_object.norm))
+      sys.exit(0)
+    engine.run (**report_args, initial_test_cases = 20)
   elif test_object.criterion=='ssc':
     from ssc import SScGANBasedAnalyzer, setup as ssc_setup
     engine = ssc_setup (test_object = test_object,

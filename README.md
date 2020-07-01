@@ -28,24 +28,24 @@ usage: deepconcolic.py [-h] [--model MODEL] [--inputs DIR] [--outputs DIR]
 Concolic testing for neural networks
 
 optional arguments:
-  -h, --help            show this help message and exit
-  --model MODEL         the input neural network model (.h5)
-  --inputs DIR          the input test data directory
-  --outputs DIR         the outputput test data directory
-  --training-data DIR   the extra training dataset
-  --criterion nc, ssc...
-                        the test criterion
-  --labels FILE         the default labels
-  --mnist-dataset       MNIST dataset
-  --cifar10-dataset     CIFAR-10 dataset
-  --vgg16-model         vgg16 model
-  --norm linf, l0       the norm metric
-  --input-rows INT      input rows
-  --input-cols INT      input cols
-  --input-channels INT  input channels
-  --cond-ratio FLOAT    the condition feature size parameter (0, 1]
-  --top-classes INT     check the top-xx classifications
-  --layer-index INT     to test a particular layer
+  -h, --help                   show this help message and exit
+  --model MODEL                the input neural network model (.h5)
+  --inputs DIR                 the input test data directory
+  --outputs DIR                the outputput test data directory
+  --training-data DIR          the extra training dataset
+  --criterion nc, ssc...       
+                               the test criterion
+  --labels FILE                the default labels
+  --mnist-dataset              MNIST dataset
+  --cifar10-dataset            CIFAR-10 dataset
+  --vgg16-model                vgg16 model
+  --norm linf, l0              the norm metric
+  --input-rows INT             input rows
+  --input-cols INT             input cols
+  --input-channels INT         input channels
+  --cond-ratio FLOAT           the condition feature size parameter (0, 1]
+  --top-classes INT            check the top-xx classifications
+  --layer-index INT0 ... INTn  to test particular layers
 ```
 
 The neural network model under tested is specified by ``--model`` and a set of raw test data should be given
@@ -103,6 +103,7 @@ conda install opencv
 conda install pillow
 pip install pulp
 pip install adversarial-robustness-toolbox
+pip install pomegranate==0.11.2
 ```
 
 # Publications

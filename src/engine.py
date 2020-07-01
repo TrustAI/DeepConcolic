@@ -733,7 +733,7 @@ class Engine:
 
       while ((max_iterations == None or iteration <= max_iterations) and
              not coverage.done):
-  
+
         filtered, adversarial = False, False
 
         search_attempt, target = criterion.search_next ()
@@ -747,7 +747,7 @@ class Engine:
             coverage = criterion.coverage ()
             y0 = self._run_test (x0)
             y1 = self._run_test (x1)
-  
+
             if y1 != y0:
               adversarial = True
               report.new_adversarial (new = (x1, y1), orig = (x0, y0), dist = d,
