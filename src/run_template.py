@@ -4,9 +4,7 @@ import os
 import numpy as np
 
 import keras
-#from keras.models import *
-#from keras import *
-#from keras.preprocessing.image import save_img, load_img
+from variables import *
 
 def flag_diff(origins, mutants):
     ## (TBD) if origins and mutants are different enough
@@ -64,11 +62,11 @@ def main():
   except:
       print ('corrupt input...to exit...')
       #os.system('rm {0}'.format(args.mutants[0])) ## remove corrupted mutants
-      sys.exit(0)
+      sys.exit(SIG_NORMAL)
 
   if flag_diff(origins, mutants) or not flag_coverage(origins, mutants):
       #os.system('rm {0}'.format(args.mutants[0])) ## remove corrupted mutants
-      sys.exit(0)
+      sys.exit(SIG_NORMAL)
 
   dnn = keras.models.load_model(args.model)
   #dnn.summary()
@@ -78,10 +76,10 @@ def main():
 
   print (ys1, ys2)
 
-  if not ys1==ys2: raise
+  if not ys1==ys2: sys.exit(SIG_ADV)
   else:
       #os.system('rm {0}'.format(args.mutants[0])) ## remove corrupted mutants
-      sys.exit(1)
+      sys.exit(SIG_COV)
 
 if __name__=="__main__":
     main()

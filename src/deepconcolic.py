@@ -105,6 +105,8 @@ def main():
                     help="number of tests to generate", metavar="INT")
   parser.add_argument("--num-processes", dest="num_processes", default="1",
                     help="number of processes to use", metavar="INT")
+  parser.add_argument("--sleep-time", dest="stime", default="4",
+                    help="fuzzing sleep time", metavar="INT")
 
   args=parser.parse_args()
 
@@ -229,6 +231,7 @@ def main():
 
   # fuzzing params
   test_object.num_tests, test_object.num_processes = int(args.num_tests), int(args.num_processes)
+  test_object.stime = int(args.stime)
   test_object.file_list = file_list
   test_object.model_name = args.model
   if args.fuzzing:

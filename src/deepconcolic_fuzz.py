@@ -20,6 +20,7 @@ except:
   import keras
 
 from utils import *
+from variables import *
 
 ## to be refined
 apps = ['run_template.py']
@@ -31,12 +32,13 @@ def deepconcolic_fuzz(test_object, outs):
 
   num_tests = test_object.num_tests
   num_processes = test_object.num_processes
+  stime = test_object.stime
   file_list = test_object.file_list
   data = test_object.raw_data.data
   if data.shape[1] == 28: # todo: this is mnist hacking
     img_rows, img_cols, img_channels = data.shape[1], data.shape[2], 1
   else:
-    img_rows, img_cols, img_channels = data.shape[1], data.shape[2], date.shape[3]
+    img_rows, img_cols, img_channels = data.shape[1], data.shape[2], data.shape[3]
   model_name = test_object.model_name
 
   num_crashes = 0
@@ -62,19 +64,19 @@ def deepconcolic_fuzz(test_object, outs):
           process = subprocess.Popen(commandline)
           processes.append(process)
   
-      time.sleep(4) # (hard coded for now)
+      time.sleep(stime) # (hard coded for now)
       for j in range(0, num_processes):
           process = processes[j]
           fuzz_output = fuzz_outputs[j]
           crashed = process.poll()
-          if not crashed:
+          print ('>>>>>', crashed)
+          if crashed == SIG_NORMAL:
               process.terminate()
-          elif crashed == 1:
+          elif crashed == SIG_COV:
               ## TODO coverage guided; add fuzz_output into the queue
               print (">>>> add fuzz_output into the queue")
-              pass
               process.terminate()
-          else:
+          elif crashed == SIG_ADV:
               num_crashes += 1
               output = open("advs.list", 'a')
               output.write("Adv# {0}: command {1}\n".format(num_crashes, commandline))
@@ -83,5 +85,6 @@ def deepconcolic_fuzz(test_object, outs):
               f = open(adv_output, 'wb')
               f.write(buf)
               f.close()
+          else: pass
 
   print (report_args)
