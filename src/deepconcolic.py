@@ -114,7 +114,7 @@ def main():
   inp_ub = 1
   save_input = None
   if args.model!='-1':
-    dnn = keras.models.load_model (args.model, compile = False)
+    dnn = keras.models.load_model (args.model)
     dnn.summary()
     save_input = save_an_image
   elif args.vgg16:
