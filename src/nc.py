@@ -25,6 +25,7 @@ class NcLayer (BoolMappedCoverableLayer):
 
 
 class NcTarget (NamedTuple, TestTarget):
+  """Inherits :class:`engine.TestTarget` as well."""
   layer: NcLayer
   position: Tuple[int, ...]
 
@@ -61,6 +62,7 @@ class NcAnalyzer (Analyzer4RootedSearch):
 
 
 class NcCriterion (LayerLocalCriterion, Criterion4RootedSearch):
+  """Neuron coverage criterion"""
 
   def __init__(self, clayers: Sequence[NcLayer], analyzer: NcAnalyzer, **kwds):
     assert isinstance (analyzer, NcAnalyzer)
@@ -82,9 +84,17 @@ class NcCriterion (LayerLocalCriterion, Criterion4RootedSearch):
 # ---
 
 
-from engine import setup as engine_setup
+from engine import setup as engine_setup, Engine
 
-def setup (test_object = None, criterion_args: dict = {}, **kwds):
+def setup (test_object = None,
+           setup_analyzer: Callable[[dict], NcAnalyzer] = None,
+           criterion_args: dict = {},
+           **kwds) -> Engine:
+  """
+  Helper to build an engine for neuron-coverage (using
+  :class:`NcCriterion` and an analyzer constructed using
+  `setup_analyzer`).
+  """
 
   setup_layer = (
     lambda l, i, **kwds: NcLayer (layer = l, layer_index = i,
@@ -95,6 +105,7 @@ def setup (test_object = None, criterion_args: dict = {}, **kwds):
                                    exclude_direct_input_succ = False)
   return engine_setup (test_object = test_object,
                        cover_layers = cover_layers,
+                       setup_analyzer = setup_analyzer,
                        setup_criterion = NcCriterion,
                        criterion_args = { 'feature_indices': test_object.feature_indices,
                                           **criterion_args },

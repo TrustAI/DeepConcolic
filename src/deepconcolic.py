@@ -39,9 +39,9 @@ def deepconcolic(test_object, outs):
       sys.exit(0)
     engine.run (**report_args)
   elif test_object.criterion=='ssc':
-    from ssc import SScAttackBasedAnalyzer, setup as ssc_setup
+    from ssc import SScGANBasedAnalyzer, setup as ssc_setup
     engine = ssc_setup (test_object = test_object,
-                        setup_analyzer = SScAttackBasedAnalyzer,
+                        setup_analyzer = SScGANBasedAnalyzer,
                         ref_data = test_object.raw_data)
     engine.run (**report_args)
   elif test_object.criterion=='ssclp':

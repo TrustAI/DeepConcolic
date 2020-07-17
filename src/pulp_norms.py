@@ -9,6 +9,9 @@ from lp import PulpLinearMetric
 
 
 class LInfPulp (LInf, PulpLinearMetric):
+  """
+  L-inf norm to use for :class:`lp.PulpSolver4DNN`.
+  """
 
   def pulp_constrain(self, dist_var, var_names, values,
                      name_prefix = 'input_activations_constraint') -> Sequence[LpConstraint]:

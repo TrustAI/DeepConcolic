@@ -192,44 +192,6 @@ class Analyzer:
     return None
 
 
-  def stat_based_test_cv_initializers(self):
-    """
-    Stat-based initialization steps with optional cross-validation
-    performed on test data.
-
-    Returns a list of dictionaries (or `None`) with the following
-    entries:
-
-    - name: short description of what's computed;
-
-    - layer_indexes: a list or set of indexes for layers whose
-      activations values are needed;
-
-    - test_size & train_size: (as in
-      `sklearn.model_selection.train_test_split`)
-
-    - train: a callable taking some test data as mapping (as a
-      dictionary) from each layer index given in `layer_indexes` to
-      activation values for the corresponding layer, and returns some
-      arbitrary object; this is to be called only once during
-      initialization;
-
-    - test: a callable taking some extra test data and associated
-      labels as two separate mappings (as a dictionary) from each
-      layer index given in `layer_indexes` to activation values for
-      the corresponding layer.
-    """
-    # - accum_test: a callable that is called with the object returned
-    #   by `train`, along with batched activation values for every layer
-    #   on the test data, and returns a new or updated accumulator.
-    #   This is called at least once.
-    #
-    # - final_test: optional function that is called with the final test
-    #   accumulator once all batched test activations have been passed
-    #   to  `accum_test`.
-    return None
-
-
   def stat_based_train_cv_initializers(self):
     """
     Stat-based initialization steps with optional cross-validation
@@ -256,8 +218,54 @@ class Analyzer:
       labels as two separate mappings (as a dictionary) from each
       layer index given in `layer_indexes` to activation values for
       the corresponding layer.
+
+    Any function given as entries above is always called before
+    functions returned by `stat_based_test_cv_initializers`, but after
+    those retured by `stat_based_basic_initializers` and
+    `stat_based_incremental_initializers`.
     """
     return None
+
+
+  def stat_based_test_cv_initializers(self):
+    """
+    Stat-based initialization steps with optional cross-validation
+    performed on test data.
+
+    Returns a list of dictionaries (or `None`) with the following
+    entries:
+
+    - name: short description of what's computed;
+
+    - layer_indexes: a list or set of indexes for layers whose
+      activations values are needed;
+
+    - test_size & train_size: (as in
+      `sklearn.model_selection.train_test_split`)
+
+    - train: a callable taking some test data as mapping (as a
+      dictionary) from each layer index given in `layer_indexes` to
+      activation values for the corresponding layer, and returns some
+      arbitrary object; this is to be called only once during
+      initialization;
+
+    - test: a callable taking some extra test data and associated
+      labels as two separate mappings (as a dictionary) from each
+      layer index given in `layer_indexes` to activation values for
+      the corresponding layer.
+
+    Any function given as entries above is always called last.
+    """
+    # - accum_test: a callable that is called with the object returned
+    #   by `train`, along with batched activation values for every layer
+    #   on the test data, and returns a new or updated accumulator.
+    #   This is called at least once.
+    #
+    # - final_test: optional function that is called with the final test
+    #   accumulator once all batched test activations have been passed
+    #   to  `accum_test`.
+    return None
+
 
 
 # ---
@@ -384,7 +392,7 @@ class Report:
     self.ntests += 1
 
 
-  def step(self, *args):
+  def step(self, *args) -> None:
     '''
     Prints a single report line.
     '''
@@ -409,7 +417,7 @@ class Criterion:
   Base class for test critieria.
 
   Note that a criterion MUST inherit either (or both)
-  `Criterion4FreeSearch` or `Criterion4RootedSearch`.
+  :class:`Criterion4FreeSearch` or :class:`Criterion4RootedSearch`.
   '''
 
   def __init__(self,
@@ -513,21 +521,24 @@ class Criterion:
     return len(self.test_cases)
 
 
-  # should be final
-  def add_new_test_case (self, t) -> None:
-    '''
-    As its name says, this method adds a new test case into
-    the set of test cases, possibly updating the coverage accordingly.
-    '''
-    self.add_new_test_cases ([t])
-
-
-  def add_new_test_cases(self, tl) -> None:
-    '''
+  # final as well
+  def add_new_test_cases(self, tl: Sequence[Input]) -> None:
+    """
     As its name says, this method adds a given series of inputs into
-    the set of test cases, possibly updating the coverage accordingly.
-    '''
+    the set of test cases.  It then calls :meth:`update_coverage`.
+    """
+    tp1 ('Adding {} test case{}'.format (len (tl), 's' if len (tl) > 1 else ''))
     self.test_cases.extend (tl)
+    self.update_coverage (tl)
+
+
+  @abstractmethod
+  def update_coverage(self, tl: Sequence[Input]) -> None:
+    """
+    Method called whenever new test cases are registered.  Overload
+    this method to update coverage.
+    """
+    raise NotImplementedError
 
 
   def search_next(self) -> Tuple[Union[Tuple[Input, Input, float], None], TestTarget]:
@@ -569,28 +580,28 @@ class Criterion:
 
   def stat_based_basic_initializers(self):
     '''
-    Ditto `Analyzer.stat_based_basic_initializers`.
+    Ditto :meth:`Analyzer.stat_based_basic_initializers`.
     '''
     return None
 
 
   def stat_based_incremental_initializers(self):
     '''
-    Ditto `Analyzer.stat_based_incremental_initializers`.
+    Ditto :meth:`Analyzer.stat_based_incremental_initializers`.
     '''
     return None
 
 
   def stat_based_train_cv_initializers(self):
     '''
-    Ditto `Analyzer.stat_based_train_cv_initializers`.
+    Ditto :meth:`Analyzer.stat_based_train_cv_initializers`.
     '''
     return None
 
 
   def stat_based_test_cv_initializers(self):
     '''
-    Ditto `Analyzer.stat_based_test_cv_initializers`.
+    Ditto :meth:`Analyzer.stat_based_test_cv_initializers`.
     '''
     return None
 
@@ -614,8 +625,9 @@ class Criterion4RootedSearch (Criterion):
 
     Note this method MUST perform enough bookkeeping so that two
     successive calls that are not interleaved with any call to
-    `add_new_test_cases` return different results.  This property is to
-    enforce progress upon unsuccessful search of concrete inputs.
+    :meth:`Criterion.add_new_test_cases` return different results.
+    This property is to enforce progress upon unsuccessful search of
+    concrete inputs.
     '''
     raise NotImplementedError
 
@@ -641,10 +653,13 @@ class Criterion4FreeSearch (Criterion):
 # ---
 
 
-def setup_basic_report(criterion, **kwds):
+def setup_basic_report(criterion: Criterion, **kwds) -> Report:
   '''
-  Returns a very basic report file with base names constructed from
-  the provided criterion.
+  Returns a very basic report object that feeds files whose base names
+  are constructed from the provided criterion.
+
+  Extra keyword arguments are passed on to the constructor of
+  :class:`Report`.
   '''
   return Report (base_name = '{0}_{0.metric}'.format (criterion),
                  **kwds)
@@ -660,12 +675,12 @@ class Engine:
                criterion: Criterion,
                custom_oracle: Oracle = None,
                **kwds):
-    '''
+    """
     Builds a test engine with the given DNN, reference data, and test
     criterion.  Uses the input metric provided by the
     criterion-specific analyzer as oracle, unless `custom_oracle` is
     not `None`.
-    '''
+    """
     
     self.ref_data = ref_data
     self.train_data = train_data
@@ -707,7 +722,7 @@ class Engine:
       p1 ('Randomly selecting an input from test data.')
       x = np.random.default_rng().choice (a = self.ref_data.data, axis = 0)
       report.save_input (x, 'seed-input')
-      self.criterion.add_new_test_case (x)
+      self.criterion.add_new_test_cases ([x])
 
 
   def run(self,
@@ -755,7 +770,7 @@ class Engine:
           close_enough = oracle.close_to (self.ref_data.data, x1)
           if close_enough:
             target.cover ()
-            criterion.add_new_test_case (x1)
+            criterion.add_new_test_cases ([x1])
             coverage = criterion.coverage ()
             y0 = self._run_test (x0)
             y1 = self._run_test (x1)
@@ -892,11 +907,11 @@ def setup (test_object: test_objectt = None,
            setup_analyzer: Callable[[dict], Analyzer] = None,
            setup_criterion: Callable[[Sequence[CL], Analyzer, dict], Criterion] = None,
            criterion_args: dict = {},
-           **kwds):
-  '''
+           **kwds) -> Engine:
+  """
   Helper to build engine instances.  Extra arguments are passed to the
   analyzer setup function (`setup_analyzer`).
-  '''
+  """
 
   print ('DNN under test has {0} layer functions, {1} of which {2} to be covered:'
          .format(len(get_layer_functions (test_object.dnn)[0]), len(cover_layers),
@@ -1132,8 +1147,10 @@ class LayerLocalCriterion (Criterion):
   # ---
 
 
-  def add_new_test_cases (self, tl):
-    super().add_new_test_cases (tl)
+  def update_coverage (self, tl: Sequence[Input]):
+    """
+    Register new test cases
+    """
     for t in tl:
       acts = self.analyzer.eval (t, allow_input_layer = True)
       for cl in self._updatable_layers:

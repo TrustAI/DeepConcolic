@@ -1,3 +1,5 @@
+assert False
+
 import argparse
 import sys
 import os
@@ -15,8 +17,6 @@ from utils import *
 from nc_lp import *
 from lp_encoding import *
 from nc_setup import nc_setup
-
-assert False
 
 def run_nc_linf(test_object, outs):
 

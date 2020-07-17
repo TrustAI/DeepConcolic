@@ -6,12 +6,15 @@ import numpy as np
 
 # ---
 
-from engine import LayerLocalAnalyzer
+from engine import LayerLocalAnalyzer, CoverableLayer, Input
 from ssc import SScAnalyzer4RootedSearch, SScTarget
 from lp import PulpLinearMetric, PulpSolver4DNN
 
 
 class SScPulpAnalyzer (SScAnalyzer4RootedSearch, LayerLocalAnalyzer, PulpSolver4DNN):
+  """
+  Pulp-based analyzer for sign-sign coverage.
+  """
 
   def __init__(self, input_metric: PulpLinearMetric = None, **kwds):
     assert isinstance (input_metric, PulpLinearMetric)
@@ -19,16 +22,16 @@ class SScPulpAnalyzer (SScAnalyzer4RootedSearch, LayerLocalAnalyzer, PulpSolver4
     self.metric = input_metric
 
 
-  def finalize_setup(self, clayers):
-    super().build_lp (self.dnn, self.metric,
-                      upto = deepest_tested_layer (self.dnn, clayers))
+  def finalize_setup(self, clayers: Sequence[CoverableLayer]):
+    super().setup (self.dnn, self.metric,
+                   upto = deepest_tested_layer (self.dnn, clayers))
 
 
-  def input_metric(self):
+  def input_metric(self) -> PulpLinearMetric:
     return self.metric
 
 
-  def search_input_close_to(self, x, target: SScTarget) -> Optional[Tuple[float, Any, Any]]:
+  def search_input_close_to(self, x: Input, target: SScTarget) -> Optional[Tuple[float, Any, Any]]:
     activations = eval_batch (self.dnn, np.array([x]))
 
     dec_layer, dec_pos, dec_neuron, cond_layer, cond_pos, cond_neuron = (

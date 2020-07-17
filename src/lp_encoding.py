@@ -1,7 +1,9 @@
+assert False
+
 try:
   import cplex
 except:
-  from solver import *
+  pass
 
 import sys
 import numpy as np

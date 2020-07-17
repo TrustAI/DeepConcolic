@@ -14,10 +14,10 @@ LOWER_BOUND=-100000000
 
 
 class PulpLayerOutput:
-
-  def __init__(self, **kwds):
-    super().__init__(**kwds)
-
+  """
+  Abstract representation to obtain symbolic expressions that encode
+  layer outputs.
+  """
 
   @abstractmethod
   def pulp_out_exprs(self):
@@ -28,6 +28,9 @@ class PulpLayerOutput:
 
 
 class BasicPulpInputLayerEncoder (PulpLayerOutput):
+  """
+  Input layer encoder for pulp.
+  """
 
   def __init__(self, var_names):
     self.var_names = var_names
@@ -43,10 +46,9 @@ class BasicPulpInputLayerEncoder (PulpLayerOutput):
 
 
 class PulpLayerEncoder:
-
-  def __init__(self, **kwds):
-    super().__init__(**kwds)
-
+  """
+  Generic layer encoder for pulp.
+  """
 
   @abstractmethod
   def pulp_gen_vars(self, idx: int, var_names: dict) -> int:
@@ -487,10 +489,18 @@ def gen_vars(layer_index, sp, var_names, flatten = False):
 # ---
 
 def same_act (base_name, out_vars, in_exprs, idx, ap_x):
+  """
+  Returns a set of constraints that reproduces the activation pattern
+  `ap_x` at neuron `idx`, based on:
+
+  - pulp variables `out_vars` that encode neuron outputs; and
+
+  - pulp expressions `in_exprs` that encode the inputs of each neuron.
+  """
 
   cname = '_'.join(str(i) for i in ("sa__", base_name, ) + idx)
 
-  if ap_x [idx] > 0: ## we know what to do
+  if ap_x [idx] > 0:
     return [
       LpConstraint (LpAffineExpression ([(out_vars[idx], +1), (in_exprs[idx], -1)]),
                     LpConstraintEQ, cname + '_eq', 0.),
@@ -507,6 +517,14 @@ def same_act (base_name, out_vars, in_exprs, idx, ap_x):
 
 
 def neg_act (base_name, out_vars, in_exprs, idx, ap_x):
+  """
+  Returns a set of constraints that negates the activation pattern
+  `ap_x` at neuron `idx`, based on:
+
+  - pulp variables `out_vars` that encode neuron outputs; and
+
+  - pulp expressions `in_exprs` that encode the inputs of each neuron.
+  """
 
   cname = '_'.join(str(i) for i in ("na__", base_name, ) + idx)
 
@@ -528,14 +546,18 @@ def neg_act (base_name, out_vars, in_exprs, idx, ap_x):
 # Those are now just aliases:
 
 def build_conv_constraint(base_name, out_vars, in_exprs, idx, ap_x):
+  """Alias for :func:`same_act`"""
   return same_act (base_name, out_vars, in_exprs, idx, ap_x)
 
 def build_dense_constraint(base_name, out_vars, in_exprs, idx, ap_x):
+  """Alias for :func:`same_act`"""
   return same_act (base_name, out_vars, in_exprs, idx, ap_x)
 
 def build_conv_constraint_neg(base_name, out_vars, in_exprs, idx, ap_x):
+  """Alias for :func:`neg_act`"""
   return neg_act (base_name, out_vars, in_exprs, idx, ap_x)
 
 def build_dense_constraint_neg(base_name, out_vars, in_exprs, idx, ap_x):
+  """Alias for :func:`neg_act`"""
   return neg_act (base_name, out_vars, in_exprs, idx, ap_x)
   

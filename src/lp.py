@@ -2,6 +2,7 @@ from abc import abstractmethod
 from typing import *
 import pulp
 import pulp_encoding
+import engine
 from pulp import *
 from utils import *
 import numpy as np
@@ -11,6 +12,9 @@ import numpy as np
 
 
 class LpLinearMetric:
+  """
+  Basic class to represent any linear metric.
+  """  
 
   def __init__ (self, LB = 0.0, UB = 1.0, **kwds):
     self.LB = LB
@@ -19,25 +23,32 @@ class LpLinearMetric:
 
 
   @property
-  def lower_bound (self):
+  def lower_bound (self) -> float:
     return self.LB
 
 
   @property
-  def upper_bound (self):
+  def upper_bound (self) -> float:
     return self.UB
 
 
 # ---
 
 
+LPProblem = TypeVar('LPProblem')
+
+
 class LpSolver4DNN:
+  """
+  Generic LP solver class.
+  """
 
-  def __init__(self, **kwds):
-    super().__init__(**kwds)
-
-  def build_lp(self, dnn, build_encoder, link_encoders, create_base_problem,
-               first = 0, upto = None):
+  def setup(self, dnn, build_encoder, link_encoders, create_base_problem,
+            first = 0, upto = None) -> None:
+    """
+    Constructs and sets up LP problems to encode from layer `first` up
+    to layer `upto`.
+    """
 
     layer_encoders, input_layer_encoder, var_names = link_encoders (dnn, build_encoder, first, upto)
     tp1 ('{} LP variables have been collected.'
@@ -55,16 +66,26 @@ class LpSolver4DNN:
 
 
   @abstractmethod
-  def for_layer(self, cl):
+  def for_layer(self, cl: engine.CL) -> LPProblem:
+    """
+    Returns an LP problem that encodes up to the given layer `cl`.
+    """
     raise NotImplementedError
 
 
   @abstractmethod
-  def find_constrained_input(self, problem,
+  def find_constrained_input(self,
+                             problem: LPProblem,
                              metric: LpLinearMetric,
                              x: np.ndarray,
                              extra_constrs = [],
                              name_prefix = None) -> Tuple[float, np.ndarray]:
+    """
+    Augment the given `LP` problem with extra constraints
+    (`extra_constrs`), and minimize `metric` against `x`.
+    
+    Must restore `problem` to its state upon call before termination.
+    """
     raise NotImplementedError
 
 
@@ -72,6 +93,9 @@ class LpSolver4DNN:
 
 
 class PulpLinearMetric (LpLinearMetric):
+  """
+  Any linear metric for the :class:`PulpSolver4DNN`.
+  """  
 
   def __init__(self, LB_noise = 255, **kwds):
     self.LB_noise = LB_noise
@@ -121,12 +145,12 @@ class PulpSolver4DNN (LpSolver4DNN):
     super().__init__(**kwds)
 
 
-  def build_lp(self, dnn, metric: PulpLinearMetric,
-               build_encoder = pulp_encoding.strict_encoder,
-               link_encoders = pulp_encoding.setup_layer_encoders,
-               create_problem = pulp_encoding.create_base_problem,
-               first = 0, upto = None):
-    super().build_lp (dnn, build_encoder, link_encoders, create_problem, first, upto)
+  def setup(self, dnn, metric: PulpLinearMetric,
+            build_encoder = pulp_encoding.strict_encoder,
+            link_encoders = pulp_encoding.setup_layer_encoders,
+            create_problem = pulp_encoding.create_base_problem,
+            first = 0, upto = None):
+    super().setup (dnn, build_encoder, link_encoders, create_problem, first, upto)
     # That's the objective:
     self.d_var = LpVariable(metric.dist_var_name,
                             lowBound = metric.draw_lower_bound (),
@@ -135,12 +159,13 @@ class PulpSolver4DNN (LpSolver4DNN):
       p += self.d_var
 
 
-  def for_layer(self, cl) -> Tuple[pulp.LpProblem, PulpVarMap]:
+  def for_layer(self, cl: engine.CL) -> pulp.LpProblem:
     index = cl.layer_index + (0 if activation_is_relu (cl.layer) else 1)
     return self.base_constraints[index]
 
 
-  def find_constrained_input(self, problem: pulp.LpProblem,
+  def find_constrained_input(self,
+                             problem: pulp.LpProblem,
                              metric: PulpLinearMetric,
                              x: np.ndarray,
                              extra_constrs = [],

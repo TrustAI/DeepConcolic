@@ -6,12 +6,15 @@ import numpy as np
 
 # ---
 
-from engine import LayerLocalAnalyzer
+from engine import LayerLocalAnalyzer, CoverableLayer, Input
 from nc import NcAnalyzer, NcTarget
 from lp import PulpLinearMetric, PulpSolver4DNN
 
 
 class NcPulpAnalyzer (NcAnalyzer, LayerLocalAnalyzer, PulpSolver4DNN):
+  """
+  Pulp-based analyzer for neuron coverage.
+  """
 
   def __init__(self, input_metric: PulpLinearMetric = None, **kwds):
     assert isinstance (input_metric, PulpLinearMetric)
@@ -19,16 +22,16 @@ class NcPulpAnalyzer (NcAnalyzer, LayerLocalAnalyzer, PulpSolver4DNN):
     self.metric = input_metric
 
 
-  def finalize_setup(self, clayers):
-    super().build_lp (self.dnn, self.metric,
-                      upto = deepest_tested_layer (self.dnn, clayers))
+  def finalize_setup(self, clayers: Sequence[CoverableLayer]):
+    super().setup (self.dnn, self.metric,
+                   upto = deepest_tested_layer (self.dnn, clayers))
 
 
-  def input_metric(self):
+  def input_metric(self) -> PulpLinearMetric:
     return self.metric
 
 
-  def search_input_close_to(self, x, target: NcTarget):
+  def search_input_close_to(self, x: Input, target: NcTarget) -> Optional[Tuple[float, Any]]:
     problem = self.for_layer (target.layer)
     activations = eval_batch (self.dnn, np.array([x]))
     cstrs = []
