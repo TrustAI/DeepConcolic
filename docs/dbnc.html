@@ -1,0 +1,454 @@
+
+
+<!doctype html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discrete Bayesian-Network-based Coverage &#8212; deepconcolic  documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Linear Program Solving" href="lp.html" />
+    <link rel="prev" title="Modified Condition/Decision Coverage" href="mcdc.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="lp.html" title="Linear Program Solving"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="mcdc.html" title="Modified Condition/Decision Coverage"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">deepconcolic  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="api.html" accesskey="U">DeepConcolic API</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Discrete Bayesian-Network-based Coverage</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="discrete-bayesian-network-based-coverage">
+<h1>Discrete Bayesian-Network-based Coverage<a class="headerlink" href="#discrete-bayesian-network-based-coverage" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-dbnc">
+<span id="criteria-base-analyzers"></span><h2>Criteria &amp; Base Analyzers<a class="headerlink" href="#module-dbnc" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="dbnc.BFcLayer">
+<em class="property">class </em><code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">BFcLayer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">transform</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">discretization</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.BFcLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="core.html#engine.CoverableLayer" title="engine.CoverableLayer"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.CoverableLayer</span></code></a></p>
+<p>Base class for layers to be covered by BN-based criteria.</p>
+<dl class="py method">
+<dt id="dbnc.BFcLayer.num_features">
+<em class="property">property </em><code class="sig-name descname">num_features</code><a class="headerlink" href="#dbnc.BFcLayer.num_features" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="dbnc.FeatureDiscretizer">
+<em class="property">class </em><code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">FeatureDiscretizer</code><a class="headerlink" href="#dbnc.FeatureDiscretizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py method">
+<dt id="dbnc.FeatureDiscretizer.feature_parts">
+<em class="property">abstract </em><code class="sig-name descname">feature_parts</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><a class="headerlink" href="#dbnc.FeatureDiscretizer.feature_parts" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="dbnc.FeatureDiscretizer.edges">
+<em class="property">abstract </em><code class="sig-name descname">edges</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></span></em>, <em class="sig-param"><span class="n">value</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a></span></em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span>Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a><span class="p">]</span><span class="p">, </span>Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a><span class="p">]</span><span class="p">]</span><a class="headerlink" href="#dbnc.FeatureDiscretizer.edges" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="dbnc.FeatureDiscretizer.part_edges">
+<em class="property">abstract </em><code class="sig-name descname">part_edges</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></span></em>, <em class="sig-param"><span class="n">part</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></span></em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span>Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a><span class="p">]</span><span class="p">, </span>Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a><span class="p">]</span><span class="p">]</span><a class="headerlink" href="#dbnc.FeatureDiscretizer.part_edges" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="dbnc.FeatureDiscretizer.fit_wrt">
+<em class="property">abstract </em><code class="sig-name descname">fit_wrt</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a><a class="headerlink" href="#dbnc.FeatureDiscretizer.fit_wrt" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="dbnc.bayes_node_name">
+<code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">bayes_node_name</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fl</span></em>, <em class="sig-param"><span class="n">idx</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.bayes_node_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt id="dbnc.BFcTarget">
+<em class="property">class </em><code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">BFcTarget</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fnode</span></em>, <em class="sig-param"><span class="n">feature_part</span></em>, <em class="sig-param"><span class="n">sanity_check</span></em>, <em class="sig-param"><span class="n">root_test_idx</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.BFcTarget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a></p>
+<p>Create new instance of BFcTarget(fnode, feature_part, sanity_check, root_test_idx)</p>
+<dl class="py method">
+<dt id="dbnc.BFcTarget.fnode">
+<em class="property">property </em><code class="sig-name descname">fnode</code><a class="headerlink" href="#dbnc.BFcTarget.fnode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="dbnc.BFcTarget.feature_part">
+<em class="property">property </em><code class="sig-name descname">feature_part</code><a class="headerlink" href="#dbnc.BFcTarget.feature_part" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="dbnc.BFcTarget.sanity_check">
+<em class="property">property </em><code class="sig-name descname">sanity_check</code><a class="headerlink" href="#dbnc.BFcTarget.sanity_check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="dbnc.BFcTarget.root_test_idx">
+<em class="property">property </em><code class="sig-name descname">root_test_idx</code><a class="headerlink" href="#dbnc.BFcTarget.root_test_idx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 3</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="dbnc.BFcTarget.log_repr">
+<code class="sig-name descname">log_repr</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><a class="headerlink" href="#dbnc.BFcTarget.log_repr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="dbnc.BFcTarget.cover">
+<code class="sig-name descname">cover</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a><a class="headerlink" href="#dbnc.BFcTarget.cover" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="dbnc.BFcTarget.check">
+<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">t: NewType.&lt;locals&gt;.new_type</em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a><a class="headerlink" href="#dbnc.BFcTarget.check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks whether the target is met.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="dbnc.BFcAnalyzer">
+<em class="property">class </em><code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">BFcAnalyzer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">analyzed_dnn</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.BFcAnalyzer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="core.html#engine.Analyzer4RootedSearch" title="engine.Analyzer4RootedSearch"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.Analyzer4RootedSearch</span></code></a></p>
+<p>Analyzer dedicated to targets of type <a class="reference internal" href="#dbnc.BFcTarget" title="dbnc.BFcTarget"><code class="xref py py-class docutils literal notranslate"><span class="pre">BFcTarget</span></code></a>.</p>
+<dl class="py method">
+<dt id="dbnc.BFcAnalyzer.search_input_close_to">
+<em class="property">abstract </em><code class="sig-name descname">search_input_close_to</code><span class="sig-paren">(</span><em class="sig-param">x: NewType.&lt;locals&gt;.new_type</em>, <em class="sig-param">target: dbnc.BFcTarget</em><span class="sig-paren">)</span> &#x2192; Optional[Tuple[float, NewType.&lt;locals&gt;.new_type]]<a class="headerlink" href="#dbnc.BFcAnalyzer.search_input_close_to" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method specialized for targets of type <a class="reference internal" href="#dbnc.BFcTarget" title="dbnc.BFcTarget"><code class="xref py py-class docutils literal notranslate"><span class="pre">BFcTarget</span></code></a>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="dbnc.BFcCriterion">
+<em class="property">class </em><code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">BFcCriterion</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">clayers</span><span class="p">:</span> <span class="n">Sequence<span class="p">[</span><a class="reference internal" href="core.html#engine.CoverableLayer" title="engine.CoverableLayer">engine.CoverableLayer</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">analyzer</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#dbnc.BFcAnalyzer" title="dbnc.BFcAnalyzer">dbnc.BFcAnalyzer</a></span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.BFcCriterion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dbnc._BaseBFcCriterion</span></code>, <a class="reference internal" href="core.html#engine.Criterion4RootedSearch" title="engine.Criterion4RootedSearch"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.Criterion4RootedSearch</span></code></a></p>
+<p>Some kind of “uniformization” coverage criterion.</p>
+<p>A criterion operates based on an <cite>analyzer</cite> to find new concrete
+inputs.</p>
+<p>Flag <cite>prefer_rooted_search</cite> can be used in case both the criterion
+and the analyzer support the two kinds of search; the default
+behavior is to select rooted search.</p>
+<dl class="py method">
+<dt id="dbnc.BFcCriterion.reset">
+<code class="sig-name descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.BFcCriterion.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Empties the set of test cases</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="dbnc.BFcCriterion.coverage">
+<code class="sig-name descname">coverage</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="core.html#utils.Coverage" title="utils.Coverage">utils.Coverage</a><a class="headerlink" href="#dbnc.BFcCriterion.coverage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a measure of the current coverage.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="dbnc.BFcCriterion.find_next_rooted_test_target">
+<code class="sig-name descname">find_next_rooted_test_target</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Tuple[NewType.&lt;locals&gt;.new_type, dbnc.BFcTarget]<a class="headerlink" href="#dbnc.BFcCriterion.find_next_rooted_test_target" title="Permalink to this definition">¶</a></dt>
+<dd><p>Seeks a new test target associated with an existing test input
+taken from the set of recorded test cases.</p>
+<p>Note this method MUST perform enough bookkeeping so that two
+successive calls that are not interleaved with any call to
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">Criterion.add_new_test_cases()</span></code> return different results.
+This property is to enforce progress upon unsuccessful search of
+concrete inputs.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="dbnc.BFDcTarget">
+<em class="property">class </em><code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">BFDcTarget</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fnode1</span></em>, <em class="sig-param"><span class="n">feature_part1</span></em>, <em class="sig-param"><span class="n">flayer0</span></em>, <em class="sig-param"><span class="n">feature_parts0</span></em>, <em class="sig-param"><span class="n">sanity_check</span></em>, <em class="sig-param"><span class="n">root_test_idx</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.BFDcTarget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a></p>
+<p>Create new instance of BFDcTarget(fnode1, feature_part1, flayer0, feature_parts0, sanity_check, root_test_idx)</p>
+<dl class="py method">
+<dt id="dbnc.BFDcTarget.fnode1">
+<em class="property">property </em><code class="sig-name descname">fnode1</code><a class="headerlink" href="#dbnc.BFDcTarget.fnode1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="dbnc.BFDcTarget.feature_part1">
+<em class="property">property </em><code class="sig-name descname">feature_part1</code><a class="headerlink" href="#dbnc.BFDcTarget.feature_part1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="dbnc.BFDcTarget.flayer0">
+<em class="property">property </em><code class="sig-name descname">flayer0</code><a class="headerlink" href="#dbnc.BFDcTarget.flayer0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="dbnc.BFDcTarget.feature_parts0">
+<em class="property">property </em><code class="sig-name descname">feature_parts0</code><a class="headerlink" href="#dbnc.BFDcTarget.feature_parts0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 3</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="dbnc.BFDcTarget.sanity_check">
+<em class="property">property </em><code class="sig-name descname">sanity_check</code><a class="headerlink" href="#dbnc.BFDcTarget.sanity_check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 4</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="dbnc.BFDcTarget.root_test_idx">
+<em class="property">property </em><code class="sig-name descname">root_test_idx</code><a class="headerlink" href="#dbnc.BFDcTarget.root_test_idx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 5</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="dbnc.BFDcTarget.log_repr">
+<code class="sig-name descname">log_repr</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><a class="headerlink" href="#dbnc.BFDcTarget.log_repr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="dbnc.BFDcTarget.cover">
+<code class="sig-name descname">cover</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a><a class="headerlink" href="#dbnc.BFDcTarget.cover" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="dbnc.BFDcTarget.check">
+<code class="sig-name descname">check</code><span class="sig-paren">(</span><em class="sig-param">t: NewType.&lt;locals&gt;.new_type</em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a><a class="headerlink" href="#dbnc.BFDcTarget.check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks whether the target is met.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="dbnc.BFDcAnalyzer">
+<em class="property">class </em><code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">BFDcAnalyzer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">analyzed_dnn</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.BFDcAnalyzer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="core.html#engine.Analyzer4RootedSearch" title="engine.Analyzer4RootedSearch"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.Analyzer4RootedSearch</span></code></a></p>
+<p>Analyzer dedicated to targets of type <code class="xref py py-class docutils literal notranslate"><span class="pre">BDFcTarget</span></code>.</p>
+<dl class="py method">
+<dt id="dbnc.BFDcAnalyzer.search_input_close_to">
+<em class="property">abstract </em><code class="sig-name descname">search_input_close_to</code><span class="sig-paren">(</span><em class="sig-param">x: NewType.&lt;locals&gt;.new_type</em>, <em class="sig-param">target: dbnc.BFDcTarget</em><span class="sig-paren">)</span> &#x2192; Optional[Tuple[float, NewType.&lt;locals&gt;.new_type]]<a class="headerlink" href="#dbnc.BFDcAnalyzer.search_input_close_to" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method specialized for targets of type <a class="reference internal" href="#dbnc.BFDcTarget" title="dbnc.BFDcTarget"><code class="xref py py-class docutils literal notranslate"><span class="pre">BFDcTarget</span></code></a>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="dbnc.BFDcCriterion">
+<em class="property">class </em><code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">BFDcCriterion</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">clayers</span><span class="p">:</span> <span class="n">Sequence<span class="p">[</span><a class="reference internal" href="core.html#engine.CoverableLayer" title="engine.CoverableLayer">engine.CoverableLayer</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">analyzer</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#dbnc.BFDcAnalyzer" title="dbnc.BFDcAnalyzer">dbnc.BFDcAnalyzer</a></span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.BFDcCriterion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dbnc._BaseBFcCriterion</span></code>, <a class="reference internal" href="core.html#engine.Criterion4RootedSearch" title="engine.Criterion4RootedSearch"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.Criterion4RootedSearch</span></code></a></p>
+<p>Adaptation of MC/DC coverage for partitioned features.</p>
+<p>A criterion operates based on an <cite>analyzer</cite> to find new concrete
+inputs.</p>
+<p>Flag <cite>prefer_rooted_search</cite> can be used in case both the criterion
+and the analyzer support the two kinds of search; the default
+behavior is to select rooted search.</p>
+<dl class="py method">
+<dt id="dbnc.BFDcCriterion.reset">
+<code class="sig-name descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.BFDcCriterion.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Empties the set of test cases</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="dbnc.BFDcCriterion.coverage">
+<code class="sig-name descname">coverage</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="core.html#utils.Coverage" title="utils.Coverage">utils.Coverage</a><a class="headerlink" href="#dbnc.BFDcCriterion.coverage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a measure of the current coverage.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="dbnc.BFDcCriterion.find_next_rooted_test_target">
+<code class="sig-name descname">find_next_rooted_test_target</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Tuple[NewType.&lt;locals&gt;.new_type, dbnc.BFcTarget]<a class="headerlink" href="#dbnc.BFDcCriterion.find_next_rooted_test_target" title="Permalink to this definition">¶</a></dt>
+<dd><p>Seeks a new test target associated with an existing test input
+taken from the set of recorded test cases.</p>
+<p>Note this method MUST perform enough bookkeeping so that two
+successive calls that are not interleaved with any call to
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">Criterion.add_new_test_cases()</span></code> return different results.
+This property is to enforce progress upon unsuccessful search of
+concrete inputs.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="dbnc.abstract_layerp">
+<code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">abstract_layerp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">li</span></em>, <em class="sig-param"><span class="n">n_feats</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">discr</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">layer_indices</span><span class="o">=</span><span class="default_value">[]</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.abstract_layerp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="dbnc.abstract_layer_features">
+<code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">abstract_layer_features</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">li</span></em>, <em class="sig-param"><span class="n">n_feats</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">discr</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">default</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.abstract_layer_features" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="dbnc.abstract_layer_feature_discretization">
+<code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">abstract_layer_feature_discretization</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">l</span></em>, <em class="sig-param"><span class="n">li</span></em>, <em class="sig-param"><span class="n">discr</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.abstract_layer_feature_discretization" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="dbnc.abstract_layer_setup">
+<code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">abstract_layer_setup</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">l</span></em>, <em class="sig-param"><span class="n">i</span></em>, <em class="sig-param"><span class="n">n_feats</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">discr</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.abstract_layer_setup" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="dbnc.report_on_feature_extractions">
+<code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">report_on_feature_extractions</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fl</span></em>, <em class="sig-param"><span class="n">flatacts</span></em>, <em class="sig-param"><span class="n">fdimred</span></em>, <em class="sig-param"><span class="n">labels</span></em>, <em class="sig-param"><span class="n">acc</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.report_on_feature_extractions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="dbnc.setup">
+<code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">setup_criterion</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">test_object</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">n_feats</span><span class="o">=</span><span class="default_value">{'decomp': 'ica', 'max_iter': 5000, 'n_components': 3, 'tol': 0.02}</span></em>, <em class="sig-param"><span class="n">discr</span><span class="o">=</span><span class="default_value">{'extended': True, 'n_bins': 1, 'strategy': 'uniform'}</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.setup" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-dbnc_pulp">
+<span id="analyzers"></span><h2>Analyzers<a class="headerlink" href="#module-dbnc_pulp" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="dbnc_pulp.PulpBFcAbstrLayerEncoder">
+<em class="property">class </em><code class="sig-prename descclassname">dbnc_pulp.</code><code class="sig-name descname">PulpBFcAbstrLayerEncoder</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fl</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#dbnc.BFcLayer" title="dbnc.BFcLayer">dbnc.BFcLayer</a></span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc_pulp.PulpBFcAbstrLayerEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="lp.html#pulp_encoding.PulpStrictLayerEncoder" title="pulp_encoding.PulpStrictLayerEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">pulp_encoding.PulpStrictLayerEncoder</span></code></a></p>
+<dl class="py method">
+<dt id="dbnc_pulp.PulpBFcAbstrLayerEncoder.pulp_constrain_outputs_in_feature_part">
+<code class="sig-name descname">pulp_constrain_outputs_in_feature_part</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></span></em>, <em class="sig-param"><span class="n">feature_part</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc_pulp.PulpBFcAbstrLayerEncoder.pulp_constrain_outputs_in_feature_part" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="dbnc_pulp.PulpBFcAbstrLayerEncoder.pulp_replicate_activations_outside_of_feature">
+<code class="sig-name descname">pulp_replicate_activations_outside_of_feature</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">feature</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></span></em>, <em class="sig-param"><span class="n">ap_x</span></em>, <em class="sig-param"><span class="n">prev</span><span class="p">:</span> <span class="n"><a class="reference internal" href="lp.html#pulp_encoding.PulpLayerOutput" title="pulp_encoding.PulpLayerOutput">pulp_encoding.PulpLayerOutput</a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc_pulp.PulpBFcAbstrLayerEncoder.pulp_replicate_activations_outside_of_feature" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="dbnc_pulp.abstracted_layer_encoder">
+<code class="sig-prename descclassname">dbnc_pulp.</code><code class="sig-name descname">abstracted_layer_encoder</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">flayers</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc_pulp.abstracted_layer_encoder" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt id="dbnc_pulp.BFcPulpAnalyzer">
+<em class="property">class </em><code class="sig-prename descclassname">dbnc_pulp.</code><code class="sig-name descname">BFcPulpAnalyzer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_metric</span><span class="p">:</span> <span class="n"><a class="reference internal" href="lp.html#lp.PulpLinearMetric" title="lp.PulpLinearMetric">lp.PulpLinearMetric</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc_pulp.BFcPulpAnalyzer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dbnc_pulp._BFcPulpAnalyzer</span></code>, <a class="reference internal" href="#dbnc.BFcAnalyzer" title="dbnc.BFcAnalyzer"><code class="xref py py-class docutils literal notranslate"><span class="pre">dbnc.BFcAnalyzer</span></code></a></p>
+<dl class="py method">
+<dt id="dbnc_pulp.BFcPulpAnalyzer.search_input_close_to">
+<code class="sig-name descname">search_input_close_to</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">target</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#dbnc.BFcTarget" title="dbnc.BFcTarget">dbnc.BFcTarget</a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc_pulp.BFcPulpAnalyzer.search_input_close_to" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method specialized for targets of type <code class="xref py py-class docutils literal notranslate"><span class="pre">BFcTarget</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="dbnc_pulp.BFDcPulpAnalyzer">
+<em class="property">class </em><code class="sig-prename descclassname">dbnc_pulp.</code><code class="sig-name descname">BFDcPulpAnalyzer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_metric</span><span class="p">:</span> <span class="n"><a class="reference internal" href="lp.html#lp.PulpLinearMetric" title="lp.PulpLinearMetric">lp.PulpLinearMetric</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc_pulp.BFDcPulpAnalyzer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dbnc_pulp._BFcPulpAnalyzer</span></code>, <a class="reference internal" href="#dbnc.BFDcAnalyzer" title="dbnc.BFDcAnalyzer"><code class="xref py py-class docutils literal notranslate"><span class="pre">dbnc.BFDcAnalyzer</span></code></a></p>
+<dl class="py method">
+<dt id="dbnc_pulp.BFDcPulpAnalyzer.search_input_close_to">
+<code class="sig-name descname">search_input_close_to</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">target</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#dbnc.BFDcTarget" title="dbnc.BFDcTarget">dbnc.BFDcTarget</a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc_pulp.BFDcPulpAnalyzer.search_input_close_to" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method specialized for targets of type <code class="xref py py-class docutils literal notranslate"><span class="pre">BFDcTarget</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Discrete Bayesian-Network-based Coverage</a><ul>
+<li><a class="reference internal" href="#module-dbnc">Criteria &amp; Base Analyzers</a></li>
+<li><a class="reference internal" href="#module-dbnc_pulp">Analyzers</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="mcdc.html"
+                        title="previous chapter">Modified Condition/Decision Coverage</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="lp.html"
+                        title="next chapter">Linear Program Solving</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/dbnc.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="lp.html" title="Linear Program Solving"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="mcdc.html" title="Modified Condition/Decision Coverage"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">deepconcolic  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="api.html" >DeepConcolic API</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Discrete Bayesian-Network-based Coverage</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, TrustAI.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+  </body>
+</html>

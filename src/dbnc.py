@@ -17,6 +17,9 @@ from pomegranate.distributions import DiscreteDistribution, ConditionalProbabili
 
 
 class BFcLayer (CoverableLayer):
+  """
+  Base class for layers to be covered by BN-based criteria.
+  """
 
   def __init__(self, transform = None, discretization = None, **kwds):
     super().__init__(**kwds)
@@ -334,10 +337,11 @@ class _BaseBFcCriterion (Criterion):
     return [ cpt[:,-1] for cpt in self._all_cpts () ]
 
 
-  # ---
-
-
   def bfc_coverage (self) -> Coverage:
+    """
+    Computes the BFCov metric as per the underlying Bayesian Network
+    abstraction.
+    """
     assert (self.num_test_cases > 0)
     margs = self._all_marginals ()
     props = sum (np.count_nonzero (np.array(p) >= self.epsilon) / len (p)
@@ -346,6 +350,10 @@ class _BaseBFcCriterion (Criterion):
 
 
   def bfdc_coverage (self) -> Coverage:
+    """
+    Computes the BFdCov metric as per the underlying Bayesian Network
+    abstraction.
+    """
     assert (self.num_test_cases > 0)
     # Count 0s in all joint mass functions in the BN abstraction
     cndps = self._all_cond_probs ()
@@ -358,6 +366,14 @@ class _BaseBFcCriterion (Criterion):
 
 
   def stat_based_train_cv_initializers (self):
+    """
+    Initializes the criterion based on traininig data.
+
+    Directly uses argument ``bn_abstr_train_size`` and
+    ``bn_abstr_test_size`` arguments given to the constructor, and
+    optionally computes some scores (based on flags given to the
+    constructor as well).
+    """
     bn_abstr = ({ 'test': self._score }
                 if (self.score_layer_likelihoods or
                     self.report_on_feature_extractions is not None or
@@ -374,6 +390,10 @@ class _BaseBFcCriterion (Criterion):
 
 
   def _discretize_features_and_create_bn_structure (self, acts):
+    """
+    Called through :meth:`stat_based_train_cv_initializers` above.
+    """
+    
     cnp1 ('| Given training data of size {}'
           .format(len(acts[self.flayers[0].layer_index])))
 
@@ -417,6 +437,10 @@ class _BaseBFcCriterion (Criterion):
 
 
   def _create_bayesian_network (self):
+    """
+    Actual BN instantiation.
+    """
+    
     import gc
     nc = sum (f.num_features for f in self.flayers)
     ec = sum (f.num_features * g.num_features
@@ -461,6 +485,10 @@ class _BaseBFcCriterion (Criterion):
 
 
   def _score (self, acts, labels = None):
+    """
+    Basic scores for manual investigations.
+    """
+    
     p1 ('| Given test sample of size {}'
          .format(len(acts[self.flayers[0].layer_index])))
 
@@ -503,6 +531,9 @@ class _BaseBFcCriterion (Criterion):
 
 
   def _score_discretized_feature_probas (self, truth):
+    """
+    Further scoring the predictive abilites of the BN.
+    """
 
     if self.N.edge_count () == 0:
       p1 ('Warning: BN abstraction has no edge: skipping prediction assessments.')
@@ -548,9 +579,6 @@ class _BaseBFcCriterion (Criterion):
     self.all_log_losses = (np.min (all_floss), np.mean (all_floss),
                            np.std (all_floss), np.max (all_floss))
     del features_probas
-
-
-  # ---
 
 
   def _setup_estimate_feature_probas (self, truth):
@@ -604,7 +632,10 @@ class BFcTarget (NamedTuple, TestTarget):
     pass
 
 
-  def check(self, t: Input) -> None:
+  def check(self, t: Input) -> bool:
+    """
+    Checks whether the target is met.
+    """
     return self.sanity_check (self.fnode.feature, t)
 
 
@@ -612,13 +643,15 @@ class BFcTarget (NamedTuple, TestTarget):
 
 
 class BFcAnalyzer (Analyzer4RootedSearch):
-  '''
-  Analyzer that finds a new concrete input that is close to a given
-  test case.
-  '''
+  """
+  Analyzer dedicated to targets of type :class:`BFcTarget`.
+  """
 
   @abstractmethod
   def search_input_close_to(self, x: Input, target: BFcTarget) -> Optional[Tuple[float, Input]]:
+    """
+    Method specialized for targets of type :class:`BFcTarget`.
+    """
     pass
 
 
@@ -737,7 +770,10 @@ class BFDcTarget (NamedTuple, TestTarget):
     pass
 
 
-  def check(self, t: Input) -> None:
+  def check(self, t: Input) -> bool:
+    """
+    Checks whether the target is met.
+    """
     return self.sanity_check (self.fnode1.feature, t)
 
 
@@ -745,13 +781,15 @@ class BFDcTarget (NamedTuple, TestTarget):
 
 
 class BFDcAnalyzer (Analyzer4RootedSearch):
-  '''
-  Analyzer that finds a new concrete input that is close to a given
-  test case.
-  '''
+  """
+  Analyzer dedicated to targets of type :class:`BDFcTarget`.
+  """
 
   @abstractmethod
   def search_input_close_to(self, x: Input, target: BFDcTarget) -> Optional[Tuple[float, Input]]:
+    """
+    Method specialized for targets of type :class:`BFDcTarget`.
+    """
     pass
 
 
