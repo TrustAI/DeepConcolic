@@ -95,6 +95,6 @@ intersphinx_mapping = {
     'numpy': ('https://numpy.org/doc/stable/', None),
     'sklearn': ('https://scikit-learn.org/stable', None),
     'tensorflow': ("https://www.tensorflow.org/api_docs/python",
-                   "https://github.com/mr-ubik/tensorflow-intersphinx/master/tf2_py_objects.inv"),
+                   "https://raw.githubusercontent.com/mr-ubik/tensorflow-intersphinx/master/tf2_py_objects.inv"),
     'matplotlib': ('https://matplotlib.org', None)
 }

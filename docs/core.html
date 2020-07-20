@@ -1,0 +1,976 @@
+
+
+<!doctype html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepConcolic Core API &#8212; deepconcolic  documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">deepconcolic  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">DeepConcolic Core API</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="deepconcolic-core-api">
+<h1>DeepConcolic Core API<a class="headerlink" href="#deepconcolic-core-api" title="Permalink to this headline">¶</a></h1>
+<p>DeepConcolic’s test input generation algorithm is embodied in an
+<em>Engine</em>, whose role is to fulfill a coverage <em>Criterion</em> by
+generating inputs using an <em>Analyzer</em>.</p>
+<div class="section" id="engine-api">
+<h2>Engine API<a class="headerlink" href="#engine-api" title="Permalink to this headline">¶</a></h2>
+<p>Note the main entry point for constructing engines is
+<a class="reference internal" href="#engine.setup" title="engine.setup"><code class="xref py py-func docutils literal notranslate"><span class="pre">engine.setup()</span></code></a>.  The base classes of criteria and analyzers are
+<a class="reference internal" href="#engine.Criterion" title="engine.Criterion"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.Criterion</span></code></a> and <a class="reference internal" href="#engine.Analyzer" title="engine.Analyzer"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.Analyzer</span></code></a>, although the
+latter comes in two flavors depending on whether the search for inputs
+is based on a given <code class="docutils literal notranslate"><span class="pre">root</span></code> sample
+(<a class="reference internal" href="#engine.Analyzer4RootedSearch" title="engine.Analyzer4RootedSearch"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.Analyzer4RootedSearch</span></code></a>) or based on a pre-defined
+sample set (<a class="reference internal" href="#engine.Analyzer4FreeSearch" title="engine.Analyzer4FreeSearch"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.Analyzer4FreeSearch</span></code></a>).</p>
+<span class="target" id="module-engine"></span><dl class="py class">
+<dt id="engine.Oracle">
+<em class="property">class </em><code class="sig-prename descclassname">engine.</code><code class="sig-name descname">Oracle</code><a class="headerlink" href="#engine.Oracle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Oracles can be used to compare any concrete input against a
+reference set.</p>
+<dl class="py method">
+<dt id="engine.Oracle.close_to">
+<em class="property">abstract </em><code class="sig-name descname">close_to</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">refs</span></em>, <em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.Oracle.close_to" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="engine.Metric">
+<em class="property">class </em><code class="sig-prename descclassname">engine.</code><code class="sig-name descname">Metric</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">factor</span><span class="o">=</span><span class="default_value">0.25</span></em>, <em class="sig-param"><span class="n">scale</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.Metric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#engine.Oracle" title="engine.Oracle"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.Oracle</span></code></a></p>
+<p>A metric can also be used as an oracle to compare and assess
+concrete inputs.</p>
+<p>The <cite>factor</cite> argument determines closeness when the object is used
+as an oracle; defaults to 1/4.  In turn, <cite>scale</cite> is applied on
+involved scalar values (e.g. pixels) when computing distances.</p>
+<dl class="py method">
+<dt id="engine.Metric.distance">
+<em class="property">abstract </em><code class="sig-name descname">distance</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.Metric.distance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the distance between two concrete inputs <cite>x</cite> and <cite>y</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="engine.Metric.is_int">
+<em class="property">property </em><code class="sig-name descname">is_int</code><a class="headerlink" href="#engine.Metric.is_int" title="Permalink to this definition">¶</a></dt>
+<dd><p>Holds iff Integer metrics.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="engine.TestTarget">
+<em class="property">class </em><code class="sig-prename descclassname">engine.</code><code class="sig-name descname">TestTarget</code><a class="headerlink" href="#engine.TestTarget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Base record of test targets.</p>
+<dl class="py method">
+<dt id="engine.TestTarget.cover">
+<em class="property">abstract </em><code class="sig-name descname">cover</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a><a class="headerlink" href="#engine.TestTarget.cover" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record that the target has been covered.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="engine.TestTarget.log_repr">
+<code class="sig-name descname">log_repr</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><a class="headerlink" href="#engine.TestTarget.log_repr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a single-line string representation of the target suitable
+for logging.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="engine.Analyzer">
+<em class="property">class </em><code class="sig-prename descclassname">engine.</code><code class="sig-name descname">Analyzer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">analyzed_dnn</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.Analyzer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Base class for any kind of analyzer that is able to construct new
+concrete inputs.</p>
+<dl class="py method">
+<dt id="engine.Analyzer.dnn">
+<em class="property">property </em><code class="sig-name descname">dnn</code><a class="headerlink" href="#engine.Analyzer.dnn" title="Permalink to this definition">¶</a></dt>
+<dd><p>The analyzed DNN.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="engine.Analyzer.eval">
+<code class="sig-name descname">eval</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">i</span></em>, <em class="sig-param"><span class="n">allow_input_layer</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.Analyzer.eval" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the activations associated to a given input.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="engine.Analyzer.eval_batch">
+<code class="sig-name descname">eval_batch</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">i</span></em>, <em class="sig-param"><span class="n">allow_input_layer</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.Analyzer.eval_batch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns all activations associated to a given input batch.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="engine.Analyzer.input_metric">
+<em class="property">abstract </em><code class="sig-name descname">input_metric</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#engine.Metric" title="engine.Metric">engine.Metric</a><a class="headerlink" href="#engine.Analyzer.input_metric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the metric used to compare concrete inputs.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="engine.Analyzer4RootedSearch">
+<em class="property">class </em><code class="sig-prename descclassname">engine.</code><code class="sig-name descname">Analyzer4RootedSearch</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">analyzed_dnn</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.Analyzer4RootedSearch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#engine.Analyzer" title="engine.Analyzer"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.Analyzer</span></code></a></p>
+<p>Analyzers that are able to find new concrete inputs close to a given
+input should inherit this class.</p>
+<dl class="py method">
+<dt id="engine.Analyzer4RootedSearch.search_input_close_to">
+<em class="property">abstract </em><code class="sig-name descname">search_input_close_to</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">target</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#engine.TestTarget" title="engine.TestTarget">engine.TestTarget</a></span></em><span class="sig-paren">)</span> &#x2192; Optional[Tuple[float, NewType.&lt;locals&gt;.new_type]]<a class="headerlink" href="#engine.Analyzer4RootedSearch.search_input_close_to" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a new concrete input close to <cite>x</cite>, that fulfills test
+target <cite>target</cite>.</p>
+<p>Returns a tuple <cite>(d, y)</cite>, that is a new concrete input <cite>y</cite> along
+with its distance <cite>d</cite> w.r.t the input metric, or <cite>None</cite> is
+unsuccessful.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="engine.Analyzer4FreeSearch">
+<em class="property">class </em><code class="sig-prename descclassname">engine.</code><code class="sig-name descname">Analyzer4FreeSearch</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">analyzed_dnn</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.Analyzer4FreeSearch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#engine.Analyzer" title="engine.Analyzer"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.Analyzer</span></code></a></p>
+<p>Analyzers that are able to find new concrete inputs close to any
+input from a give set of test cases.</p>
+<dl class="py method">
+<dt id="engine.Analyzer4FreeSearch.search_close_inputs">
+<em class="property">abstract </em><code class="sig-name descname">search_close_inputs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">target</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#engine.TestTarget" title="engine.TestTarget">engine.TestTarget</a></span></em><span class="sig-paren">)</span> &#x2192; Optional[Tuple[float, NewType.&lt;locals&gt;.new_type, input]]<a class="headerlink" href="#engine.Analyzer4FreeSearch.search_close_inputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a new concrete input that fulfills test target <cite>target</cite>.</p>
+<p>Returns a tuple <cite>(d, base, new)</cite> where <cite>base</cite> is a concrete
+element from a set given on initialization (typically for now, raw
+data from <cite>test_object</cite>) and <cite>new</cite> is a new concrete input at
+distance <cite>d</cite> from <cite>base</cite>, or <cite>None</cite> is unsuccessful.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="engine.Report">
+<em class="property">class </em><code class="sig-prename descclassname">engine.</code><code class="sig-name descname">Report</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">base_name</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">outs</span><span class="o">=</span><span class="default_value">'/tmp'</span></em>, <em class="sig-param"><span class="n">save_new_tests</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">adv_dist_period</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">save_input_func</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">inp_up</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.Report" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>A simple class to take reporting stuff out from the engine.</p>
+<dl class="py method">
+<dt id="engine.Report.save_input">
+<code class="sig-name descname">save_input</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">i</span></em>, <em class="sig-param"><span class="n">suff</span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.Report.save_input" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="engine.Report.new_test">
+<code class="sig-name descname">new_test</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">new</span><span class="o">=</span><span class="default_value">()</span></em>, <em class="sig-param"><span class="n">orig</span><span class="o">=</span><span class="default_value">()</span></em>, <em class="sig-param"><span class="n">dist</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">is_int</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.Report.new_test" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="engine.Report.num_adversarials">
+<em class="property">property </em><code class="sig-name descname">num_adversarials</code><a class="headerlink" href="#engine.Report.num_adversarials" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="engine.Report.new_adversarial">
+<code class="sig-name descname">new_adversarial</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">new</span><span class="o">=</span><span class="default_value">()</span></em>, <em class="sig-param"><span class="n">orig</span><span class="o">=</span><span class="default_value">()</span></em>, <em class="sig-param"><span class="n">dist</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">is_int</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.Report.new_adversarial" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="engine.Report.step">
+<code class="sig-name descname">step</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a><a class="headerlink" href="#engine.Report.step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints a single report line.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt id="engine.EarlyTermination">
+<em class="property">exception </em><code class="sig-prename descclassname">engine.</code><code class="sig-name descname">EarlyTermination</code><a class="headerlink" href="#engine.EarlyTermination" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></a></p>
+<p>Exception raised by criteria when no new test target can be found.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="engine.Criterion">
+<em class="property">class </em><code class="sig-prename descclassname">engine.</code><code class="sig-name descname">Criterion</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">analyzer</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#engine.Analyzer" title="engine.Analyzer">engine.Analyzer</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">prefer_rooted_search</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.Criterion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Base class for test critieria.</p>
+<p>Note that a criterion MUST inherit either (or both)
+<a class="reference internal" href="#engine.Criterion4FreeSearch" title="engine.Criterion4FreeSearch"><code class="xref py py-class docutils literal notranslate"><span class="pre">Criterion4FreeSearch</span></code></a> or <a class="reference internal" href="#engine.Criterion4RootedSearch" title="engine.Criterion4RootedSearch"><code class="xref py py-class docutils literal notranslate"><span class="pre">Criterion4RootedSearch</span></code></a>.</p>
+<p>A criterion operates based on an <cite>analyzer</cite> to find new concrete
+inputs.</p>
+<p>Flag <cite>prefer_rooted_search</cite> can be used in case both the criterion
+and the analyzer support the two kinds of search; the default
+behavior is to select rooted search.</p>
+<dl class="py method">
+<dt id="engine.Criterion.finalize_setup">
+<em class="property">abstract </em><code class="sig-name descname">finalize_setup</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#engine.Criterion.finalize_setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called once after any stat-based initialization (see, e.g.,
+<a class="reference internal" href="#engine.Criterion.stat_based_basic_initializers" title="engine.Criterion.stat_based_basic_initializers"><code class="xref py py-meth docutils literal notranslate"><span class="pre">stat_based_basic_initializers()</span></code></a>), and before any call to
+<a class="reference internal" href="#engine.Criterion.add_new_test_cases" title="engine.Criterion.add_new_test_cases"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_new_test_cases()</span></code></a>, <a class="reference internal" href="#engine.Criterion.coverage" title="engine.Criterion.coverage"><code class="xref py py-meth docutils literal notranslate"><span class="pre">coverage()</span></code></a>, and
+<a class="reference internal" href="#engine.Criterion.search_next" title="engine.Criterion.search_next"><code class="xref py py-meth docutils literal notranslate"><span class="pre">search_next()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="engine.Criterion.reset">
+<code class="sig-name descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#engine.Criterion.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Empties the set of test cases</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="engine.Criterion.coverage">
+<em class="property">abstract </em><code class="sig-name descname">coverage</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#utils.Coverage" title="utils.Coverage">utils.Coverage</a><a class="headerlink" href="#engine.Criterion.coverage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a measure of the current coverage.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="engine.Criterion.metric">
+<em class="property">property </em><code class="sig-name descname">metric</code><a class="headerlink" href="#engine.Criterion.metric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the metric used by the analyzer to compare concrete
+inputs.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="engine.Criterion.oracle">
+<em class="property">property </em><code class="sig-name descname">oracle</code><a class="headerlink" href="#engine.Criterion.oracle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the oracle used to compare concrete inputs.  By default
+this is in input metric used by the analyzer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="engine.Criterion.num_test_cases">
+<em class="property">property </em><code class="sig-name descname">num_test_cases</code><a class="headerlink" href="#engine.Criterion.num_test_cases" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the number of test cases.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="engine.Criterion.add_new_test_cases">
+<code class="sig-name descname">add_new_test_cases</code><span class="sig-paren">(</span><em class="sig-param">tl: Sequence[NewType.&lt;locals&gt;.new_type]</em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a><a class="headerlink" href="#engine.Criterion.add_new_test_cases" title="Permalink to this definition">¶</a></dt>
+<dd><p>As its name says, this method adds a given series of inputs into
+the set of test cases.  It then calls <a class="reference internal" href="#engine.Criterion.update_coverage" title="engine.Criterion.update_coverage"><code class="xref py py-meth docutils literal notranslate"><span class="pre">update_coverage()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="engine.Criterion.update_coverage">
+<em class="property">abstract </em><code class="sig-name descname">update_coverage</code><span class="sig-paren">(</span><em class="sig-param">tl: Sequence[NewType.&lt;locals&gt;.new_type]</em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a><a class="headerlink" href="#engine.Criterion.update_coverage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method called whenever new test cases are registered.  Overload
+this method to update coverage.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="engine.Criterion.search_next">
+<code class="sig-name descname">search_next</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Tuple[Optional[Tuple[NewType.&lt;locals&gt;.new_type, NewType.&lt;locals&gt;.new_type, float]], engine.TestTarget]<a class="headerlink" href="#engine.Criterion.search_next" title="Permalink to this definition">¶</a></dt>
+<dd><p>Selects a new test target based (see
+<a class="reference internal" href="#engine.Criterion4RootedSearch" title="engine.Criterion4RootedSearch"><code class="xref py py-class docutils literal notranslate"><span class="pre">Criterion4RootedSearch</span></code></a> and
+<a class="reference internal" href="#engine.Criterion4FreeSearch" title="engine.Criterion4FreeSearch"><code class="xref py py-class docutils literal notranslate"><span class="pre">Criterion4FreeSearch</span></code></a>), and then uses the analyzer to find
+a new concrete input.</p>
+<p>Returns a pair of:</p>
+<ul class="simple">
+<li><p>either <cite>None</cite> in case of failure of the analyzer, or a triple
+<cite>(x0, x1, d)</cite>, <cite>x1</cite> being the new concrete input generated by
+the analyzer;</p></li>
+<li><p>the test target considered.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py method">
+<dt id="engine.Criterion.stat_based_basic_initializers">
+<code class="sig-name descname">stat_based_basic_initializers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#engine.Criterion.stat_based_basic_initializers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stat-based initialization steps (non-batched).</p>
+<p>Returns a list of dictionaries (or <cite>None</cite>) with the following
+entries:</p>
+<ul class="simple">
+<li><p>name: short description of what’s computed;</p></li>
+<li><p>layer_indexes: a list or set of indexes for layers whose
+activations values are needed;</p></li>
+<li><p>once: a callable taking a mapping (as a dictionary) from each
+layer index given in <cite>layer_indexes</cite> to activation values for
+the corresponding layer; this is to be called only once during
+initialization of the analyzer;</p></li>
+<li><p>print (optional): a function that prints a summary of results.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py method">
+<dt id="engine.Criterion.stat_based_incremental_initializers">
+<code class="sig-name descname">stat_based_incremental_initializers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#engine.Criterion.stat_based_incremental_initializers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stat-based incremental initialization steps.</p>
+<p>Returns a list of dictionaries (or <cite>None</cite>) with the following
+entries:</p>
+<ul class="simple">
+<li><p>name: short description of what’s computed;</p></li>
+<li><p>accum: a callable taking batched activation values for every
+layer and any accumulator that is (initially <cite>None</cite>), and
+returns a new or updated accumulator.  This is called at least
+once.</p></li>
+<li><p>final: optional function that is called with the final
+accumulator once all batched activations have been passed to
+<cite>accum</cite>;</p></li>
+<li><p>print (optional): a function that prints a summary of results.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py method">
+<dt id="engine.Criterion.stat_based_train_cv_initializers">
+<code class="sig-name descname">stat_based_train_cv_initializers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#engine.Criterion.stat_based_train_cv_initializers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stat-based initialization steps with optional cross-validation
+performed on training data.</p>
+<p>Returns a list of dictionaries (or <cite>None</cite>) with the following
+entries:</p>
+<ul class="simple">
+<li><p>name: short description of what’s computed;</p></li>
+<li><p>layer_indexes: a list or set of indexes for layers whose
+activations values are needed;</p></li>
+<li><p>test_size &amp; train_size: (as in
+<cite>sklearn.model_selection.train_test_split</cite>)</p></li>
+<li><p>train: a callable taking some training data as mapping (as a
+dictionary) from each layer index given in <cite>layer_indexes</cite> to
+activation values for the corresponding layer, and returns some
+arbitrary object; this is to be called only once during
+initialization;</p></li>
+<li><p>test: a callable taking some extra training data and associated
+labels as two separate mappings (as a dictionary) from each
+layer index given in <cite>layer_indexes</cite> to activation values for
+the corresponding layer.</p></li>
+</ul>
+<p>Any function given as entries above is always called before
+functions returned by <cite>stat_based_test_cv_initializers</cite>, but after
+those retured by <cite>stat_based_basic_initializers</cite> and
+<cite>stat_based_incremental_initializers</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="engine.Criterion.stat_based_test_cv_initializers">
+<code class="sig-name descname">stat_based_test_cv_initializers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#engine.Criterion.stat_based_test_cv_initializers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stat-based initialization steps with optional cross-validation
+performed on test data.</p>
+<p>Returns a list of dictionaries (or <cite>None</cite>) with the following
+entries:</p>
+<ul class="simple">
+<li><p>name: short description of what’s computed;</p></li>
+<li><p>layer_indexes: a list or set of indexes for layers whose
+activations values are needed;</p></li>
+<li><p>test_size &amp; train_size: (as in
+<cite>sklearn.model_selection.train_test_split</cite>)</p></li>
+<li><p>train: a callable taking some test data as mapping (as a
+dictionary) from each layer index given in <cite>layer_indexes</cite> to
+activation values for the corresponding layer, and returns some
+arbitrary object; this is to be called only once during
+initialization;</p></li>
+<li><p>test: a callable taking some extra test data and associated
+labels as two separate mappings (as a dictionary) from each
+layer index given in <cite>layer_indexes</cite> to activation values for
+the corresponding layer.</p></li>
+</ul>
+<p>Any function given as entries above is always called last.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="engine.Criterion4RootedSearch">
+<em class="property">class </em><code class="sig-prename descclassname">engine.</code><code class="sig-name descname">Criterion4RootedSearch</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">analyzer</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#engine.Analyzer" title="engine.Analyzer">engine.Analyzer</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">prefer_rooted_search</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.Criterion4RootedSearch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#engine.Criterion" title="engine.Criterion"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.Criterion</span></code></a></p>
+<p>Any criterion that can be used to find a pair of a base test case
+and a test target should inherit this class.</p>
+<p>A criterion operates based on an <cite>analyzer</cite> to find new concrete
+inputs.</p>
+<p>Flag <cite>prefer_rooted_search</cite> can be used in case both the criterion
+and the analyzer support the two kinds of search; the default
+behavior is to select rooted search.</p>
+<dl class="py method">
+<dt id="engine.Criterion4RootedSearch.find_next_rooted_test_target">
+<em class="property">abstract </em><code class="sig-name descname">find_next_rooted_test_target</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Tuple[NewType.&lt;locals&gt;.new_type, engine.TestTarget]<a class="headerlink" href="#engine.Criterion4RootedSearch.find_next_rooted_test_target" title="Permalink to this definition">¶</a></dt>
+<dd><p>Seeks a new test target associated with an existing test input
+taken from the set of recorded test cases.</p>
+<p>Note this method MUST perform enough bookkeeping so that two
+successive calls that are not interleaved with any call to
+<a class="reference internal" href="#engine.Criterion.add_new_test_cases" title="engine.Criterion.add_new_test_cases"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Criterion.add_new_test_cases()</span></code></a> return different results.
+This property is to enforce progress upon unsuccessful search of
+concrete inputs.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="engine.Criterion4FreeSearch">
+<em class="property">class </em><code class="sig-prename descclassname">engine.</code><code class="sig-name descname">Criterion4FreeSearch</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">analyzer</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#engine.Analyzer" title="engine.Analyzer">engine.Analyzer</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">prefer_rooted_search</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.Criterion4FreeSearch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#engine.Criterion" title="engine.Criterion"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.Criterion</span></code></a></p>
+<p>Any criterion that can be used to select a test target without
+relying on activation data or previously inserted test cases should
+inherit this class.</p>
+<p>A criterion operates based on an <cite>analyzer</cite> to find new concrete
+inputs.</p>
+<p>Flag <cite>prefer_rooted_search</cite> can be used in case both the criterion
+and the analyzer support the two kinds of search; the default
+behavior is to select rooted search.</p>
+<dl class="py method">
+<dt id="engine.Criterion4FreeSearch.find_next_test_target">
+<em class="property">abstract </em><code class="sig-name descname">find_next_test_target</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#engine.TestTarget" title="engine.TestTarget">engine.TestTarget</a><a class="headerlink" href="#engine.Criterion4FreeSearch.find_next_test_target" title="Permalink to this definition">¶</a></dt>
+<dd><p>Seeks and returns a new test target.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="engine.setup_basic_report">
+<code class="sig-prename descclassname">engine.</code><code class="sig-name descname">setup_basic_report</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">criterion</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#engine.Criterion" title="engine.Criterion">engine.Criterion</a></span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#engine.Report" title="engine.Report">engine.Report</a><a class="headerlink" href="#engine.setup_basic_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a very basic report object that feeds files whose base names
+are constructed from the provided criterion.</p>
+<p>Extra keyword arguments are passed on to the constructor of
+<a class="reference internal" href="#engine.Report" title="engine.Report"><code class="xref py py-class docutils literal notranslate"><span class="pre">Report</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="engine.Engine">
+<em class="property">class </em><code class="sig-prename descclassname">engine.</code><code class="sig-name descname">Engine</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ref_data</span></em>, <em class="sig-param"><span class="n">train_data</span></em>, <em class="sig-param"><span class="n">criterion</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#engine.Criterion" title="engine.Criterion">engine.Criterion</a></span></em>, <em class="sig-param"><span class="n">custom_oracle</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#engine.Oracle" title="engine.Oracle">engine.Oracle</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.Engine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Core Deepconcolic engine.</p>
+<p>Builds a test engine with the given DNN, reference data, and test
+criterion.  Uses the input metric provided by the
+criterion-specific analyzer as oracle, unless <cite>custom_oracle</cite> is
+not <cite>None</cite>.</p>
+<dl class="py method">
+<dt id="engine.Engine.run">
+<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param">setup_report: Callable[[engine.Criterion], engine.Report] = &lt;function setup_basic_report&gt;, initial_test_cases=None, max_iterations=None, **kwds</em><span class="sig-paren">)</span><a class="headerlink" href="#engine.Engine.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses <cite>setup_report</cite> to construct a helper for outputing logs and
+new test cases, and then starts the engine for either: up to
+<cite>max_iterations</cite> iterations (i.e. number of runs of the analyzer)
+if <cite>max_iterations = None</cite>, or until full coverage is reached, or
+the criterion is fulfilled (whichever happens first).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="engine.setup">
+<code class="sig-prename descclassname">engine.</code><code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">test_object</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#utils.test_objectt" title="utils.test_objectt">utils.test_objectt</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cover_layers</span><span class="p">:</span> <span class="n">Sequence<span class="p">[</span>CL<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">setup_analyzer</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a><span class="p">]</span><span class="p">, </span><a class="reference internal" href="#engine.Analyzer" title="engine.Analyzer">engine.Analyzer</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">setup_criterion</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">[</span>Sequence<span class="p">[</span>CL<span class="p">]</span><span class="p">, </span><a class="reference internal" href="#engine.Analyzer" title="engine.Analyzer">engine.Analyzer</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a><span class="p">]</span><span class="p">, </span><a class="reference internal" href="#engine.Criterion" title="engine.Criterion">engine.Criterion</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">criterion_args</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a></span> <span class="o">=</span> <span class="default_value">{}</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#engine.Engine" title="engine.Engine">engine.Engine</a><a class="headerlink" href="#engine.setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper to build engine instances.  Extra arguments are passed to the
+analyzer setup function (<cite>setup_analyzer</cite>).</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="engine.CoverableLayer">
+<em class="property">class </em><code class="sig-prename descclassname">engine.</code><code class="sig-name descname">CoverableLayer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">layer</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">layer_index</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.CoverableLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#utils.cover_layert" title="utils.cover_layert"><code class="xref py py-class docutils literal notranslate"><span class="pre">utils.cover_layert</span></code></a></p>
+<p>Base class for any layer based on which coverability criteria are
+defined.</p>
+<p>Note: this reuses <cite>cover_layert</cite> to hold <cite>layer</cite> and <cite>layer_index</cite>,
+yet one should not rely on that as this is only temporary.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="engine.BoolMappedCoverableLayer">
+<em class="property">class </em><code class="sig-prename descclassname">engine.</code><code class="sig-name descname">BoolMappedCoverableLayer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">feature_indices</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">bottom_act_value</span><span class="o">=</span><span class="default_value">- 100000</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.BoolMappedCoverableLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#engine.CoverableLayer" title="engine.CoverableLayer"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.CoverableLayer</span></code></a></p>
+<p>Represents a layer where coverage is defined using a Boolean mapping
+from each neuron.</p>
+<dl class="py method">
+<dt id="engine.BoolMappedCoverableLayer.filter_out_padding_against">
+<code class="sig-name descname">filter_out_padding_against</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">prev_layer</span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.BoolMappedCoverableLayer.filter_out_padding_against" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="engine.BoolMappedCoverableLayer.coverage">
+<code class="sig-name descname">coverage</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">feature_indices</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#utils.Coverage" title="utils.Coverage">utils.Coverage</a><a class="headerlink" href="#engine.BoolMappedCoverableLayer.coverage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="engine.BoolMappedCoverableLayer.find">
+<code class="sig-name descname">find</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">f</span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.BoolMappedCoverableLayer.find" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="engine.BoolMappedCoverableLayer.cover">
+<code class="sig-name descname">cover</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pos</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a><a class="headerlink" href="#engine.BoolMappedCoverableLayer.cover" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="engine.BoolMappedCoverableLayer.inhibit_activation">
+<code class="sig-name descname">inhibit_activation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pos</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a><a class="headerlink" href="#engine.BoolMappedCoverableLayer.inhibit_activation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inhibit any activation at the given position so that it is not
+returned by any direct subsequent call to <cite>find</cite> (i.e not
+precededed by a call to <cite>update_with_new_activations</cite>).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="engine.BoolMappedCoverableLayer.update_with_new_activations">
+<code class="sig-name descname">update_with_new_activations</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">act</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a><a class="headerlink" href="#engine.BoolMappedCoverableLayer.update_with_new_activations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="engine.LayerLocalAnalyzer">
+<em class="property">class </em><code class="sig-prename descclassname">engine.</code><code class="sig-name descname">LayerLocalAnalyzer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">analyzed_dnn</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.LayerLocalAnalyzer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#engine.Analyzer" title="engine.Analyzer"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.Analyzer</span></code></a></p>
+<p>Analyzers that seek layer-local criteria must inherit this class to
+register the sequence of covered layers.</p>
+<dl class="py method">
+<dt id="engine.LayerLocalAnalyzer.finalize_setup">
+<em class="property">abstract </em><code class="sig-name descname">finalize_setup</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">clayers</span><span class="p">:</span> <span class="n">Sequence<span class="p">[</span><a class="reference internal" href="#engine.CoverableLayer" title="engine.CoverableLayer">engine.CoverableLayer</a><span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.LayerLocalAnalyzer.finalize_setup" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="engine.LayerLocalCriterion">
+<em class="property">class </em><code class="sig-prename descclassname">engine.</code><code class="sig-name descname">LayerLocalCriterion</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">clayers</span><span class="p">:</span> <span class="n">Sequence<span class="p">[</span><a class="reference internal" href="#engine.BoolMappedCoverableLayer" title="engine.BoolMappedCoverableLayer">engine.BoolMappedCoverableLayer</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">shallow_first</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">feature_indices</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#engine.LayerLocalCriterion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#engine.Criterion" title="engine.Criterion"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.Criterion</span></code></a></p>
+<p>Criteria whose definition involves layer-local coverage properties.</p>
+<p>A criterion operates based on an <cite>analyzer</cite> to find new concrete
+inputs.</p>
+<p>Flag <cite>prefer_rooted_search</cite> can be used in case both the criterion
+and the analyzer support the two kinds of search; the default
+behavior is to select rooted search.</p>
+<dl class="py method">
+<dt id="engine.LayerLocalCriterion.finalize_setup">
+<code class="sig-name descname">finalize_setup</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#engine.LayerLocalCriterion.finalize_setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called once after any stat-based initialization (see, e.g.,
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">stat_based_basic_initializers()</span></code>), and before any call to
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">add_new_test_cases()</span></code>, <a class="reference internal" href="#engine.LayerLocalCriterion.coverage" title="engine.LayerLocalCriterion.coverage"><code class="xref py py-meth docutils literal notranslate"><span class="pre">coverage()</span></code></a>, and
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">search_next()</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="engine.LayerLocalCriterion.stat_based_incremental_initializers">
+<code class="sig-name descname">stat_based_incremental_initializers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#engine.LayerLocalCriterion.stat_based_incremental_initializers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stat-based incremental initialization steps.</p>
+<p>Returns a list of dictionaries (or <cite>None</cite>) with the following
+entries:</p>
+<ul class="simple">
+<li><p>name: short description of what’s computed;</p></li>
+<li><p>accum: a callable taking batched activation values for every
+layer and any accumulator that is (initially <cite>None</cite>), and
+returns a new or updated accumulator.  This is called at least
+once.</p></li>
+<li><p>final: optional function that is called with the final
+accumulator once all batched activations have been passed to
+<cite>accum</cite>;</p></li>
+<li><p>print (optional): a function that prints a summary of results.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py method">
+<dt id="engine.LayerLocalCriterion.coverage">
+<code class="sig-name descname">coverage</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#utils.Coverage" title="utils.Coverage">utils.Coverage</a><a class="headerlink" href="#engine.LayerLocalCriterion.coverage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a measure of the current coverage.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="engine.LayerLocalCriterion.update_coverage">
+<code class="sig-name descname">update_coverage</code><span class="sig-paren">(</span><em class="sig-param">tl: Sequence[NewType.&lt;locals&gt;.new_type]</em><span class="sig-paren">)</span><a class="headerlink" href="#engine.LayerLocalCriterion.update_coverage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register new test cases</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="engine.LayerLocalCriterion.get_max">
+<code class="sig-name descname">get_max</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Tuple[engine.BoolMappedCoverableLayer, Tuple[int, …], float, NewType.&lt;locals&gt;.new_type]<a class="headerlink" href="#engine.LayerLocalCriterion.get_max" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="engine.LayerLocalCriterion.get_random">
+<code class="sig-name descname">get_random</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#engine.LayerLocalCriterion.get_random" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-norms">
+<span id="norms"></span><h2>Norms<a class="headerlink" href="#module-norms" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="norms.Norm">
+<em class="property">class </em><code class="sig-prename descclassname">norms.</code><code class="sig-name descname">Norm</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">factor</span><span class="o">=</span><span class="default_value">0.25</span></em>, <em class="sig-param"><span class="n">scale</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#norms.Norm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#engine.Metric" title="engine.Metric"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.Metric</span></code></a></p>
+<p>Just an alias for norms.</p>
+<p>The <cite>factor</cite> argument determines closeness when the object is used
+as an oracle; defaults to 1/4.  In turn, <cite>scale</cite> is applied on
+involved scalar values (e.g. pixels) when computing distances.</p>
+<dl class="py method">
+<dt id="norms.Norm.close_to">
+<code class="sig-name descname">close_to</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">refs</span></em>, <em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="headerlink" href="#norms.Norm.close_to" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="norms.L0">
+<em class="property">class </em><code class="sig-prename descclassname">norms.</code><code class="sig-name descname">L0</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">scale</span><span class="o">=</span><span class="default_value">255</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#norms.L0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#norms.Norm" title="norms.Norm"><code class="xref py py-class docutils literal notranslate"><span class="pre">norms.Norm</span></code></a></p>
+<p>L0 norm.</p>
+<p>The <cite>factor</cite> argument determines closeness when the object is used
+as an oracle; defaults to 1/4.  In turn, <cite>scale</cite> is applied on
+involved scalar values (e.g. pixels) when computing distances.</p>
+<dl class="py method">
+<dt id="norms.L0.is_int">
+<em class="property">property </em><code class="sig-name descname">is_int</code><a class="headerlink" href="#norms.L0.is_int" title="Permalink to this definition">¶</a></dt>
+<dd><p>Holds iff Integer metrics.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="norms.L0.distance">
+<code class="sig-name descname">distance</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em><span class="sig-paren">)</span><a class="headerlink" href="#norms.L0.distance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the distance between two concrete inputs <cite>x</cite> and <cite>y</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="norms.L0.close_to">
+<code class="sig-name descname">close_to</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">refs</span></em>, <em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="headerlink" href="#norms.L0.close_to" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="norms.LInf">
+<em class="property">class </em><code class="sig-prename descclassname">norms.</code><code class="sig-name descname">LInf</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">factor</span><span class="o">=</span><span class="default_value">0.25</span></em>, <em class="sig-param"><span class="n">scale</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#norms.LInf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#norms.Norm" title="norms.Norm"><code class="xref py py-class docutils literal notranslate"><span class="pre">norms.Norm</span></code></a></p>
+<p>L-inf norm.</p>
+<p>The <cite>factor</cite> argument determines closeness when the object is used
+as an oracle; defaults to 1/4.  In turn, <cite>scale</cite> is applied on
+involved scalar values (e.g. pixels) when computing distances.</p>
+<dl class="py method">
+<dt id="norms.LInf.distance">
+<code class="sig-name descname">distance</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em><span class="sig-paren">)</span><a class="headerlink" href="#norms.LInf.distance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the distance between two concrete inputs <cite>x</cite> and <cite>y</cite>.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-utils">
+<span id="utils"></span><h2>Utils<a class="headerlink" href="#module-utils" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="utils.tp1">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">tp1</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.tp1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.ctp1">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">ctp1</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.ctp1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.np1">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">np1</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.np1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.cnp1">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">cnp1</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.cnp1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.p1">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">p1</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.p1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.cp1">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">cp1</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.cp1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.xtuple">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">xtuple</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.xtuple" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.is_input_layer">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">is_input_layer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">layer</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.is_input_layer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.is_conv_layer">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">is_conv_layer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">layer</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.is_conv_layer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.is_dense_layer">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">is_dense_layer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">layer</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.is_dense_layer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.is_activation_layer">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">is_activation_layer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">layer</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.is_activation_layer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.is_relu_layer">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">is_relu_layer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">layer</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.is_relu_layer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.is_maxpooling_layer">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">is_maxpooling_layer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">layer</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.is_maxpooling_layer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.is_flatten_layer">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">is_flatten_layer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">layer</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.is_flatten_layer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.is_dropout_layer">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">is_dropout_layer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">layer</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.is_dropout_layer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.activation_is_relu">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">activation_is_relu</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">layer</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.activation_is_relu" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.setup_output_dir">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">setup_output_dir</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">outs</span></em>, <em class="sig-param"><span class="n">log</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.setup_output_dir" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.setup_output_files">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">setup_output_files</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">outs</span></em>, <em class="sig-param"><span class="n">ident</span></em>, <em class="sig-param"><span class="n">suff0</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">suff</span><span class="o">=</span><span class="default_value">'.txt'</span></em>, <em class="sig-param"><span class="n">log</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.setup_output_files" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.write_in_file">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">write_in_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">f</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">fmts</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.write_in_file" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.append_in_file">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">append_in_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">f</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">fmts</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.append_in_file" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.save_an_image">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">save_an_image</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">im</span></em>, <em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">directory</span><span class="o">=</span><span class="default_value">'./'</span></em>, <em class="sig-param"><span class="n">log</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.save_an_image" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.save_adversarial_examples">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">save_adversarial_examples</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">adv</span></em>, <em class="sig-param"><span class="n">origin</span></em>, <em class="sig-param"><span class="n">diff</span></em>, <em class="sig-param"><span class="n">di</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.save_adversarial_examples" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt id="utils.cover_layert">
+<em class="property">class </em><code class="sig-prename descclassname">utils.</code><code class="sig-name descname">cover_layert</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">layer</span></em>, <em class="sig-param"><span class="n">layer_index</span></em>, <em class="sig-param"><span class="n">prev</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">succ</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.cover_layert" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py method">
+<dt id="utils.cover_layert.initialize_ssc_map">
+<code class="sig-name descname">initialize_ssc_map</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">layer_feature</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.cover_layert.initialize_ssc_map" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="utils.cover_layert.initialize_ubs">
+<code class="sig-name descname">initialize_ubs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#utils.cover_layert.initialize_ubs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="utils.cover_layert.coverage">
+<em class="property">abstract </em><code class="sig-name descname">coverage</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#utils.cover_layert.coverage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.actual_layer">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">actual_layer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">l</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.actual_layer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.post_activation_layer">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">post_activation_layer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dnn</span></em>, <em class="sig-param"><span class="n">idx</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.post_activation_layer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.deepest_tested_layer">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">deepest_tested_layer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dnn</span></em>, <em class="sig-param"><span class="n">clayers</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.deepest_tested_layer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.testable_layer">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">testable_layer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dnn</span></em>, <em class="sig-param"><span class="n">idx</span></em>, <em class="sig-param"><span class="n">exclude_direct_input_succ</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.testable_layer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.get_cover_layers">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">get_cover_layers</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dnn</span></em>, <em class="sig-param"><span class="n">constr</span></em>, <em class="sig-param"><span class="n">layer_indices</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">exclude_direct_input_succ</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">exclude_output_layer</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.get_cover_layers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.get_layer_functions">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">get_layer_functions</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dnn</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.get_layer_functions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.eval_batch">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">eval_batch</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">o</span></em>, <em class="sig-param"><span class="n">ims</span></em>, <em class="sig-param"><span class="n">allow_input_layer</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.eval_batch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.eval">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">eval</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">o</span></em>, <em class="sig-param"><span class="n">im</span></em>, <em class="sig-param"><span class="n">having_input_layer</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.eval" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt id="utils.raw_datat">
+<em class="property">class </em><code class="sig-prename descclassname">utils.</code><code class="sig-name descname">raw_datat</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">labels</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">'unknown'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.raw_datat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="utils.test_objectt">
+<em class="property">class </em><code class="sig-prename descclassname">utils.</code><code class="sig-name descname">test_objectt</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dnn</span></em>, <em class="sig-param"><span class="n">test_data</span></em>, <em class="sig-param"><span class="n">train_data</span></em>, <em class="sig-param"><span class="n">criterion</span></em>, <em class="sig-param"><span class="n">norm</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.test_objectt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py method">
+<dt id="utils.test_objectt.eval">
+<code class="sig-name descname">eval</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">im</span></em>, <em class="sig-param"><span class="n">allow_input_layer</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.test_objectt.eval" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="utils.test_objectt.eval_batch">
+<code class="sig-name descname">eval_batch</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ims</span></em>, <em class="sig-param"><span class="n">allow_input_layer</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.test_objectt.eval_batch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="utils.test_objectt.save_input">
+<code class="sig-name descname">save_input</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">im</span></em>, <em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">directory</span></em>, <em class="sig-param"><span class="n">log</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">fit</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.test_objectt.save_input" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="utils.test_objectt.save_adversarial_example">
+<code class="sig-name descname">save_adversarial_example</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">adv</span></em>, <em class="sig-param"><span class="n">origin</span></em>, <em class="sig-param"><span class="n">directory</span><span class="o">=</span><span class="default_value">'/tmp'</span></em>, <em class="sig-param"><span class="n">diff</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">diff_amplified</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">log</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.test_objectt.save_adversarial_example" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="utils.test_objectt.tests_layer">
+<code class="sig-name descname">tests_layer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cl</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.test_objectt.tests_layer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="utils.test_objectt.check_layer_indices">
+<code class="sig-name descname">check_layer_indices</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#utils.test_objectt.check_layer_indices" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="utils.is_padding">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">is_padding</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dec_pos</span></em>, <em class="sig-param"><span class="n">dec_layer</span></em>, <em class="sig-param"><span class="n">cond_layer</span></em>, <em class="sig-param"><span class="n">post</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">unravel_pos</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.is_padding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.get_ssc_next">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">get_ssc_next</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">clayers</span></em>, <em class="sig-param"><span class="n">layer_indices</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">feature_indices</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.get_ssc_next" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="utils.print_adversarial_distribution">
+<code class="sig-prename descclassname">utils.</code><code class="sig-name descname">print_adversarial_distribution</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">advs</span></em>, <em class="sig-param"><span class="n">fname</span></em>, <em class="sig-param"><span class="n">int_flag</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.print_adversarial_distribution" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt id="utils.Coverage">
+<em class="property">class </em><code class="sig-prename descclassname">utils.</code><code class="sig-name descname">Coverage</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">covered</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">total</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">non_covered</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.Coverage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Basic helper class to manipulate and type-annotate coverage measures.</p>
+<dl class="py method">
+<dt id="utils.Coverage.done">
+<em class="property">property </em><code class="sig-name descname">done</code><a class="headerlink" href="#utils.Coverage.done" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="utils.Coverage.as_prop">
+<em class="property">property </em><code class="sig-name descname">as_prop</code><a class="headerlink" href="#utils.Coverage.as_prop" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">DeepConcolic Core API</a><ul>
+<li><a class="reference internal" href="#engine-api">Engine API</a></li>
+<li><a class="reference internal" href="#module-norms">Norms</a></li>
+<li><a class="reference internal" href="#module-utils">Utils</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/core.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">deepconcolic  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">DeepConcolic Core API</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, TrustAI.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+  </body>
+</html>
