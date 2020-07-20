@@ -3,26 +3,27 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to DeepConcolic's documentation!
+Welcome to DeepConcolic's Documentation!
 ========================================
 
-* :doc:`/core`
+Purposes of DeepConcolic
+------------------------
 
-Available Coverage Metrics & Analyzers
---------------------------------------
-  
-* :doc:`/nc`
-* :doc:`/mcdc`
+TODO: Insert parts of ``README.md``.
 
-Internals
----------
+Source Code Documentation
+-------------------------
 
-* :doc:`/lp`
-* :doc:`/l0`
-  
-Indices and tables
-==================
+.. toctree::
+   :maxdepth: 3
+
+   api
+   howtodev
+
+Indices & Tables
+================
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+   
