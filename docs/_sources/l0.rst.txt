@@ -1,0 +1,4 @@
+Specialized L0 Search
+======================
+
+.. automodule:: l0_encoding

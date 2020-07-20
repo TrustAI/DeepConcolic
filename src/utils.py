@@ -8,17 +8,20 @@ except:
   import keras
 
 import numpy as np
-from PIL import Image
 import copy
 import sys
 import os
 import cv2
 
+COLUMNS = os.getenv ('COLUMNS', default = '80')
+P1F = '{:<' + COLUMNS + '}'
+N1F = '\n{:<' + COLUMNS + '}'
+
 def tp1(x):
-  print ('{:<80}'.format(x), end = '\r', flush = True)
+  print (P1F.format(x), end = '\r', flush = True)
 
 def ctp1(x):
-  print ('\n{:<80}'.format(x), end = '\r', flush = True)
+  print (N1F.format(x), end = '\r', flush = True)
 
 def np1(x):
   print (x, end = '', flush = True)
@@ -27,10 +30,10 @@ def cnp1(x):
   print ('\n', x, sep = '', end = '', flush = True)
 
 def p1(x):
-  print ('{:<80}'.format(x))
+  print (P1F.format(x))
 
 def cp1(x):
-  print ('\n{:<80}'.format(x))
+  print (N1F.format(x))
 
 
 def xtuple(t):
@@ -229,11 +232,12 @@ def testable_layer (dnn, idx,
           not (exclude_direct_input_succ and
                (idx == 0 or idx == 1 and is_input_layer (dnn.layers[0]))))
 
-def get_cover_layers(dnn, constr, layer_indices = None,
-                     exclude_direct_input_succ = False):
+def get_cover_layers (dnn, constr, layer_indices = None,
+                      exclude_direct_input_succ = False,
+                      exclude_output_layer = True):
   # All coverable layers:
-  cls = [ (l, layer) for l, layer in enumerate(dnn.layers[:-1])
-          if testable_layer (dnn, l) ]
+  layers = dnn.layers[:-1] if exclude_output_layer else dnn.layers
+  cls = [ (l, layer) for l, layer in enumerate (layers) if testable_layer (dnn, l) ]
   return [ constr (layer[1], layer[0],
                    prev = (cls[l-1][0] if l > 0 else None),
                    succ = (cls[l+1][1] if l < len(cls) - 1 else None))
@@ -283,16 +287,18 @@ def eval(o, im, having_input_layer = False):
 # ---
 
 class raw_datat:
-  def __init__(self, data, labels):
+  def __init__(self, data, labels, name = 'unknown'):
     self.data=data
     self.labels=labels
+    self.name = name
     
 
 
 class test_objectt:
-  def __init__(self, dnn, raw_data, criterion, norm):
+  def __init__(self, dnn, test_data, train_data, criterion, norm):
     self.dnn=dnn
-    self.raw_data=raw_data
+    self.raw_data=test_data
+    self.train_data = train_data
     ## test config
     self.norm=norm
     self.criterion=criterion
@@ -480,13 +486,8 @@ class Coverage:
 
 
   @property
-  def covered(self) -> int:
-    return self.c
-
-
-  @property
-  def not_covered(self) -> int:
-    return self.total - self.c
+  def done(self) -> bool:
+    return self.total == self.c
 
 
   @property

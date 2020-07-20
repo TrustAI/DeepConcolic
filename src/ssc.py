@@ -73,7 +73,6 @@ def local_search(eval_batch, local_input, ssc_pair, adv_crafter, e_max_input, ss
 
 def ssc_search(eval_batch, raw_data, cond_ratio, cond_layer, dec_layer, dec_pos, adv_crafter, adv_object=None):
 
-  # NB: What's this for?
   keras.backend.set_learning_phase(False)
   import tensorflow
   try:
@@ -291,7 +290,7 @@ from engine import (Input, TestTarget,
                     Criterion4FreeSearch, Criterion4RootedSearch,
                     Analyzer4FreeSearch, Analyzer4RootedSearch,
                     EarlyTermination)
-from engine import setup as engine_setup
+from engine import setup as engine_setup, Engine
 
 
 # ---
@@ -434,9 +433,6 @@ class SScAnalyzer4FreeSearch (Analyzer4FreeSearch):
     raise NotImplementedError
 
 
-# ---
-
-
 class SScAnalyzer4RootedSearch (Analyzer4RootedSearch):
   """
   Analyzer that finds a new input close to a given input so that a
@@ -455,7 +451,8 @@ class SScCriterion (LayerLocalCriterion, Criterion4FreeSearch, Criterion4RootedS
 
   def __init__(self,
                clayers: Sequence[SScLayer],
-               analyzer: Union[SScAnalyzer4FreeSearch, SScAnalyzer4RootedSearch],
+               analyzer: Union[SScAnalyzer4FreeSearch,
+                               SScAnalyzer4RootedSearch],
                injecting_layer: BoolMappedCoverableLayer = None,
                **kwds):
 
@@ -548,7 +545,16 @@ class SScCriterion (LayerLocalCriterion, Criterion4FreeSearch, Criterion4RootedS
 # ---
 
 
-def setup (test_object = None, criterion_args: dict = {}, **kwds):
+def setup (test_object = None,
+           setup_analyzer: Callable[[dict], Union[SScAnalyzer4FreeSearch,
+                                                  SScAnalyzer4RootedSearch]] = None,
+           criterion_args: dict = {},
+           **kwds) -> Engine:
+  """
+  Helper to build an engine for sign-sign-coverage (using
+  :class:`SScCriterion` and an analyzer constructed using
+  `setup_analyzer`).
+  """
 
   setup_layer = (
     lambda l, i, **kwds: SScLayer (layer = l, layer_index = i,
@@ -564,26 +570,28 @@ def setup (test_object = None, criterion_args: dict = {}, **kwds):
                               feature_indices = test_object.feature_indices))
   return engine_setup (test_object = test_object,
                        cover_layers = cover_layers,
+                       setup_analyzer = setup_analyzer,
                        setup_criterion = SScCriterion,
-                       criterion_args = criterion_args,
+                       criterion_args = { 'feature_indices': test_object.feature_indices,
+                                          **criterion_args },
                        **kwds)
 
 
 # ---
 
-# TODO: put that in a `ssc_attack' module?
+# TODO: put that in a `ssc_gan' module?
 
 try:
   from art.attacks.fast_gradient import FastGradientMethod
   from art.classifiers import KerasClassifier
 except:
-  from attacks import *
+  pass
 
 from norms import LInf
 
-class SScAttackBasedAnalyzer (SScAnalyzer4FreeSearch):
+class SScGANBasedAnalyzer (SScAnalyzer4FreeSearch):
 
-  def __init__(self, _clayers, linf_args = {}, cond_ratio = 0.01, ref_data = None, **kwds):
+  def __init__(self, linf_args = {}, cond_ratio = 0.01, ref_data = None, **kwds):
     super().__init__(**kwds)
     self.metric = LInf (**linf_args)
     self.cond_ratio = cond_ratio

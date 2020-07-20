@@ -11,6 +11,12 @@ class Norm (Metric):
   Just an alias for norms.
   '''
 
+  def close_to(self, refs, x):
+    for r in refs:
+      if self.distance (r, x) <= self.factor:
+        return True;
+    return False
+
 
 # ---
 
@@ -22,7 +28,7 @@ class L0 (Norm):
 
   def __init__(self, scale = 255, **kwds):
     super().__init__(scale = scale, **kwds)
-    
+
 
   def __repr__(self):
     return 'L0'
@@ -37,10 +43,10 @@ class L0 (Norm):
     return (np.abs (x - y) * self.scale > 1).sum()
 
 
-  def close_to (self, refs, x):
-    size = refs.size * self.factor
-    for ref in refs:
-      if np.count_nonzero (ref - x) < size:
+  def close_to(self, refs, x):
+    size = refs[0].size * self.factor
+    for diff in refs - x:
+      if np.count_nonzero (diff) <= size:
         return True
     return False
 
@@ -59,16 +65,6 @@ class LInf (Norm):
 
   def distance(self, x, y):
     return np.amax (np.absolute (x - y) * self.scale)
-
-
-  def close_to(self, refs, x):
-    size = refs.size * self.factor
-    for index, ref in np.ndenumerate (refs):
-      diff_abs = np.array(np.abs(ref - x))
-      diff_abs[diff_abs <= self.factor] = 0.0
-      if np.count_nonzero(diff_abs) < size:
-        return True
-    return False
 
 
 # ---
