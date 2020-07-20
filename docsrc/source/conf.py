@@ -61,7 +61,7 @@ html_static_path = ['_static']
 
 # -- Options for Autodoc -----------------------------------------------------
 
-autodoc_mock_imports = ['numpy', 'tensorflow', 'sklearn',
+autodoc_mock_imports = ['tensorflow', 'sklearn',
                         'cv2', 'typing']
 autoclass_content = 'both'
 autodoc_default_options = {

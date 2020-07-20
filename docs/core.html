@@ -6,7 +6,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DeepConcolic Core API &#8212; deepconcolic  documentation</title>
+    <title>Engine &#8212; deepconcolic  documentation</title>
     <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
@@ -18,6 +18,8 @@
     <script src="_static/bizstyle.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Neuron Coverage" href="nc.html" />
+    <link rel="prev" title="DeepConcolic API" href="api.html" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <!--[if lt IE 9]>
     <script src="_static/css3-mediaqueries.js"></script>
@@ -32,8 +34,15 @@
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
+        <li class="right" >
+          <a href="nc.html" title="Neuron Coverage"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="api.html" title="DeepConcolic API"
+             accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">deepconcolic  documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">DeepConcolic Core API</a></li> 
+          <li class="nav-item nav-item-1"><a href="api.html" accesskey="U">DeepConcolic API</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Engine</a></li> 
       </ul>
     </div>  
 
@@ -42,15 +51,13 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="deepconcolic-core-api">
-<h1>DeepConcolic Core API<a class="headerlink" href="#deepconcolic-core-api" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="engine">
+<h1>Engine<a class="headerlink" href="#engine" title="Permalink to this headline">¶</a></h1>
 <p>DeepConcolic’s test input generation algorithm is embodied in an
 <em>Engine</em>, whose role is to fulfill a coverage <em>Criterion</em> by
 generating inputs using an <em>Analyzer</em>.</p>
-<div class="section" id="engine-api">
-<h2>Engine API<a class="headerlink" href="#engine-api" title="Permalink to this headline">¶</a></h2>
-<p>Note the main entry point for constructing engines is
-<a class="reference internal" href="#engine.setup" title="engine.setup"><code class="xref py py-func docutils literal notranslate"><span class="pre">engine.setup()</span></code></a>.  The base classes of criteria and analyzers are
+<p>The main entry point for constructing engines is <a class="reference internal" href="#engine.setup" title="engine.setup"><code class="xref py py-func docutils literal notranslate"><span class="pre">engine.setup()</span></code></a>.
+The base classes of criteria and analyzers are
 <a class="reference internal" href="#engine.Criterion" title="engine.Criterion"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.Criterion</span></code></a> and <a class="reference internal" href="#engine.Analyzer" title="engine.Analyzer"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.Analyzer</span></code></a>, although the
 latter comes in two flavors depending on whether the search for inputs
 is based on a given <code class="docutils literal notranslate"><span class="pre">root</span></code> sample
@@ -607,7 +614,7 @@ accumulator once all batched activations have been passed to
 
 </div>
 <div class="section" id="module-norms">
-<span id="norms"></span><h2>Norms<a class="headerlink" href="#module-norms" title="Permalink to this headline">¶</a></h2>
+<span id="norms"></span><h1>Norms<a class="headerlink" href="#module-norms" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt id="norms.Norm">
 <em class="property">class </em><code class="sig-prename descclassname">norms.</code><code class="sig-name descname">Norm</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">factor</span><span class="o">=</span><span class="default_value">0.25</span></em>, <em class="sig-param"><span class="n">scale</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#norms.Norm" title="Permalink to this definition">¶</a></dt>
@@ -668,7 +675,7 @@ involved scalar values (e.g. pixels) when computing distances.</p>
 
 </div>
 <div class="section" id="module-utils">
-<span id="utils"></span><h2>Utils<a class="headerlink" href="#module-utils" title="Permalink to this headline">¶</a></h2>
+<span id="utilities"></span><h1>Utilities<a class="headerlink" href="#module-utils" title="Permalink to this headline">¶</a></h1>
 <dl class="py function">
 <dt id="utils.tp1">
 <code class="sig-prename descclassname">utils.</code><code class="sig-name descname">tp1</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.tp1" title="Permalink to this definition">¶</a></dt>
@@ -915,7 +922,6 @@ involved scalar values (e.g. pixels) when computing distances.</p>
 </dd></dl>
 
 </div>
-</div>
 
 
             <div class="clearer"></div>
@@ -926,14 +932,17 @@ involved scalar values (e.g. pixels) when computing distances.</p>
         <div class="sphinxsidebarwrapper">
   <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">DeepConcolic Core API</a><ul>
-<li><a class="reference internal" href="#engine-api">Engine API</a></li>
+<li><a class="reference internal" href="#">Engine</a></li>
 <li><a class="reference internal" href="#module-norms">Norms</a></li>
-<li><a class="reference internal" href="#module-utils">Utils</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#module-utils">Utilities</a></li>
 </ul>
 
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="api.html"
+                        title="previous chapter">DeepConcolic API</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="nc.html"
+                        title="next chapter">Neuron Coverage</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -964,8 +973,15 @@ involved scalar values (e.g. pixels) when computing distances.</p>
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
+        <li class="right" >
+          <a href="nc.html" title="Neuron Coverage"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="api.html" title="DeepConcolic API"
+             >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">deepconcolic  documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">DeepConcolic Core API</a></li> 
+          <li class="nav-item nav-item-1"><a href="api.html" >DeepConcolic API</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Engine</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

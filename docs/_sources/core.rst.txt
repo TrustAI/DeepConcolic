@@ -1,15 +1,12 @@
-DeepConcolic Core API
-=====================
+Engine
+======
 
 DeepConcolic's test input generation algorithm is embodied in an
 *Engine*, whose role is to fulfill a coverage *Criterion* by
 generating inputs using an *Analyzer*.
 
-Engine API
-----------
-
-Note the main entry point for constructing engines is
-:func:`engine.setup`.  The base classes of criteria and analyzers are
+The main entry point for constructing engines is :func:`engine.setup`.
+The base classes of criteria and analyzers are
 :class:`engine.Criterion` and :class:`engine.Analyzer`, although the
 latter comes in two flavors depending on whether the search for inputs
 is based on a given ``root`` sample
@@ -19,11 +16,11 @@ sample set (:class:`engine.Analyzer4FreeSearch`).
 .. automodule:: engine
 
 Norms
------
+=====
 
 .. automodule:: norms
 
-Utils
------
+Utilities
+=========
 		   
 .. automodule:: utils
