@@ -133,139 +133,12 @@ class Analyzer:
     return eval_batch (self.dnn, i, allow_input_layer)
 
 
-  # ---
-  
-
   @abstractmethod
   def input_metric(self) -> Metric:
     '''
     Returns the metric used to compare concrete inputs.
     '''
     raise NotImplementedError
-
-
-  # ---
-
-
-  def stat_based_basic_initializers(self):
-    """
-    Stat-based initialization steps (non-batched).
-    
-    Returns a list of dictionaries (or `None`) with the following
-    entries:
-
-    - name: short description of what's computed;
-
-    - layer_indexes: a list or set of indexes for layers whose
-      activations values are needed;
-    
-    - once: a callable taking a mapping (as a dictionary) from each
-      layer index given in `layer_indexes` to activation values for
-      the corresponding layer; this is to be called only once during
-      initialization of the analyzer;
-
-    - print (optional): a function that prints a summary of results.
-    """
-    return None
-
-
-  def stat_based_incremental_initializers(self):
-    """
-    Stat-based incremental initialization steps.
-
-    Returns a list of dictionaries (or `None`) with the following
-    entries:
-
-    - name: short description of what's computed;
-    
-    - accum: a callable taking batched activation values for every
-      layer and any accumulator that is (initially `None`), and
-      returns a new or updated accumulator.  This is called at least
-      once.
-
-    - final: optional function that is called with the final
-      accumulator once all batched activations have been passed to
-      `accum`;
-
-    - print (optional): a function that prints a summary of results.
-    """
-    return None
-
-
-  def stat_based_train_cv_initializers(self):
-    """
-    Stat-based initialization steps with optional cross-validation
-    performed on training data.
-
-    Returns a list of dictionaries (or `None`) with the following
-    entries:
-
-    - name: short description of what's computed;
-
-    - layer_indexes: a list or set of indexes for layers whose
-      activations values are needed;
-
-    - test_size & train_size: (as in
-      `sklearn.model_selection.train_test_split`)
-
-    - train: a callable taking some training data as mapping (as a
-      dictionary) from each layer index given in `layer_indexes` to
-      activation values for the corresponding layer, and returns some
-      arbitrary object; this is to be called only once during
-      initialization;
-
-    - test: a callable taking some extra training data and associated
-      labels as two separate mappings (as a dictionary) from each
-      layer index given in `layer_indexes` to activation values for
-      the corresponding layer.
-
-    Any function given as entries above is always called before
-    functions returned by `stat_based_test_cv_initializers`, but after
-    those retured by `stat_based_basic_initializers` and
-    `stat_based_incremental_initializers`.
-    """
-    return None
-
-
-  def stat_based_test_cv_initializers(self):
-    """
-    Stat-based initialization steps with optional cross-validation
-    performed on test data.
-
-    Returns a list of dictionaries (or `None`) with the following
-    entries:
-
-    - name: short description of what's computed;
-
-    - layer_indexes: a list or set of indexes for layers whose
-      activations values are needed;
-
-    - test_size & train_size: (as in
-      `sklearn.model_selection.train_test_split`)
-
-    - train: a callable taking some test data as mapping (as a
-      dictionary) from each layer index given in `layer_indexes` to
-      activation values for the corresponding layer, and returns some
-      arbitrary object; this is to be called only once during
-      initialization;
-
-    - test: a callable taking some extra test data and associated
-      labels as two separate mappings (as a dictionary) from each
-      layer index given in `layer_indexes` to activation values for
-      the corresponding layer.
-
-    Any function given as entries above is always called last.
-    """
-    # - accum_test: a callable that is called with the object returned
-    #   by `train`, along with batched activation values for every layer
-    #   on the test data, and returns a new or updated accumulator.
-    #   This is called at least once.
-    #
-    # - final_test: optional function that is called with the final test
-    #   accumulator once all batched test activations have been passed
-    #   to  `accum_test`.
-    return None
-
 
 
 # ---
@@ -425,12 +298,12 @@ class Criterion:
                prefer_rooted_search = None,
                **kwds):
     '''
-    A criterion operates based on a `test_object` (to retrieve the DNN
-    and initial raw labeled data), and an `analyzer` to find new
-    concrete inputs.
+    A criterion operates based on an `analyzer` to find new concrete
+    inputs.
 
-    `prefer_rooted_search` can be used in case both the criterion and
-    the analyzer support the two kinds of search.
+    Flag `prefer_rooted_search` can be used in case both the criterion
+    and the analyzer support the two kinds of search; the default
+    behavior is to select rooted search.
     '''
     
     assert isinstance (analyzer, Analyzer)
@@ -476,6 +349,12 @@ class Criterion:
 
   @abstractmethod
   def finalize_setup(self):
+    """
+    Called once after any stat-based initialization (see, e.g.,
+    :meth:`stat_based_basic_initializers`), and before any call to
+    :meth:`add_new_test_cases`, :meth:`coverage`, and
+    :meth:`search_next`.
+    """
     raise NotImplementedError
     # self.analyzer.finalize_setup ()
 
@@ -543,9 +422,10 @@ class Criterion:
 
   def search_next(self) -> Tuple[Union[Tuple[Input, Input, float], None], TestTarget]:
     '''
-    Selects a new test target based (see `Criterion4RootedSearch` and
-    `Criterion4FreeSearch`), and then uses the analyzer to find a new
-    concrete input.
+    Selects a new test target based (see
+    :class:`Criterion4RootedSearch` and
+    :class:`Criterion4FreeSearch`), and then uses the analyzer to find
+    a new concrete input.
 
     Returns a pair of:
 
@@ -579,31 +459,124 @@ class Criterion:
 
 
   def stat_based_basic_initializers(self):
-    '''
-    Ditto :meth:`Analyzer.stat_based_basic_initializers`.
-    '''
+    """
+    Stat-based initialization steps (non-batched).
+    
+    Returns a list of dictionaries (or `None`) with the following
+    entries:
+
+    - name: short description of what's computed;
+
+    - layer_indexes: a list or set of indexes for layers whose
+      activations values are needed;
+    
+    - once: a callable taking a mapping (as a dictionary) from each
+      layer index given in `layer_indexes` to activation values for
+      the corresponding layer; this is to be called only once during
+      initialization of the analyzer;
+
+    - print (optional): a function that prints a summary of results.
+    """
     return None
 
 
   def stat_based_incremental_initializers(self):
-    '''
-    Ditto :meth:`Analyzer.stat_based_incremental_initializers`.
-    '''
+    """
+    Stat-based incremental initialization steps.
+
+    Returns a list of dictionaries (or `None`) with the following
+    entries:
+
+    - name: short description of what's computed;
+    
+    - accum: a callable taking batched activation values for every
+      layer and any accumulator that is (initially `None`), and
+      returns a new or updated accumulator.  This is called at least
+      once.
+
+    - final: optional function that is called with the final
+      accumulator once all batched activations have been passed to
+      `accum`;
+
+    - print (optional): a function that prints a summary of results.
+    """
     return None
 
 
   def stat_based_train_cv_initializers(self):
-    '''
-    Ditto :meth:`Analyzer.stat_based_train_cv_initializers`.
-    '''
+    """
+    Stat-based initialization steps with optional cross-validation
+    performed on training data.
+
+    Returns a list of dictionaries (or `None`) with the following
+    entries:
+
+    - name: short description of what's computed;
+
+    - layer_indexes: a list or set of indexes for layers whose
+      activations values are needed;
+
+    - test_size & train_size: (as in
+      `sklearn.model_selection.train_test_split`)
+
+    - train: a callable taking some training data as mapping (as a
+      dictionary) from each layer index given in `layer_indexes` to
+      activation values for the corresponding layer, and returns some
+      arbitrary object; this is to be called only once during
+      initialization;
+
+    - test: a callable taking some extra training data and associated
+      labels as two separate mappings (as a dictionary) from each
+      layer index given in `layer_indexes` to activation values for
+      the corresponding layer.
+
+    Any function given as entries above is always called before
+    functions returned by `stat_based_test_cv_initializers`, but after
+    those retured by `stat_based_basic_initializers` and
+    `stat_based_incremental_initializers`.
+    """
     return None
 
 
   def stat_based_test_cv_initializers(self):
-    '''
-    Ditto :meth:`Analyzer.stat_based_test_cv_initializers`.
-    '''
+    """
+    Stat-based initialization steps with optional cross-validation
+    performed on test data.
+
+    Returns a list of dictionaries (or `None`) with the following
+    entries:
+
+    - name: short description of what's computed;
+
+    - layer_indexes: a list or set of indexes for layers whose
+      activations values are needed;
+
+    - test_size & train_size: (as in
+      `sklearn.model_selection.train_test_split`)
+
+    - train: a callable taking some test data as mapping (as a
+      dictionary) from each layer index given in `layer_indexes` to
+      activation values for the corresponding layer, and returns some
+      arbitrary object; this is to be called only once during
+      initialization;
+
+    - test: a callable taking some extra test data and associated
+      labels as two separate mappings (as a dictionary) from each
+      layer index given in `layer_indexes` to activation values for
+      the corresponding layer.
+
+    Any function given as entries above is always called last.
+    """
+    # - accum_test: a callable that is called with the object returned
+    #   by `train`, along with batched activation values for every layer
+    #   on the test data, and returns a new or updated accumulator.
+    #   This is called at least once.
+    #
+    # - final_test: optional function that is called with the final test
+    #   accumulator once all batched test activations have been passed
+    #   to  `accum_test`.
     return None
+
 
 
 
