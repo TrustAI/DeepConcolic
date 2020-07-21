@@ -911,10 +911,13 @@ def abstract_layer_features (li, feats = None, discr = None, default = 1):
 
 
 def abstract_layer_feature_discretization (l, li, discr = None):
+  import builtins
   li_discr = (discr[li] if isinstance (discr, dict) and li in discr else
               discr     if isinstance (discr, dict) else
+              discr     if isinstance (discr, int)  else
               discr[li] if isinstance (discr, list) else
-              discr(li) if callable (discr) else None)
+              discr(li) if callable (discr) else
+              builtins.eval(discr, {})(li) if isinstance (discr, str) else None)
   if li_discr in (None, 'binarizer', 'bin'):
     p1 ('Using binarizer for layer {.name}'.format (l))
     return FeatureBinarizer ()
@@ -923,24 +926,21 @@ def abstract_layer_feature_discretization (l, li, discr = None):
          li_discr['n_bins'] if isinstance (li_discr, dict) else
          # TODO: per feature discretization strategy?
          2)
+    s = (li_discr['strategy'] if (isinstance (li_discr, dict)
+                                  and 'strategy' in li_discr)
+         else 'quantile')
     extended = (isinstance (li_discr, dict) and 'extended' in li_discr
                 and li_discr['extended'])
     if extended is None or not extended:
-      p1 ('Using {}-bins discretizer for layer {.name}'.format (k, l))
-      return KBinsFeatureDiscretizer (
-        n_bins = k,
-        encode = 'ordinal',
-        strategy = (li_discr['strategy'] if (isinstance (li_discr, dict)
-                                             and 'strategy' in li_discr)
-                    else 'quantile'))
+      p1 ('Using {}-bins discretizer with {} strategy for layer {.name}'
+          .format (k, s, l))
+      return KBinsFeatureDiscretizer (n_bins = k, encode = 'ordinal',
+                                      strategy = s)
     else:
-      p1 ('Using extended {}-bins discretizer for layer {.name}'.format (k, l))
-      return KBinsNOutFeatureDiscretizer (
-        n_bins = k,
-        encode = 'ordinal',
-        strategy = (li_discr['strategy'] if (isinstance (li_discr, dict)
-                                             and 'strategy' in li_discr)
-                    else 'quantile'))
+      p1 ('Using extended {}-bins discretizer with {} strategy for layer {.name}'
+          .format (k, s, l))
+      return KBinsNOutFeatureDiscretizer (n_bins = k, encode = 'ordinal',
+                                          strategy = s)
 
 
 

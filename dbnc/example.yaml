@@ -1,0 +1,90 @@
+{
+    # 
+    # Training Data
+    # =============
+    #
+    # Size of training sample to use for feature extraction and
+    # discretization; this defines the `training data' below:
+    bn_abstr_train_size: 1000,
+    #
+    # 
+    # Feature Extraction (for each layer)
+    # ===================================
+    #
+    # Note that `decomp: "PCA"' is optional as it's the default.
+    # 
+    # PCA: Use 3 components with randomized SVD algorithm:
+    # feats: { decomp: 'pca', n_components: 3, svd_solver: 'randomized' },
+    # 
+    # PCA: Use 5 components with exact algorthm (slower):
+    # feats: { decomp: 'pca', n_components: 3, svd_solver: 'full' },
+    # 
+    # PCA: Use as many components as needed to capture at least 50% of
+    # variance.  High values for shallow layers (close to input) is
+    # discouraged, as this usually leads to large amounts of
+    # components (which in turn leads to a BN that does not fit in
+    # memory).
+    # feats: 0.5,
+    #
+    # ICA: Use 3 components, with up to 5000 iteratons and a tolerance
+    # of 0.01:
+    feats: { decomp: 'ica', n_components: 3, max_iter: 5000, tol: 0.01 },
+    #
+    # 
+    # Discretization Strategy (for each extracted feature)
+    # ====================================================
+    #
+    # Binarize feature around 0.0 (this is the default, if `discr` is
+    # not given:
+    # discr: 'bin',
+    #
+    # Partition each feature into 2 intervals (with quantile strategy,
+    # that computes interval boundaries so that the projected training
+    # data is evenly spread among each interval---the default for
+    # non-binarization):
+    # discr: 2,
+    # 
+    # Perform a 3-clustering of the projected training data, and use 3
+    # adjacent intervals that each span exactly one cluster:
+    discr: { n_bins: 3, strategy: "kmeans" },
+    # 
+    # Use 4 intervals of identical width that span all training data:
+    # discr: { n_bins: 4, strategy: "uniform" },
+    #
+    # Extended Variants
+    # -----------------
+    # 
+    # Extended discretization strategies (with `extended: True') add
+    # two left- and right-open intervals that contain no projected
+    # training data.
+    # 
+    # Use 3 extended bins (so, 5 in total) to discretize based on
+    # 3-clustered training data:
+    # discr: { n_bins: 3, extended: True, strategy: "kmeans" },
+    # 
+    # Use 3 extended bins (so, 5 in total) to discretize with 3
+    # intervals of identical width:
+    # discr: { n_bins: 3, extended: True, strategy: "uniform" },
+    #
+    # Custom (per-layer) Specifications
+    # ---------------------------------
+    # 
+    # To define the discretization strategy on a per-layer basis, one
+    # can also use a lambda function that takes the layer index as
+    # argument, and returns any of the specification dictonaries as
+    # above (or None for default, binarization):
+    # discr: '(lambda li: { "n_bins": 4, "strategy": "uniform" } if li in (1,) else None)',
+    #
+    #
+    # Reporting
+    # =========
+    # 
+    # If True, plot graphs that show how some of the training data is
+    # spread w.r.t each extracted features for each layer:
+    report_on_feature_extractions: False,
+    #
+    # Size of test sample (also extracted from training data) to use
+    # for scoring and reporting:
+    bn_abstr_test_size: 200,
+    #
+}
