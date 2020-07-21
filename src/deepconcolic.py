@@ -84,10 +84,10 @@ def deepconcolic(criterion, norm, test_object, report_args, dbnc_spec = {}):
                         input_metric = LInfPulp ())
     engine.run (**report_args)
   elif criterion=='svc':
-    outs = setup_output_dir (report_args.outs)
+    outs = setup_output_dir (report_args['outs'])
     from run_ssc import run_svc
     print('\n== Starting DeepConcolic tests for {0} =='.format (test_object))
-    run_svc(test_object, report_args.outs)
+    run_svc(test_object, report_args['outs'])
   else:
     print('\n not supported coverage criterion... {0}\n'.format(criterion))
     sys.exit(0)
