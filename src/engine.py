@@ -884,6 +884,9 @@ def setup (test_object: test_objectt = None,
   """
   Helper to build engine instances.  Extra arguments are passed to the
   analyzer setup function (`setup_analyzer`).
+
+  Note: only fields ``dnn``, ``raw_data``, and ``train_data`` are
+  required from `test_object`.
   """
 
   print ('DNN under test has {0} layer functions, {1} of which {2} to be covered:'
