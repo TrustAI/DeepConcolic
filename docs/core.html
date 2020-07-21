@@ -484,6 +484,8 @@ the criterion is fulfilled (whichever happens first).</p>
 <code class="sig-prename descclassname">engine.</code><code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">test_object</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#utils.test_objectt" title="utils.test_objectt">utils.test_objectt</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cover_layers</span><span class="p">:</span> <span class="n">Sequence<span class="p">[</span>CL<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">setup_analyzer</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a><span class="p">]</span><span class="p">, </span><a class="reference internal" href="#engine.Analyzer" title="engine.Analyzer">engine.Analyzer</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">setup_criterion</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">[</span>Sequence<span class="p">[</span>CL<span class="p">]</span><span class="p">, </span><a class="reference internal" href="#engine.Analyzer" title="engine.Analyzer">engine.Analyzer</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a><span class="p">]</span><span class="p">, </span><a class="reference internal" href="#engine.Criterion" title="engine.Criterion">engine.Criterion</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">criterion_args</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a></span> <span class="o">=</span> <span class="default_value">{}</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#engine.Engine" title="engine.Engine">engine.Engine</a><a class="headerlink" href="#engine.setup" title="Permalink to this definition">¶</a></dt>
 <dd><p>Helper to build engine instances.  Extra arguments are passed to the
 analyzer setup function (<cite>setup_analyzer</cite>).</p>
+<p>Note: only fields <code class="docutils literal notranslate"><span class="pre">dnn</span></code>, <code class="docutils literal notranslate"><span class="pre">raw_data</span></code>, and <code class="docutils literal notranslate"><span class="pre">train_data</span></code> are
+required from <cite>test_object</cite>.</p>
 </dd></dl>
 
 <dl class="py class">
@@ -855,28 +857,8 @@ involved scalar values (e.g. pixels) when computing distances.</p>
 
 <dl class="py class">
 <dt id="utils.test_objectt">
-<em class="property">class </em><code class="sig-prename descclassname">utils.</code><code class="sig-name descname">test_objectt</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dnn</span></em>, <em class="sig-param"><span class="n">test_data</span></em>, <em class="sig-param"><span class="n">train_data</span></em>, <em class="sig-param"><span class="n">criterion</span></em>, <em class="sig-param"><span class="n">norm</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.test_objectt" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">utils.</code><code class="sig-name descname">test_objectt</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dnn</span></em>, <em class="sig-param"><span class="n">test_data</span></em>, <em class="sig-param"><span class="n">train_data</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.test_objectt" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<dl class="py method">
-<dt id="utils.test_objectt.eval">
-<code class="sig-name descname">eval</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">im</span></em>, <em class="sig-param"><span class="n">allow_input_layer</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.test_objectt.eval" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt id="utils.test_objectt.eval_batch">
-<code class="sig-name descname">eval_batch</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ims</span></em>, <em class="sig-param"><span class="n">allow_input_layer</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.test_objectt.eval_batch" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt id="utils.test_objectt.save_input">
-<code class="sig-name descname">save_input</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">im</span></em>, <em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">directory</span></em>, <em class="sig-param"><span class="n">log</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">fit</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.test_objectt.save_input" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt id="utils.test_objectt.save_adversarial_example">
-<code class="sig-name descname">save_adversarial_example</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">adv</span></em>, <em class="sig-param"><span class="n">origin</span></em>, <em class="sig-param"><span class="n">directory</span><span class="o">=</span><span class="default_value">'/tmp'</span></em>, <em class="sig-param"><span class="n">diff</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">diff_amplified</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">log</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.test_objectt.save_adversarial_example" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 <dl class="py method">
 <dt id="utils.test_objectt.tests_layer">
 <code class="sig-name descname">tests_layer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cl</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.test_objectt.tests_layer" title="Permalink to this definition">¶</a></dt>
@@ -884,7 +866,7 @@ involved scalar values (e.g. pixels) when computing distances.</p>
 
 <dl class="py method">
 <dt id="utils.test_objectt.check_layer_indices">
-<code class="sig-name descname">check_layer_indices</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#utils.test_objectt.check_layer_indices" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">check_layer_indices</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">criterion</span></em><span class="sig-paren">)</span><a class="headerlink" href="#utils.test_objectt.check_layer_indices" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
