@@ -78,6 +78,8 @@
     #
     # Reporting
     # =========
+    #
+    # Current reporting requires `matplotlib` to be installed.
     # 
     # If True, plot graphs that show how some of the training data is
     # spread w.r.t each extracted features for each layer:

@@ -23,7 +23,7 @@ usage: deepconcolic.py [-h] [--model MODEL] [--inputs DIR] [--outputs DIR]
                        [--vgg16-model] [--norm linf, l0] [--input-rows INT]
                        [--input-cols INT] [--input-channels INT]
                        [--cond-ratio FLOAT] [--top-classes INT]
-                       [--layer-index INT]
+                       [--layer-index INT] [--dbnc-spec SPEC]
 
 Concolic testing for neural networks
 
@@ -46,6 +46,7 @@ optional arguments:
   --cond-ratio FLOAT           the condition feature size parameter (0, 1]
   --top-classes INT            check the top-xx classifications
   --layer-index INT0 ... INTn  to test particular layers
+  --dbnc-spec SPEC             to give options for DBN-based coverage
 ```
 
 The neural network model under tested is specified by ``--model`` and a set of raw test data should be given
@@ -89,12 +90,19 @@ To run Concolic Sign-sign-coverage (MC/DC) for DNNs on the MNIST model
 python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --criterion ssclp --mnist-data --outputs outs
 ```
 
+To run Concolic BN-based coverage (BNCov) for DNNs on the MNIST model
+```
+python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --criterion bfc --norm linf --mnist-data --outputs outs --dbnc-spec ../dbnc/example.yaml
+```
+See [the example YAML specification](dbnc/example.yaml) for details on how to configure the BN-based abstraction.
+
+
 ### Concolic Testing on Lipschitz Constants for DNNs
 
 To run Lipschitz Constant Testing, please refer to instructions in folder "Lipschitz Constant Testing".
 
 # Dependencies
-We suggest create an environment using `conda`, `tensorflow==2.0`
+We suggest create an environment using `conda`, `tensorflow==2.0` (or `tensorflow>=2.3`)
 ```
 conda create --name deepconcolic
 source activate deepconcolic
@@ -103,7 +111,7 @@ conda install opencv
 conda install pillow
 pip install pulp
 pip install adversarial-robustness-toolbox
-pip install pomegranate==0.11.2
+pip install pomegranate==0.12.0
 ```
 
 # Publications
