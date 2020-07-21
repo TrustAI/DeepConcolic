@@ -873,16 +873,19 @@ class BFDcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
 
 
 
-def abstract_layerp (li, feats = None, discr = None, layer_indices = []):
-  return (li in discr if discr is not None and isinstance (discr, dict) else
-          li in feats if feats is not None and isinstance (feats, dict) else
-          li in layer_indices)
+# def abstract_layerp (li, feats = None, discr = None, layer_indices = []):
+#   return (li in discr if discr is not None and isinstance (discr, dict) else
+#           li in feats if feats is not None and isinstance (feats, dict) else
+#           li in layer_indices)
 
+import builtins
 
 def abstract_layer_features (li, feats = None, discr = None, default = 1):
   if feats is not None:
-    if isinstance (feats, (int, float, str)):
+    if isinstance (feats, (int, float)):
       return feats
+    if isinstance (feats, str):
+      return builtins.eval(feats, {})(li)
     if isinstance (feats, dict) and li in feats:
       li_feats = feats[li]
       if not isinstance (li_feats, (int, float, str, dict)):
@@ -911,7 +914,6 @@ def abstract_layer_features (li, feats = None, discr = None, default = 1):
 
 
 def abstract_layer_feature_discretization (l, li, discr = None):
-  import builtins
   li_discr = (discr[li] if isinstance (discr, dict) and li in discr else
               discr     if isinstance (discr, dict) else
               discr     if isinstance (discr, int)  else

@@ -14,22 +14,37 @@
     # Note that `decomp: "PCA"' is optional as it's the default.
     # 
     # PCA: Use 3 components with randomized SVD algorithm:
-    # feats: { decomp: 'pca', n_components: 3, svd_solver: 'randomized' },
+    feats: { decomp: 'pca', n_components: 3, svd_solver: 'randomized' },
     # 
-    # PCA: Use 5 components with exact algorthm (slower):
-    # feats: { decomp: 'pca', n_components: 3, svd_solver: 'full' },
+    # PCA: Use 5 components with exact algorthm (potentially slower):
+    # feats: { decomp: 'pca', n_components: 5, svd_solver: 'full' },
+    #
+    # PCA: Use 5 components and guess a good algorithms based on size
+    # of training data:
+    # feats: 5,
     # 
     # PCA: Use as many components as needed to capture at least 50% of
     # variance.  High values for shallow layers (close to input) is
     # discouraged, as this usually leads to large amounts of
     # components (which in turn leads to a BN that does not fit in
-    # memory).
+    # memory):
     # feats: 0.5,
     #
     # ICA: Use 3 components, with up to 5000 iteratons and a tolerance
     # of 0.01:
-    feats: { decomp: 'ica', n_components: 3, max_iter: 5000, tol: 0.01 },
+    # feats: { decomp: 'ica', n_components: 3, max_iter: 5000, tol: 0.01 },
     #
+    # Custom (per-layer) Specifications
+    # ---------------------------------
+    #
+    # To define the feature extraction technique strategy on a
+    # per-layer basis, one can give a lambda function that takes the
+    # layer index as argument, and returns any of the specification
+    # dictonaries as above:
+    # feats: '(lambda li: 3 if li <= 2 else 4)',
+    #
+    # Hybrid: Use ICA(3) for the three first layers, PCA(4) elsewhere:
+    # feats: '(lambda li: { "decomp": "ica", "n_components": 3 } if li <= 2 else { "n_components": 4 })',
     # 
     # Discretization Strategy (for each extracted feature)
     # ====================================================
