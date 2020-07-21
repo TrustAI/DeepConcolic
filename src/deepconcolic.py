@@ -66,6 +66,9 @@ def deepconcolic(criterion, norm, test_object, report_args, dbnc_spec = {}):
     else:
       sys.exit ('\n not supported norm... {0}\n'.format(norm))
     engine.run (**report_args, initial_test_cases = 20)
+  elif criterion=='dbnc_stats':
+    import dbnc_stats
+    dbnc_stats.run (test_object, report_args['outs'])
   elif criterion=='ssc':
     from ssc import SScGANBasedAnalyzer, setup as ssc_setup
     engine = ssc_setup (test_object = test_object,

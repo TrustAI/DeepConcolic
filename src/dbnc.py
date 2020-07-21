@@ -254,10 +254,12 @@ class _BaseBFcCriterion (Criterion):
 
   def fit_activations (self, acts):
     # Assumes `num_test_cases' has already been updated with the
-    # inputs that triggered the given activations.
+    # inputs that triggered the given activations; otherwise, set
+    # inertia to 0.0, which basically erases history.
     facts = self.dimred_n_discretize_activations (acts)
     nbase = self.num_test_cases - len (facts)
-    self.N.fit (facts, inertia = nbase / self.num_test_cases)
+    self.N.fit (facts,
+                inertia = nbase / self.num_test_cases if nbase >= 0 else 0.0)
 
 
   def update_coverage (self, tl: Sequence[Input]) -> None:
