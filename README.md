@@ -90,11 +90,18 @@ To run Concolic Sign-sign-coverage (MC/DC) for DNNs on the MNIST model
 python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --criterion ssclp --mnist-data --outputs outs
 ```
 
-To run Concolic BN-based coverage (BNCov) for DNNs on the MNIST model
+
+To run Concolic BN-based Feature coverage (BFCov) for DNNs on the MNIST model
 ```
 python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --criterion bfc --norm linf --mnist-data --outputs outs --dbnc-spec ../dbnc/example.yaml
 ```
 See [the example YAML specification](dbnc/example.yaml) for details on how to configure the BN-based abstraction.
+
+
+To run Concolic BN-based Feature-dependence coverage (BFdCov) for DNNs on the MNIST model
+```
+python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --criterion bfdc --norm linf --mnist-data --outputs outs --dbnc-spec ../dbnc/example.yaml
+```
 
 
 ### Concolic Testing on Lipschitz Constants for DNNs
