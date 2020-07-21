@@ -2,6 +2,7 @@ import argparse
 import sys
 import os
 import cv2
+import yaml
 import warnings
 
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -16,7 +17,7 @@ except:
 
 from utils import *
 
-def deepconcolic(criterion, norm, test_object, report_args):
+def deepconcolic(criterion, norm, test_object, report_args, dbnc_spec = {}):
   if criterion=='nc':                   ## neuron cover
     from nc import setup as nc_setup
     if norm=='linf':
@@ -35,33 +36,35 @@ def deepconcolic(criterion, norm, test_object, report_args):
       print('\n not supported norm... {0}\n'.format(norm))
       sys.exit(0)
     engine.run (**report_args)
-  elif test_object.criterion=='bfc':    ## feature cover
+  elif criterion=='bfc':                ## feature cover
     from dbnc import setup as dbnc_setup
     from dbnc import BFcCriterion
-    if test_object.norm == 'linf':
+    print ("DBNC Spec:\n", yaml.dump (dbnc_spec), sep='')
+    if norm == 'linf':
       from pulp_norms import LInfPulp
       from dbnc_pulp import BFcPulpAnalyzer
-      engine = dbnc_setup (test_object = test_object,
+      engine = dbnc_setup (**dbnc_spec,
+                           test_object = test_object,
                            setup_criterion = BFcCriterion,
                            setup_analyzer = BFcPulpAnalyzer,
                            input_metric = LInfPulp ())
     else:
-      print('\n not supported norm... {0}\n'.format(test_object.norm))
-      sys.exit(0)
+      sys.exit ('\n not supported norm... {0}\n'.format(norm))
     engine.run (**report_args, initial_test_cases = 20)
-  elif test_object.criterion=='bfdc':   ## feature-dependence cover
+  elif criterion=='bfdc':               ## feature-dependence cover
     from dbnc import setup as dbnc_setup
     from dbnc import BFDcCriterion
-    if test_object.norm == 'linf':
+    print ("DBNC Spec:\n", yaml.dump (dbnc_spec), sep='')
+    if norm == 'linf':
       from pulp_norms import LInfPulp
       from dbnc_pulp import BFDcPulpAnalyzer
-      engine = dbnc_setup (test_object = test_object,
+      engine = dbnc_setup (**dbnc_spec,
+                           test_object = test_object,
                            setup_criterion = BFDcCriterion,
                            setup_analyzer = BFDcPulpAnalyzer,
                            input_metric = LInfPulp ())
     else:
-      print('\n not supported norm... {0}\n'.format(test_object.norm))
-      sys.exit(0)
+      sys.exit ('\n not supported norm... {0}\n'.format(norm))
     engine.run (**report_args, initial_test_cases = 20)
   elif criterion=='ssc':
     from ssc import SScGANBasedAnalyzer, setup as ssc_setup
@@ -125,6 +128,11 @@ def main():
                       help="to test a particular layer", metavar="INT")
   parser.add_argument("--feature-index", dest="feature_index", default="-1",
                       help="to test a particular feature map", metavar="INT")
+
+  # DBNC-specific
+  parser.add_argument("--dbnc-spec", dest="dbnc_spec", default="{}",
+                      help="Feature extraction and discretisation specification",
+                      metavar="SPEC")
 
   args=parser.parse_args()
 
@@ -250,11 +258,23 @@ def main():
         labels.append(int(l))
     test_object.labels=labels
 
+  # DBNC-specific parameters:
+  try:
+    if args.dbnc_spec != "{}" and os.path.exists(args.dbnc_spec):
+      with open(args.dbnc_spec, 'r') as f:
+        dbnc_spec = yaml.safe_load (f)
+    else:
+      dbnc_spec = yaml.safe_load (args.dbnc_spec)
+  except yaml.YAMLError as exc:
+    sys.exit(exc)
+
   test_object.check_layer_indices (criterion)
+
   deepconcolic (criterion, norm, test_object,
                 report_args = { 'save_input_func': save_input,
                                 'inp_ub': inp_ub,
-                                'outs': outs })
+                                'outs': outs },
+                dbnc_spec = dbnc_spec)
 
 if __name__=="__main__":
   try:

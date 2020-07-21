@@ -873,28 +873,28 @@ class BFDcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
 
 
 
-def abstract_layerp (li, n_feats = None, discr = None, layer_indices = []):
+def abstract_layerp (li, feats = None, discr = None, layer_indices = []):
   return (li in discr if discr is not None and isinstance (discr, dict) else
-          li in n_feats if n_feats is not None and isinstance (n_feats, dict) else
+          li in feats if feats is not None and isinstance (feats, dict) else
           li in layer_indices)
 
 
-def abstract_layer_features (li, n_feats = None, discr = None, default = 1):
-  if n_feats is not None:
-    if isinstance (n_feats, (int, float, str)):
-      return n_feats
-    if isinstance (n_feats, dict) and li in n_feats:
-      li_feats = n_feats[li]
+def abstract_layer_features (li, feats = None, discr = None, default = 1):
+  if feats is not None:
+    if isinstance (feats, (int, float, str)):
+      return feats
+    if isinstance (feats, dict) and li in feats:
+      li_feats = feats[li]
       if not isinstance (li_feats, (int, float, str, dict)):
         raise ValueError (
-          'n_feats[{}] should be an int, a string, or a float (got {})'
+          'feats[{}] should be an int, a string, or a float (got {})'
           .format (li, type (li_feats)))
       return li_feats
-    elif isinstance (n_feats, dict):
-      return n_feats
+    elif isinstance (feats, dict):
+      return feats
     raise ValueError (
-      'n_feats should either be a dictonary, an int, a string, or a float (got {})'
-      .format (type (n_feats)))
+      'feats should either be a dictonary, an int, a string, or a float (got {})'
+      .format (type (feats)))
 
   # Guess from discr
   if discr is not None:
@@ -944,8 +944,8 @@ def abstract_layer_feature_discretization (l, li, discr = None):
 
 
 
-def abstract_layer_setup (l, i, n_feats = None, discr = None):
-  options = abstract_layer_features (i, n_feats, discr)
+def abstract_layer_setup (l, i, feats = None, discr = None):
+  options = abstract_layer_features (i, feats, discr)
   if isinstance (options, dict) and 'decomp' in options:
     decomp = options['decomp']
     options = { **options }
@@ -973,7 +973,7 @@ def abstract_layer_setup (l, i, n_feats = None, discr = None):
 
 import matplotlib.pyplot as plt
 
-def report_on_feature_extractions (fl, flatacts, fdimred, labels, acc = None):
+def plot_report_on_feature_extractions (fl, flatacts, fdimred, labels, acc = None):
   from matplotlib import cm
   from matplotlib.colors import LinearSegmentedColormap, BoundaryNorm
   from mpl_toolkits.mplot3d import Axes3D
@@ -1029,60 +1029,39 @@ from engine import setup as engine_setup
 def setup (
   setup_criterion = None,
   test_object = None,
-  n_feats = { # 0: { 'n_components': 5, 'svd_solver': 'full' },
-  # 1: { 'n_components': 5, 'svd_solver': 'full' },
-  # 2: { 'n_components': 5, 'svd_solver': 'full' },
-  # 1: 0.7,
-  'decomp': 'ica',
-  'n_components': 3,
-  'max_iter': 5000,
-  'tol': 0.02,
-  # 0: 0.1,
-  # 1: 0.2,
-  # 2: 0.2,
-  # 4: 0.46,
-  # 5: 0.7,
-  # 6: 0.9,
-  # # 2: 0.9,
-  # # 3: 0.9,
-  # # 4: 0.9
-  # # 0: { 'n_components': 2, 'svd_solver': 'randomized' },
-  # # 2: { 'n_components': 3, 'svd_solver': 'randomized' },
-  # 5: 0.9,
-  # 6: 0.9,
-  # 7: 0.4,
-  # 11: 0.6,
-  # 13: 0.8,
-  # 15: 0.9
-  },
+  feats = { 'n_components': 2, 'svd_solver': 'randomized' },
   # discr = (lambda li: { 'n_bins': 4, 'strategy': 'uniform' } if li in (15,) else
   #          None),
   discr = { 'n_bins': 1, 'extended': True, 'strategy': 'uniform' },
   # discr = (lambda li: { 'n_bins': 3, 'strategy': 'kmeans' }),
   # discr = { 'n_bins': 2, 'extended': True, 'strategy': 'quantile' },
+  report_on_feature_extractions = False,
+  bn_abstr_train_size = 1000,
+  bn_abstr_test_size = 200,
   **kwds):
 
   if setup_criterion is None:
     raise ValueError ('Missing argument `setup_criterion`!')
 
-  setup_layer = (lambda l, i, **kwds: abstract_layer_setup (l, i, n_feats, discr))
+  setup_layer = (lambda l, i, **kwds: abstract_layer_setup (l, i, feats, discr))
   cover_layers = get_cover_layers (test_object.dnn, setup_layer,
                                    layer_indices = test_object.layer_indices,
                                    exclude_direct_input_succ = False,
                                    exclude_output_layer = False)
-  return engine_setup (
-    test_object = test_object,
-    cover_layers = cover_layers,
-    setup_criterion = setup_criterion,
-    criterion_args = {
-      'bn_abstr_train_size': 1000,
-      'bn_abstr_test_size': 100,
-      'print_classification_reports': True,
-      # 'report_on_feature_extractions': report_on_feature_extractions,
-      # 'close_reports_on_feature_extractions': (lambda _: plt.show ()),
-    },
-    **kwds
-  )
+  criterion_args = {
+    'bn_abstr_train_size': bn_abstr_train_size,
+    'bn_abstr_test_size': bn_abstr_test_size,
+    'print_classification_reports': True,
+    **({'report_on_feature_extractions': plot_report_on_feature_extractions,
+        'close_reports_on_feature_extractions': (lambda _: plt.show ()) }
+       if report_on_feature_extractions else {})
+  }
+
+  return engine_setup (test_object = test_object,
+                       cover_layers = cover_layers,
+                       setup_criterion = setup_criterion,
+                       criterion_args = criterion_args,
+                       **kwds)
 
 # ---
 
