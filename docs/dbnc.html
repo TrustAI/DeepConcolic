@@ -103,27 +103,27 @@
 <em class="property">class </em><code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">BFcTarget</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fnode</span></em>, <em class="sig-param"><span class="n">feature_part</span></em>, <em class="sig-param"><span class="n">sanity_check</span></em>, <em class="sig-param"><span class="n">root_test_idx</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.BFcTarget" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a></p>
 <p>Create new instance of BFcTarget(fnode, feature_part, sanity_check, root_test_idx)</p>
-<dl class="py method">
+<dl class="py attribute">
 <dt id="dbnc.BFcTarget.fnode">
-<em class="property">property </em><code class="sig-name descname">fnode</code><a class="headerlink" href="#dbnc.BFcTarget.fnode" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">fnode</code><em class="property">: dbnc.DiscretizedFeatureNode</em><a class="headerlink" href="#dbnc.BFcTarget.fnode" title="Permalink to this definition">¶</a></dt>
 <dd><p>Alias for field number 0</p>
 </dd></dl>
 
-<dl class="py method">
+<dl class="py attribute">
 <dt id="dbnc.BFcTarget.feature_part">
-<em class="property">property </em><code class="sig-name descname">feature_part</code><a class="headerlink" href="#dbnc.BFcTarget.feature_part" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">feature_part</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></em><a class="headerlink" href="#dbnc.BFcTarget.feature_part" title="Permalink to this definition">¶</a></dt>
 <dd><p>Alias for field number 1</p>
 </dd></dl>
 
-<dl class="py method">
+<dl class="py attribute">
 <dt id="dbnc.BFcTarget.sanity_check">
-<em class="property">property </em><code class="sig-name descname">sanity_check</code><a class="headerlink" href="#dbnc.BFcTarget.sanity_check" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">sanity_check</code><em class="property">: Callable[[int, int, NewType.&lt;locals&gt;.new_type], bool]</em><a class="headerlink" href="#dbnc.BFcTarget.sanity_check" title="Permalink to this definition">¶</a></dt>
 <dd><p>Alias for field number 2</p>
 </dd></dl>
 
-<dl class="py method">
+<dl class="py attribute">
 <dt id="dbnc.BFcTarget.root_test_idx">
-<em class="property">property </em><code class="sig-name descname">root_test_idx</code><a class="headerlink" href="#dbnc.BFcTarget.root_test_idx" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">root_test_idx</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></em><a class="headerlink" href="#dbnc.BFcTarget.root_test_idx" title="Permalink to this definition">¶</a></dt>
 <dd><p>Alias for field number 3</p>
 </dd></dl>
 
@@ -199,39 +199,39 @@ concrete inputs.</p>
 <em class="property">class </em><code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">BFDcTarget</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fnode1</span></em>, <em class="sig-param"><span class="n">feature_part1</span></em>, <em class="sig-param"><span class="n">flayer0</span></em>, <em class="sig-param"><span class="n">feature_parts0</span></em>, <em class="sig-param"><span class="n">sanity_check</span></em>, <em class="sig-param"><span class="n">root_test_idx</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.BFDcTarget" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a></p>
 <p>Create new instance of BFDcTarget(fnode1, feature_part1, flayer0, feature_parts0, sanity_check, root_test_idx)</p>
-<dl class="py method">
+<dl class="py attribute">
 <dt id="dbnc.BFDcTarget.fnode1">
-<em class="property">property </em><code class="sig-name descname">fnode1</code><a class="headerlink" href="#dbnc.BFDcTarget.fnode1" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">fnode1</code><em class="property">: dbnc.DiscretizedHiddenFeatureNode</em><a class="headerlink" href="#dbnc.BFDcTarget.fnode1" title="Permalink to this definition">¶</a></dt>
 <dd><p>Alias for field number 0</p>
 </dd></dl>
 
-<dl class="py method">
+<dl class="py attribute">
 <dt id="dbnc.BFDcTarget.feature_part1">
-<em class="property">property </em><code class="sig-name descname">feature_part1</code><a class="headerlink" href="#dbnc.BFDcTarget.feature_part1" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">feature_part1</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></em><a class="headerlink" href="#dbnc.BFDcTarget.feature_part1" title="Permalink to this definition">¶</a></dt>
 <dd><p>Alias for field number 1</p>
 </dd></dl>
 
-<dl class="py method">
+<dl class="py attribute">
 <dt id="dbnc.BFDcTarget.flayer0">
-<em class="property">property </em><code class="sig-name descname">flayer0</code><a class="headerlink" href="#dbnc.BFDcTarget.flayer0" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">flayer0</code><em class="property">: <a class="reference internal" href="#dbnc.BFcLayer" title="dbnc.BFcLayer">dbnc.BFcLayer</a></em><a class="headerlink" href="#dbnc.BFDcTarget.flayer0" title="Permalink to this definition">¶</a></dt>
 <dd><p>Alias for field number 2</p>
 </dd></dl>
 
-<dl class="py method">
+<dl class="py attribute">
 <dt id="dbnc.BFDcTarget.feature_parts0">
-<em class="property">property </em><code class="sig-name descname">feature_parts0</code><a class="headerlink" href="#dbnc.BFDcTarget.feature_parts0" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">feature_parts0</code><em class="property">: Sequence<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">]</span></em><a class="headerlink" href="#dbnc.BFDcTarget.feature_parts0" title="Permalink to this definition">¶</a></dt>
 <dd><p>Alias for field number 3</p>
 </dd></dl>
 
-<dl class="py method">
+<dl class="py attribute">
 <dt id="dbnc.BFDcTarget.sanity_check">
-<em class="property">property </em><code class="sig-name descname">sanity_check</code><a class="headerlink" href="#dbnc.BFDcTarget.sanity_check" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">sanity_check</code><em class="property">: Callable[[int, int, NewType.&lt;locals&gt;.new_type], bool]</em><a class="headerlink" href="#dbnc.BFDcTarget.sanity_check" title="Permalink to this definition">¶</a></dt>
 <dd><p>Alias for field number 4</p>
 </dd></dl>
 
-<dl class="py method">
+<dl class="py attribute">
 <dt id="dbnc.BFDcTarget.root_test_idx">
-<em class="property">property </em><code class="sig-name descname">root_test_idx</code><a class="headerlink" href="#dbnc.BFDcTarget.root_test_idx" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">root_test_idx</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></em><a class="headerlink" href="#dbnc.BFDcTarget.root_test_idx" title="Permalink to this definition">¶</a></dt>
 <dd><p>Alias for field number 5</p>
 </dd></dl>
 
@@ -304,12 +304,12 @@ concrete inputs.</p>
 
 <dl class="py function">
 <dt id="dbnc.abstract_layerp">
-<code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">abstract_layerp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">li</span></em>, <em class="sig-param"><span class="n">n_feats</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">discr</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">layer_indices</span><span class="o">=</span><span class="default_value">[]</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.abstract_layerp" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">abstract_layerp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">li</span></em>, <em class="sig-param"><span class="n">feats</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">discr</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">layer_indices</span><span class="o">=</span><span class="default_value">[]</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.abstract_layerp" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt id="dbnc.abstract_layer_features">
-<code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">abstract_layer_features</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">li</span></em>, <em class="sig-param"><span class="n">n_feats</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">discr</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">default</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.abstract_layer_features" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">abstract_layer_features</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">li</span></em>, <em class="sig-param"><span class="n">feats</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">discr</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">default</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.abstract_layer_features" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
@@ -319,17 +319,17 @@ concrete inputs.</p>
 
 <dl class="py function">
 <dt id="dbnc.abstract_layer_setup">
-<code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">abstract_layer_setup</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">l</span></em>, <em class="sig-param"><span class="n">i</span></em>, <em class="sig-param"><span class="n">n_feats</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">discr</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.abstract_layer_setup" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">abstract_layer_setup</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">l</span></em>, <em class="sig-param"><span class="n">i</span></em>, <em class="sig-param"><span class="n">feats</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">discr</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.abstract_layer_setup" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt id="dbnc.report_on_feature_extractions">
-<code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">report_on_feature_extractions</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fl</span></em>, <em class="sig-param"><span class="n">flatacts</span></em>, <em class="sig-param"><span class="n">fdimred</span></em>, <em class="sig-param"><span class="n">labels</span></em>, <em class="sig-param"><span class="n">acc</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.report_on_feature_extractions" title="Permalink to this definition">¶</a></dt>
+<dt id="dbnc.plot_report_on_feature_extractions">
+<code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">plot_report_on_feature_extractions</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fl</span></em>, <em class="sig-param"><span class="n">flatacts</span></em>, <em class="sig-param"><span class="n">fdimred</span></em>, <em class="sig-param"><span class="n">labels</span></em>, <em class="sig-param"><span class="n">acc</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.plot_report_on_feature_extractions" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt id="dbnc.setup">
-<code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">setup_criterion</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">test_object</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">n_feats</span><span class="o">=</span><span class="default_value">{'decomp': 'ica', 'max_iter': 5000, 'n_components': 3, 'tol': 0.02}</span></em>, <em class="sig-param"><span class="n">discr</span><span class="o">=</span><span class="default_value">{'extended': True, 'n_bins': 1, 'strategy': 'uniform'}</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.setup" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">dbnc.</code><code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">setup_criterion</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">test_object</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">feats</span><span class="o">=</span><span class="default_value">{'n_components': 2, 'svd_solver': 'randomized'}</span></em>, <em class="sig-param"><span class="n">discr</span><span class="o">=</span><span class="default_value">{'extended': True, 'n_bins': 1, 'strategy': 'uniform'}</span></em>, <em class="sig-param"><span class="n">report_on_feature_extractions</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">bn_abstr_train_size</span><span class="o">=</span><span class="default_value">1000</span></em>, <em class="sig-param"><span class="n">bn_abstr_test_size</span><span class="o">=</span><span class="default_value">200</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#dbnc.setup" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div>
