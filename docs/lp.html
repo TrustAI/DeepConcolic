@@ -1,0 +1,391 @@
+
+
+<!doctype html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linear Program Solving &#8212; deepconcolic  documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Specialized L0 Search" href="l0.html" />
+    <link rel="prev" title="Modified Condition/Decision Coverage" href="mcdc.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="l0.html" title="Specialized L0 Search"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="mcdc.html" title="Modified Condition/Decision Coverage"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">deepconcolic  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="api.html" accesskey="U">DeepConcolic API</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Linear Program Solving</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="linear-program-solving">
+<h1>Linear Program Solving<a class="headerlink" href="#linear-program-solving" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-lp">
+<span id="solvers"></span><h2>Solvers<a class="headerlink" href="#module-lp" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="lp.LpLinearMetric">
+<em class="property">class </em><code class="sig-prename descclassname">lp.</code><code class="sig-name descname">LpLinearMetric</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">LB</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">UB</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#lp.LpLinearMetric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Basic class to represent any linear metric.</p>
+<dl class="py method">
+<dt id="lp.LpLinearMetric.lower_bound">
+<em class="property">property </em><code class="sig-name descname">lower_bound</code><a class="headerlink" href="#lp.LpLinearMetric.lower_bound" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="lp.LpLinearMetric.upper_bound">
+<em class="property">property </em><code class="sig-name descname">upper_bound</code><a class="headerlink" href="#lp.LpLinearMetric.upper_bound" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="lp.LpSolver4DNN">
+<em class="property">class </em><code class="sig-prename descclassname">lp.</code><code class="sig-name descname">LpSolver4DNN</code><a class="headerlink" href="#lp.LpSolver4DNN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Generic LP solver class.</p>
+<dl class="py method">
+<dt id="lp.LpSolver4DNN.setup">
+<code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dnn</span></em>, <em class="sig-param"><span class="n">build_encoder</span></em>, <em class="sig-param"><span class="n">link_encoders</span></em>, <em class="sig-param"><span class="n">create_base_problem</span></em>, <em class="sig-param"><span class="n">first</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">upto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a><a class="headerlink" href="#lp.LpSolver4DNN.setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs and sets up LP problems to encode from layer <cite>first</cite> up
+to layer <cite>upto</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="lp.LpSolver4DNN.for_layer">
+<em class="property">abstract </em><code class="sig-name descname">for_layer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cl</span><span class="p">:</span> <span class="n">CL</span></em><span class="sig-paren">)</span> &#x2192; LPProblem<a class="headerlink" href="#lp.LpSolver4DNN.for_layer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an LP problem that encodes up to the given layer <cite>cl</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="lp.LpSolver4DNN.find_constrained_input">
+<em class="property">abstract </em><code class="sig-name descname">find_constrained_input</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">problem</span><span class="p">:</span> <span class="n">LPProblem</span></em>, <em class="sig-param"><span class="n">metric</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#lp.LpLinearMetric" title="lp.LpLinearMetric">lp.LpLinearMetric</a></span></em>, <em class="sig-param"><span class="n">x</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.19)">numpy.ndarray</a></span></em>, <em class="sig-param"><span class="n">extra_constrs</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">name_prefix</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a><span class="p">, </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.19)">numpy.ndarray</a><span class="p">]</span><a class="headerlink" href="#lp.LpSolver4DNN.find_constrained_input" title="Permalink to this definition">¶</a></dt>
+<dd><p>Augment the given <cite>LP</cite> problem with extra constraints
+(<cite>extra_constrs</cite>), and minimize <cite>metric</cite> against <cite>x</cite>.</p>
+<p>Must restore <cite>problem</cite> to its state upon call before termination.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="lp.PulpLinearMetric">
+<em class="property">class </em><code class="sig-prename descclassname">lp.</code><code class="sig-name descname">PulpLinearMetric</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">LB_noise</span><span class="o">=</span><span class="default_value">255</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#lp.PulpLinearMetric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#lp.LpLinearMetric" title="lp.LpLinearMetric"><code class="xref py py-class docutils literal notranslate"><span class="pre">lp.LpLinearMetric</span></code></a></p>
+<p>Any linear metric for the <a class="reference internal" href="#lp.PulpSolver4DNN" title="lp.PulpSolver4DNN"><code class="xref py py-class docutils literal notranslate"><span class="pre">PulpSolver4DNN</span></code></a>.</p>
+<dl class="py method">
+<dt id="lp.PulpLinearMetric.dist_var_name">
+<em class="property">property </em><code class="sig-name descname">dist_var_name</code><a class="headerlink" href="#lp.PulpLinearMetric.dist_var_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="lp.PulpLinearMetric.draw_lower_bound">
+<code class="sig-name descname">draw_lower_bound</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lp.PulpLinearMetric.draw_lower_bound" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="lp.PulpLinearMetric.pulp_constrain">
+<em class="property">abstract </em><code class="sig-name descname">pulp_constrain</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist_var</span></em>, <em class="sig-param"><span class="n">in_vars</span></em>, <em class="sig-param"><span class="n">values</span></em>, <em class="sig-param"><span class="n">name_prefix</span><span class="o">=</span><span class="default_value">'input_activations_constraint'</span></em><span class="sig-paren">)</span> &#x2192; Sequence<span class="p">[</span>pulp.pulp.LpConstraint<span class="p">]</span><a class="headerlink" href="#lp.PulpLinearMetric.pulp_constrain" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="lp.PulpSolver4DNN">
+<em class="property">class </em><code class="sig-prename descclassname">lp.</code><code class="sig-name descname">PulpSolver4DNN</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#lp.PulpSolver4DNN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#lp.LpSolver4DNN" title="lp.LpSolver4DNN"><code class="xref py py-class docutils literal notranslate"><span class="pre">lp.LpSolver4DNN</span></code></a></p>
+<dl class="py method">
+<dt id="lp.PulpSolver4DNN.setup">
+<code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param">dnn</em>, <em class="sig-param">metric: lp.PulpLinearMetric</em>, <em class="sig-param">build_encoder=&lt;class 'pulp_encoding.PulpStrictLayerEncoder'&gt;</em>, <em class="sig-param">link_encoders=&lt;function setup_layer_encoders&gt;</em>, <em class="sig-param">create_problem=&lt;function create_base_problem&gt;</em>, <em class="sig-param">first=0</em>, <em class="sig-param">upto=None</em><span class="sig-paren">)</span><a class="headerlink" href="#lp.PulpSolver4DNN.setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs and sets up LP problems to encode from layer <cite>first</cite> up
+to layer <cite>upto</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="lp.PulpSolver4DNN.for_layer">
+<code class="sig-name descname">for_layer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cl</span><span class="p">:</span> <span class="n">CL</span></em><span class="sig-paren">)</span> &#x2192; pulp.pulp.LpProblem<a class="headerlink" href="#lp.PulpSolver4DNN.for_layer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an LP problem that encodes up to the given layer <cite>cl</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="lp.PulpSolver4DNN.find_constrained_input">
+<code class="sig-name descname">find_constrained_input</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">problem</span><span class="p">:</span> <span class="n">pulp.pulp.LpProblem</span></em>, <em class="sig-param"><span class="n">metric</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#lp.PulpLinearMetric" title="lp.PulpLinearMetric">lp.PulpLinearMetric</a></span></em>, <em class="sig-param"><span class="n">x</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.19)">numpy.ndarray</a></span></em>, <em class="sig-param"><span class="n">extra_constrs</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">name_prefix</span><span class="o">=</span><span class="default_value">'x_0_0'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#lp.PulpSolver4DNN.find_constrained_input" title="Permalink to this definition">¶</a></dt>
+<dd><p>Augment the given <cite>LP</cite> problem with extra constraints
+(<cite>extra_constrs</cite>), and minimize <cite>metric</cite> against <cite>x</cite>.</p>
+<p>Must restore <cite>problem</cite> to its state upon call before termination.</p>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-pulp_norms"></span><dl class="py class">
+<dt id="pulp_norms.LInfPulp">
+<em class="property">class </em><code class="sig-prename descclassname">pulp_norms.</code><code class="sig-name descname">LInfPulp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">factor</span><span class="o">=</span><span class="default_value">0.25</span></em>, <em class="sig-param"><span class="n">scale</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pulp_norms.LInfPulp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="core.html#norms.LInf" title="norms.LInf"><code class="xref py py-class docutils literal notranslate"><span class="pre">norms.LInf</span></code></a>, <a class="reference internal" href="#lp.PulpLinearMetric" title="lp.PulpLinearMetric"><code class="xref py py-class docutils literal notranslate"><span class="pre">lp.PulpLinearMetric</span></code></a></p>
+<p>L-inf norm to use for <a class="reference internal" href="#lp.PulpSolver4DNN" title="lp.PulpSolver4DNN"><code class="xref py py-class docutils literal notranslate"><span class="pre">lp.PulpSolver4DNN</span></code></a>.</p>
+<p>The <cite>factor</cite> argument determines closeness when the object is used
+as an oracle; defaults to 1/4.  In turn, <cite>scale</cite> is applied on
+involved scalar values (e.g. pixels) when computing distances.</p>
+<dl class="py method">
+<dt id="pulp_norms.LInfPulp.pulp_constrain">
+<code class="sig-name descname">pulp_constrain</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dist_var</span></em>, <em class="sig-param"><span class="n">var_names</span></em>, <em class="sig-param"><span class="n">values</span></em>, <em class="sig-param"><span class="n">name_prefix</span><span class="o">=</span><span class="default_value">'input_activations_constraint'</span></em><span class="sig-paren">)</span> &#x2192; Sequence<span class="p">[</span>pulp.pulp.LpConstraint<span class="p">]</span><a class="headerlink" href="#pulp_norms.LInfPulp.pulp_constrain" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-pulp_encoding">
+<span id="specialized-encoders"></span><h2>Specialized Encoders<a class="headerlink" href="#module-pulp_encoding" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="pulp_encoding.PulpLayerOutput">
+<em class="property">class </em><code class="sig-prename descclassname">pulp_encoding.</code><code class="sig-name descname">PulpLayerOutput</code><a class="headerlink" href="#pulp_encoding.PulpLayerOutput" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Abstract representation to obtain symbolic expressions that encode
+layer outputs.</p>
+<dl class="py method">
+<dt id="pulp_encoding.PulpLayerOutput.pulp_out_exprs">
+<em class="property">abstract </em><code class="sig-name descname">pulp_out_exprs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pulp_encoding.PulpLayerOutput.pulp_out_exprs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="pulp_encoding.BasicPulpInputLayerEncoder">
+<em class="property">class </em><code class="sig-prename descclassname">pulp_encoding.</code><code class="sig-name descname">BasicPulpInputLayerEncoder</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">var_names</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pulp_encoding.BasicPulpInputLayerEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pulp_encoding.PulpLayerOutput" title="pulp_encoding.PulpLayerOutput"><code class="xref py py-class docutils literal notranslate"><span class="pre">pulp_encoding.PulpLayerOutput</span></code></a></p>
+<p>Input layer encoder for pulp.</p>
+<dl class="py method">
+<dt id="pulp_encoding.BasicPulpInputLayerEncoder.pulp_in_vars">
+<code class="sig-name descname">pulp_in_vars</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pulp_encoding.BasicPulpInputLayerEncoder.pulp_in_vars" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pulp_encoding.BasicPulpInputLayerEncoder.pulp_out_exprs">
+<code class="sig-name descname">pulp_out_exprs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pulp_encoding.BasicPulpInputLayerEncoder.pulp_out_exprs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="pulp_encoding.PulpLayerEncoder">
+<em class="property">class </em><code class="sig-prename descclassname">pulp_encoding.</code><code class="sig-name descname">PulpLayerEncoder</code><a class="headerlink" href="#pulp_encoding.PulpLayerEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Generic layer encoder for pulp.</p>
+<dl class="py method">
+<dt id="pulp_encoding.PulpLayerEncoder.pulp_gen_vars">
+<em class="property">abstract </em><code class="sig-name descname">pulp_gen_vars</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">idx</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></span></em>, <em class="sig-param"><span class="n">var_names</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><a class="headerlink" href="#pulp_encoding.PulpLayerEncoder.pulp_gen_vars" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pulp_encoding.PulpLayerEncoder.pulp_gen_base_constraints">
+<em class="property">abstract </em><code class="sig-name descname">pulp_gen_base_constraints</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">base_prob</span><span class="p">:</span> <span class="n">pulp.pulp.LpProblem</span></em>, <em class="sig-param"><span class="n">base_prob_dict</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a></span></em>, <em class="sig-param"><span class="n">prev</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#pulp_encoding.PulpLayerOutput" title="pulp_encoding.PulpLayerOutput">pulp_encoding.PulpLayerOutput</a></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a><a class="headerlink" href="#pulp_encoding.PulpLayerEncoder.pulp_gen_base_constraints" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pulp_encoding.PulpLayerEncoder.pulp_replicate_activations">
+<em class="property">abstract </em><code class="sig-name descname">pulp_replicate_activations</code><span class="sig-paren">(</span><em class="sig-param">ap_x</em>, <em class="sig-param">prev: pulp_encoding.PulpLayerOutput</em>, <em class="sig-param">exclude=&lt;function PulpLayerEncoder.&lt;lambda&gt;&gt;</em><span class="sig-paren">)</span> &#x2192; Sequence<span class="p">[</span>pulp.pulp.LpConstraint<span class="p">]</span><a class="headerlink" href="#pulp_encoding.PulpLayerEncoder.pulp_replicate_activations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="pulp_encoding.PulpStrictLayerEncoder">
+<em class="property">class </em><code class="sig-prename descclassname">pulp_encoding.</code><code class="sig-name descname">PulpStrictLayerEncoder</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">l</span></em>, <em class="sig-param"><span class="n">layer</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pulp_encoding.PulpStrictLayerEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pulp_encoding.PulpLayerEncoder" title="pulp_encoding.PulpLayerEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">pulp_encoding.PulpLayerEncoder</span></code></a>, <a class="reference internal" href="#pulp_encoding.PulpLayerOutput" title="pulp_encoding.PulpLayerOutput"><code class="xref py py-class docutils literal notranslate"><span class="pre">pulp_encoding.PulpLayerOutput</span></code></a></p>
+<dl class="py method">
+<dt id="pulp_encoding.PulpStrictLayerEncoder.pulp_gen_vars">
+<code class="sig-name descname">pulp_gen_vars</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">idx</span></em>, <em class="sig-param"><span class="n">var_names</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pulp_encoding.PulpStrictLayerEncoder.pulp_gen_vars" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pulp_encoding.PulpStrictLayerEncoder.pulp_out_exprs">
+<code class="sig-name descname">pulp_out_exprs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pulp_encoding.PulpStrictLayerEncoder.pulp_out_exprs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pulp_encoding.PulpStrictLayerEncoder.pulp_gen_base_constraints">
+<code class="sig-name descname">pulp_gen_base_constraints</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">base_prob</span></em>, <em class="sig-param"><span class="n">base_prob_dict</span></em>, <em class="sig-param"><span class="n">prev</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pulp_encoding.PulpStrictLayerEncoder.pulp_gen_base_constraints" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pulp_encoding.PulpStrictLayerEncoder.pulp_replicate_activations">
+<code class="sig-name descname">pulp_replicate_activations</code><span class="sig-paren">(</span><em class="sig-param">ap_x</em>, <em class="sig-param">prev: pulp_encoding.PulpLayerOutput</em>, <em class="sig-param">exclude=&lt;function PulpStrictLayerEncoder.&lt;lambda&gt;&gt;</em><span class="sig-paren">)</span> &#x2192; Sequence<span class="p">[</span>pulp.pulp.LpConstraint<span class="p">]</span><a class="headerlink" href="#pulp_encoding.PulpStrictLayerEncoder.pulp_replicate_activations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pulp_encoding.PulpStrictLayerEncoder.pulp_negate_activation">
+<code class="sig-name descname">pulp_negate_activation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ap_x</span></em>, <em class="sig-param"><span class="n">oidx</span></em>, <em class="sig-param"><span class="n">prev</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#pulp_encoding.PulpLayerOutput" title="pulp_encoding.PulpLayerOutput">pulp_encoding.PulpLayerOutput</a></span></em><span class="sig-paren">)</span> &#x2192; Sequence<span class="p">[</span>pulp.pulp.LpConstraint<span class="p">]</span><a class="headerlink" href="#pulp_encoding.PulpStrictLayerEncoder.pulp_negate_activation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pulp_encoding.strict_encoder">
+<code class="sig-prename descclassname">pulp_encoding.</code><code class="sig-name descname">strict_encoder</code><a class="headerlink" href="#pulp_encoding.strict_encoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#pulp_encoding.PulpStrictLayerEncoder" title="pulp_encoding.PulpStrictLayerEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">pulp_encoding.PulpStrictLayerEncoder</span></code></a></p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pulp_encoding.setup_layer_encoders">
+<code class="sig-prename descclassname">pulp_encoding.</code><code class="sig-name descname">setup_layer_encoders</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dnn</span></em>, <em class="sig-param"><span class="n">build_encoder</span></em>, <em class="sig-param"><span class="n">first_layer</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">upto</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pulp_encoding.setup_layer_encoders" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="pulp_encoding.create_base_problem">
+<code class="sig-prename descclassname">pulp_encoding.</code><code class="sig-name descname">create_base_problem</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">layer_encoders</span></em>, <em class="sig-param"><span class="n">input_layer_encoder</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pulp_encoding.create_base_problem" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="pulp_encoding.gen_vars">
+<code class="sig-prename descclassname">pulp_encoding.</code><code class="sig-name descname">gen_vars</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">layer_index</span></em>, <em class="sig-param"><span class="n">sp</span></em>, <em class="sig-param"><span class="n">var_names</span></em>, <em class="sig-param"><span class="n">flatten</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pulp_encoding.gen_vars" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="pulp_encoding.same_act">
+<code class="sig-prename descclassname">pulp_encoding.</code><code class="sig-name descname">same_act</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">base_name</span></em>, <em class="sig-param"><span class="n">out_vars</span></em>, <em class="sig-param"><span class="n">in_exprs</span></em>, <em class="sig-param"><span class="n">idx</span></em>, <em class="sig-param"><span class="n">ap_x</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pulp_encoding.same_act" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a set of constraints that reproduces the activation pattern
+<cite>ap_x</cite> at neuron <cite>idx</cite>, based on:</p>
+<ul class="simple">
+<li><p>pulp variables <cite>out_vars</cite> that encode neuron outputs; and</p></li>
+<li><p>pulp expressions <cite>in_exprs</cite> that encode the inputs of each neuron.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pulp_encoding.neg_act">
+<code class="sig-prename descclassname">pulp_encoding.</code><code class="sig-name descname">neg_act</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">base_name</span></em>, <em class="sig-param"><span class="n">out_vars</span></em>, <em class="sig-param"><span class="n">in_exprs</span></em>, <em class="sig-param"><span class="n">idx</span></em>, <em class="sig-param"><span class="n">ap_x</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pulp_encoding.neg_act" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a set of constraints that negates the activation pattern
+<cite>ap_x</cite> at neuron <cite>idx</cite>, based on:</p>
+<ul class="simple">
+<li><p>pulp variables <cite>out_vars</cite> that encode neuron outputs; and</p></li>
+<li><p>pulp expressions <cite>in_exprs</cite> that encode the inputs of each neuron.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pulp_encoding.build_conv_constraint">
+<code class="sig-prename descclassname">pulp_encoding.</code><code class="sig-name descname">build_conv_constraint</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">base_name</span></em>, <em class="sig-param"><span class="n">out_vars</span></em>, <em class="sig-param"><span class="n">in_exprs</span></em>, <em class="sig-param"><span class="n">idx</span></em>, <em class="sig-param"><span class="n">ap_x</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pulp_encoding.build_conv_constraint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for <a class="reference internal" href="#pulp_encoding.same_act" title="pulp_encoding.same_act"><code class="xref py py-func docutils literal notranslate"><span class="pre">same_act()</span></code></a></p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pulp_encoding.build_dense_constraint">
+<code class="sig-prename descclassname">pulp_encoding.</code><code class="sig-name descname">build_dense_constraint</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">base_name</span></em>, <em class="sig-param"><span class="n">out_vars</span></em>, <em class="sig-param"><span class="n">in_exprs</span></em>, <em class="sig-param"><span class="n">idx</span></em>, <em class="sig-param"><span class="n">ap_x</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pulp_encoding.build_dense_constraint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for <a class="reference internal" href="#pulp_encoding.same_act" title="pulp_encoding.same_act"><code class="xref py py-func docutils literal notranslate"><span class="pre">same_act()</span></code></a></p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pulp_encoding.build_conv_constraint_neg">
+<code class="sig-prename descclassname">pulp_encoding.</code><code class="sig-name descname">build_conv_constraint_neg</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">base_name</span></em>, <em class="sig-param"><span class="n">out_vars</span></em>, <em class="sig-param"><span class="n">in_exprs</span></em>, <em class="sig-param"><span class="n">idx</span></em>, <em class="sig-param"><span class="n">ap_x</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pulp_encoding.build_conv_constraint_neg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for <a class="reference internal" href="#pulp_encoding.neg_act" title="pulp_encoding.neg_act"><code class="xref py py-func docutils literal notranslate"><span class="pre">neg_act()</span></code></a></p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pulp_encoding.build_dense_constraint_neg">
+<code class="sig-prename descclassname">pulp_encoding.</code><code class="sig-name descname">build_dense_constraint_neg</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">base_name</span></em>, <em class="sig-param"><span class="n">out_vars</span></em>, <em class="sig-param"><span class="n">in_exprs</span></em>, <em class="sig-param"><span class="n">idx</span></em>, <em class="sig-param"><span class="n">ap_x</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pulp_encoding.build_dense_constraint_neg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for <a class="reference internal" href="#pulp_encoding.neg_act" title="pulp_encoding.neg_act"><code class="xref py py-func docutils literal notranslate"><span class="pre">neg_act()</span></code></a></p>
+</dd></dl>
+
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Linear Program Solving</a><ul>
+<li><a class="reference internal" href="#module-lp">Solvers</a></li>
+<li><a class="reference internal" href="#module-pulp_encoding">Specialized Encoders</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="mcdc.html"
+                        title="previous chapter">Modified Condition/Decision Coverage</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="l0.html"
+                        title="next chapter">Specialized L0 Search</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/lp.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="l0.html" title="Specialized L0 Search"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="mcdc.html" title="Modified Condition/Decision Coverage"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">deepconcolic  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="api.html" >DeepConcolic API</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Linear Program Solving</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, TrustAI.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+  </body>
+</html>

@@ -8,17 +8,20 @@ except:
   import keras
 
 import numpy as np
-from PIL import Image
 import copy
 import sys
 import os
 import cv2
 
+COLUMNS = os.getenv ('COLUMNS', default = '80')
+P1F = '{:<' + COLUMNS + '}'
+N1F = '\n{:<' + COLUMNS + '}'
+
 def tp1(x):
-  print ('{:<80}'.format(x), end = '\r', flush = True)
+  print (P1F.format(x), end = '\r', flush = True)
 
 def ctp1(x):
-  print ('\n{:<80}'.format(x), end = '\r', flush = True)
+  print (N1F.format(x), end = '\r', flush = True)
 
 def np1(x):
   print (x, end = '', flush = True)
@@ -27,10 +30,10 @@ def cnp1(x):
   print ('\n', x, sep = '', end = '', flush = True)
 
 def p1(x):
-  print ('{:<80}'.format(x))
+  print (P1F.format(x))
 
 def cp1(x):
-  print ('\n{:<80}'.format(x))
+  print (N1F.format(x))
 
 
 def xtuple(t):
@@ -229,11 +232,12 @@ def testable_layer (dnn, idx,
           not (exclude_direct_input_succ and
                (idx == 0 or idx == 1 and is_input_layer (dnn.layers[0]))))
 
-def get_cover_layers(dnn, constr, layer_indices = None,
-                     exclude_direct_input_succ = False):
+def get_cover_layers (dnn, constr, layer_indices = None,
+                      exclude_direct_input_succ = False,
+                      exclude_output_layer = True):
   # All coverable layers:
-  cls = [ (l, layer) for l, layer in enumerate(dnn.layers[:-1])
-          if testable_layer (dnn, l) ]
+  layers = dnn.layers[:-1] if exclude_output_layer else dnn.layers
+  cls = [ (l, layer) for l, layer in enumerate (layers) if testable_layer (dnn, l) ]
   return [ constr (layer[1], layer[0],
                    prev = (cls[l-1][0] if l > 0 else None),
                    succ = (cls[l+1][1] if l < len(cls) - 1 else None))
@@ -283,63 +287,38 @@ def eval(o, im, having_input_layer = False):
 # ---
 
 class raw_datat:
-  def __init__(self, data, labels):
+  def __init__(self, data, labels, name = 'unknown'):
     self.data=data
     self.labels=labels
+    self.name = name
     
 
 
 class test_objectt:
-  def __init__(self, dnn, raw_data, criterion, norm):
+  def __init__(self, dnn, test_data, train_data):
     self.dnn=dnn
-    self.raw_data=raw_data
+    self.raw_data=test_data
+    self.train_data = train_data
+    # Most of what's below should not be needed anymore: one should
+    # avoid populating that object with criteria/analyzer-specific
+    # parameters.
     ## test config
-    self.norm=norm
-    self.criterion=criterion
     self.cond_ratio=None
     self.top_classes=None
-    self.inp_ub=None
-    self.training_data=None
-    self.labels=None
+    self.labels=None                    # only used in run_scc.run_svc
     self.trace_flag=None
     self.layer_indices=None
     self.feature_indices=None
-    self.save_input_func = None
 
-  def __repr__(self):
-    return 'criterion {0} with norm {1}'.format (self.criterion, self.norm)
-
-  def eval(self, im, allow_input_layer = False):
-    return eval(self.dnn, im, allow_input_layer)
-
-  def eval_batch(self, ims, allow_input_layer = False):
-    return eval_batch(self.dnn, ims, allow_input_layer)
-
-  # ---
-
-  def save_input(self, im, name, directory, log = None, fit = False):
-    if self.save_input_func != None:
-      self.save_input_func (self.inp_ub * 0.5 + (im / self.inp_ub * 0.5) if fit
-                            else (im / self.inp_ub * 1.0),
-                            name, directory, log)
-
-
-  def save_adversarial_example(self, adv, origin, directory = '/tmp',
-                               diff = None, diff_amplified = False,
-                               log = None):
-    self.save_input (adv[0], adv[1], directory, log)
-    self.save_input (origin[0], origin[1], directory, log)
-    if diff is not None:
-      self.save_input (diff[0], diff[1], directory, log, fit = False)
   
 
   def tests_layer(self, cl):
     return self.layer_indices == None or cl.layer_index in self.layer_indices
 
 
-  def check_layer_indices (self):
+  def check_layer_indices (self, criterion):
     if self.layer_indices == None: return
-    mcdc = self.criterion in ('ssc', 'ssclp')
+    mcdc = criterion in ('ssc', 'ssclp')
     testable = lambda l: testable_layer (self.dnn, l, exclude_direct_input_succ = mcdc)
     testable_layers_indices = [ l for l in range(0, len(self.dnn.layers)) if testable (l) ]
     wrong_layer_indices = [ i for i in self.layer_indices if i not in testable_layers_indices ]
@@ -480,13 +459,8 @@ class Coverage:
 
 
   @property
-  def covered(self) -> int:
-    return self.c
-
-
-  @property
-  def not_covered(self) -> int:
-    return self.total - self.c
+  def done(self) -> bool:
+    return self.total == self.c
 
 
   @property

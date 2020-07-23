@@ -9,7 +9,7 @@ try:
   from art.attacks.fast_gradient import FastGradientMethod
   from art.classifiers import KerasClassifier
 except:
-  from attacks import *
+  pass
 
 
 class adv_objectt:
