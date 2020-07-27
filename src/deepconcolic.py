@@ -16,7 +16,8 @@ except:
 
 from utils import *
 
-def deepconcolic(criterion, norm, test_object, report_args):
+def deepconcolic(criterion, norm, test_object, report_args, engine_args = {}):
+  engine = None
   if criterion=='nc':                   ## neuron cover
     from nc import setup as nc_setup
     if norm=='linf':
@@ -34,13 +35,11 @@ def deepconcolic(criterion, norm, test_object, report_args):
     else:
       print('\n not supported norm... {0}\n'.format(norm))
       sys.exit(0)
-    engine.run (**report_args)
   elif criterion=='ssc':
     from ssc import SScGANBasedAnalyzer, setup as ssc_setup
     engine = ssc_setup (test_object = test_object,
                         setup_analyzer = SScGANBasedAnalyzer,
                         ref_data = test_object.raw_data)
-    engine.run (**report_args)
   elif criterion=='ssclp':
     from pulp_norms import LInfPulp
     from mcdc_pulp import SScPulpAnalyzer
@@ -48,7 +47,6 @@ def deepconcolic(criterion, norm, test_object, report_args):
     engine = ssc_setup (test_object = test_object,
                         setup_analyzer = SScPulpAnalyzer,
                         input_metric = LInfPulp ())
-    engine.run (**report_args)
   elif criterion=='svc':
     outs = setup_output_dir (report_args['outs'])
     from run_ssc import run_svc
@@ -57,6 +55,9 @@ def deepconcolic(criterion, norm, test_object, report_args):
   else:
     print('\n not supported coverage criterion... {0}\n'.format(criterion))
     sys.exit(0)
+
+  if engine != None:
+    engine.run (**engine_args, **report_args)
 
 
 def main():
@@ -72,6 +73,8 @@ def main():
                       help="the extra training dataset", metavar="DIR")
   parser.add_argument("--criterion", dest="criterion", default="nc",
                       help="the test criterion", metavar="nc, ssc...")
+  parser.add_argument("--init", dest="init_tests", metavar="INT",
+                      help="number of test samples to initialize the engine")
   parser.add_argument("--labels", dest="labels", default="-1",
                       help="the default labels", metavar="FILE")
   parser.add_argument("--mnist-dataset", dest="mnist",
@@ -127,7 +130,7 @@ def main():
     sys.exit(0)
 
   if args.inputs!='-1':
-    
+
     xs=[]
     print ('Loading input data... ', end = '', flush = True)
     for path, subdirs, files in os.walk(args.inputs):
@@ -222,11 +225,15 @@ def main():
         labels.append(int(l))
     test_object.labels=labels
 
+  init_tests = int (args.init_tests) if args.init_tests is not None else None
+
   test_object.check_layer_indices (criterion)
   deepconcolic (criterion, norm, test_object,
                 report_args = { 'save_input_func': save_input,
                                 'inp_ub': inp_ub,
-                                'outs': outs })
+                                'outs': outs },
+                engine_args = { 'initial_test_cases': init_tests,
+                                'max_iterations': None })
 
 if __name__=="__main__":
   try:
