@@ -17,7 +17,9 @@ except:
 
 from utils import *
 
-def deepconcolic(criterion, norm, test_object, report_args, dbnc_spec = {}):
+def deepconcolic(criterion, norm, test_object, report_args,
+                 engine_args = {}, dbnc_spec = {}):
+  engine = None
   if criterion=='nc':                   ## neuron cover
     from nc import setup as nc_setup
     if norm=='linf':
@@ -35,7 +37,6 @@ def deepconcolic(criterion, norm, test_object, report_args, dbnc_spec = {}):
     else:
       print('\n not supported norm... {0}\n'.format(norm))
       sys.exit(0)
-    engine.run (**report_args)
   elif criterion=='bfc':                ## feature cover
     from dbnc import setup as dbnc_setup
     from dbnc import BFcCriterion
@@ -50,7 +51,6 @@ def deepconcolic(criterion, norm, test_object, report_args, dbnc_spec = {}):
                            input_metric = LInfPulp ())
     else:
       sys.exit ('\n not supported norm... {0}\n'.format(norm))
-    engine.run (**report_args, initial_test_cases = 20)
   elif criterion=='bfdc':               ## feature-dependence cover
     from dbnc import setup as dbnc_setup
     from dbnc import BFDcCriterion
@@ -65,7 +65,6 @@ def deepconcolic(criterion, norm, test_object, report_args, dbnc_spec = {}):
                            input_metric = LInfPulp ())
     else:
       sys.exit ('\n not supported norm... {0}\n'.format(norm))
-    engine.run (**report_args, initial_test_cases = 20)
   elif criterion=='dbnc_stats':
     import dbnc_stats
     dbnc_stats.run (test_object, report_args['outs'])
@@ -74,7 +73,6 @@ def deepconcolic(criterion, norm, test_object, report_args, dbnc_spec = {}):
     engine = ssc_setup (test_object = test_object,
                         setup_analyzer = SScGANBasedAnalyzer,
                         ref_data = test_object.raw_data)
-    engine.run (**report_args)
   elif criterion=='ssclp':
     from pulp_norms import LInfPulp
     from mcdc_pulp import SScPulpAnalyzer
@@ -82,7 +80,6 @@ def deepconcolic(criterion, norm, test_object, report_args, dbnc_spec = {}):
     engine = ssc_setup (test_object = test_object,
                         setup_analyzer = SScPulpAnalyzer,
                         input_metric = LInfPulp ())
-    engine.run (**report_args)
   elif criterion=='svc':
     outs = setup_output_dir (report_args['outs'])
     from run_ssc import run_svc
@@ -91,6 +88,9 @@ def deepconcolic(criterion, norm, test_object, report_args, dbnc_spec = {}):
   else:
     print('\n not supported coverage criterion... {0}\n'.format(criterion))
     sys.exit(0)
+
+  if engine != None:
+    engine.run (**engine_args, **report_args)
 
 
 def main():
@@ -106,6 +106,8 @@ def main():
                       help="the extra training dataset", metavar="DIR")
   parser.add_argument("--criterion", dest="criterion", default="nc",
                       help="the test criterion", metavar="nc, ssc...")
+  parser.add_argument("--init", dest="init_tests", metavar="INT",
+                      help="number of test samples to initialize the engine")
   parser.add_argument("--labels", dest="labels", default="-1",
                       help="the default labels", metavar="FILE")
   parser.add_argument("--mnist-dataset", dest="mnist",
@@ -166,7 +168,7 @@ def main():
     sys.exit(0)
 
   if args.inputs!='-1':
-    
+
     xs=[]
     print ('Loading input data... ', end = '', flush = True)
     for path, subdirs, files in os.walk(args.inputs):
@@ -261,6 +263,8 @@ def main():
         labels.append(int(l))
     test_object.labels=labels
 
+  init_tests = int (args.init_tests) if args.init_tests is not None else None
+
   # DBNC-specific parameters:
   try:
     if args.dbnc_spec != "{}" and os.path.exists(args.dbnc_spec):
@@ -277,6 +281,8 @@ def main():
                 report_args = { 'save_input_func': save_input,
                                 'inp_ub': inp_ub,
                                 'outs': outs },
+                engine_args = { 'initial_test_cases': init_tests,
+                                'max_iterations': None },
                 dbnc_spec = dbnc_spec)
 
 if __name__=="__main__":
