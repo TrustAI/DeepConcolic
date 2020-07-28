@@ -17,8 +17,8 @@ except:
 
 from utils import *
 
-def deepconcolic(criterion, norm, test_object, report_args,
-                 engine_args = {}, dbnc_spec = {}):
+def deepconcolic(criterion, norm, test_object, report_args, engine_args = {},
+                 dbnc_spec = {}):
   engine = None
   if criterion=='nc':                   ## neuron cover
     from nc import setup as nc_setup

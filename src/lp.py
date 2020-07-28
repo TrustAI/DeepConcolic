@@ -125,23 +125,45 @@ PulpVarMap = NewType('PulpVarMap', Sequence[np.ndarray])
 
 class PulpSolver4DNN (LpSolver4DNN):
 
-  def __init__(self, **kwds):
-    # if solvers.CPLEX_PY ().available ():
-    #   self.solver = CPLEX_PY (timeLimit = 10 * 60, msg = False)
-    #   print ('PuLP: CPLEX_PY backend selected (with 10 minutes time limit).')
-    # el
-    if solvers.CPLEX ().available ():
-      self.solver = CPLEX (timeLimit = 10 * 60, msg = False)
-      print ('PuLP: CPLEX backend selected (with 10 minutes time limit).')
-    # elif solvers.GLPK ().available ():
-    #   self.solver = GLPK ()
-    #   print ('PuLP: GLPK backend selected.')
-    #   print ('PuLP: WARNING: GLPK does not support time limit.')
-    else:
-      self.solver = None
-      print ('PuLP: CBC backend selected.')
-      print ('PuLP: WARNING: CBC does not support time limit.')
-
+  def __init__(self,
+               try_solvers = ('PYGLPK',
+                              'CPLEX_PY',
+                              'CPLEX_DLL',
+                              'GUROBI',
+                              'CPLEX_CMD',
+                              'GUROBI_CMD',
+                              # 'MOSEK',
+                              # 'XPRESS',
+                              'COIN_CMD',
+                              # 'COINMP_DLL',
+                              'GLPK_CMD',
+                              'CHOCO_CMD',
+                              'PULP_CHOCO_CMD',
+                              'PULP_CBC_CMD',
+                              # 'MIPCL_CMD',
+                              # 'SCIP_CMD',
+                              ),
+               time_limit = 10 * 60,
+               **kwds):
+    from pulp import apis, __version__ as pulp_version
+    print ('PuLP: Version {}.'.format (pulp_version))
+    available_solvers = list_solvers (onlyAvailable = True)
+    print ('PuLP: Available solvers: {}.'.format (', '.join (available_solvers)))
+    args = { 'timeLimit': time_limit,
+             'timelimit': time_limit,
+             # 'maxSeconds': time_limit,
+             'mip': False, 'msg': False }
+    for solver in try_solvers:
+      if solver in available_solvers:
+        self.solver = get_solver (solver, **args)
+        # NB: does CPLEX_PY actually supports time limits?
+        if solver in ('PULP_CHOCO_CMD', 'PULP_CBC_CMD', 'GLPK_CMD', 'CHOCO_CMD'):
+          print ('PuLP: {} solver selected.'.format (solver))
+          print ('PuLP: WARNING: {} does not support time limit.'.format (solver))
+        else:
+          print ('PuLP: {} solver selected (with {} minutes time limit).'
+                 .format (solver, time_limit / 60))
+        break
     super().__init__(**kwds)
 
 
