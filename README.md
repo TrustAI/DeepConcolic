@@ -101,7 +101,7 @@ source activate deepconcolic
 conda install keras
 conda install opencv 
 conda install pillow
-pip install pulp
+pip install pulp\>=2
 pip install adversarial-robustness-toolbox
 ```
 

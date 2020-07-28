@@ -683,13 +683,13 @@ class Engine:
     Method called once at the beginning of search.
     '''
     xl = []
-    if initial_test_cases is not None:
+    if initial_test_cases is not None and initial_test_cases > 0:
       x = self.ref_data.data
       x = x[self._run_tests (x) == self.ref_data.labels]
       x = np.random.default_rng().choice (a = x, axis = 0,
                                           size = min (initial_test_cases, len (x)))
-      p1 ('Initializing with {} randomly selected test case{} that are correctly classified.'
-          .format(len (x), 's' if len (x) > 1 else ''))
+      p1 ('Initializing with {} randomly selected test case{} that {} correctly classified.'
+          .format(len (x), 's' if len (x) > 1 else '', 'are' if len (x) > 1 else 'is'))
       self.criterion.add_new_test_cases (x)
     elif self.criterion.rooted_search:
       p1 ('Randomly selecting an input from test data.')
