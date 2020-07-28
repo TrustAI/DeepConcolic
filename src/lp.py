@@ -126,21 +126,37 @@ PulpVarMap = NewType('PulpVarMap', Sequence[np.ndarray])
 class PulpSolver4DNN (LpSolver4DNN):
 
   def __init__(self, **kwds):
-    # if solvers.CPLEX_PY ().available ():
-    #   self.solver = CPLEX_PY (timeLimit = 10 * 60, msg = False)
-    #   print ('PuLP: CPLEX_PY backend selected (with 10 minutes time limit).')
-    # el
-    if solvers.CPLEX ().available ():
-      self.solver = CPLEX (timeLimit = 10 * 60, msg = False)
+    # TODO: parameterize with a list of solvers, in order of
+    # preference...
+    from pulp import apis, __version__ as pulp_version
+    print ('PuLP: Version {}.'.format (pulp_version))
+    solvers = list_solvers (onlyAvailable = True)
+    print ('PuLP: Available solvers: {}.'.format (', '.join (solvers)))
+    if 'CPLEX_PY' in solvers:
+      self.solver = CPLEX_PY (timeLimit = tl, msg = False)
+      print ('PuLP: CPLEX_PY backend selected (with 10 minutes time limit).')
+    elif 'PYGLPK' in solvers:
+      self.solver = PYGLPK (timeLimit = tl, mip = False, msg = False)
+      print ('PuLP: PYGLPK backend selected (with 10 minutes time limit).')
+    elif 'GUROBI' in solvers:
+      self.solver = GUROBI (timeLimit = tl, mip = False, msg = False)
+      print ('PuLP: GUROBY backend selected (with 10 minutes time limit).')
+    elif 'CPLEX' in solvers:
+      self.solver = CPLEX (timeLimit = tl, msg = False)
       print ('PuLP: CPLEX backend selected (with 10 minutes time limit).')
-    # elif solvers.GLPK ().available ():
-    #   self.solver = GLPK ()
-    #   print ('PuLP: GLPK backend selected.')
-    #   print ('PuLP: WARNING: GLPK does not support time limit.')
+    elif 'GLPK' in solvers:
+      self.solver = GLPK ()
+      print ('PuLP: GLPK backend selected.')
+      print ('PuLP: WARNING: GLPK does not support time limit.')
+    elif 'GUROBI_CMD' in solvers:
+      self.solver = GUROBI_CMD ()
+      print ('PuLP: GUROBI_CMD backend selected.')
+      print ('PuLP: WARNING: GUROBI_CMD does not support time limit.')
     else:
-      self.solver = None
+      self.solver = PULP_CBC_CMD (msg = False)
       print ('PuLP: CBC backend selected.')
       print ('PuLP: WARNING: CBC does not support time limit.')
+    # Missing: SCIP, MOSEK, XPRESS, YAPOSIB.
 
     super().__init__(**kwds)
 
