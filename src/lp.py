@@ -145,8 +145,6 @@ class PulpSolver4DNN (LpSolver4DNN):
                               ),
                time_limit = 10 * 60,
                **kwds):
-    # TODO: parameterize with a list of solvers, in order of
-    # preference...
     from pulp import apis, __version__ as pulp_version
     print ('PuLP: Version {}.'.format (pulp_version))
     available_solvers = list_solvers (onlyAvailable = True)
