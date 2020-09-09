@@ -140,10 +140,9 @@ def main():
     print (' \n == Please specify the input neural network == \n')
     sys.exit(0)
 
+  # fuzzing_params
   if args.inputs!='-1':
-
-    file_list = [] # fuzzing_params
-
+    file_list = []
     xs=[]
     print ('Loading input data... ', end = '', flush = True)
     for path, subdirs, files in os.walk(args.inputs):
@@ -240,15 +239,13 @@ def main():
     test_object.labels=labels
 
   init_tests = int (args.init_tests) if args.init_tests is not None else None
-  # fuzzing params
-  test_object.num_tests, test_object.num_processes = int(args.num_tests), int(args.num_processes)
-  test_object.stime = int(args.stime)
-  test_object.file_list = file_list
-  test_object.model_name = args.model
-  if args.fuzzing:
-    deepconcolic_fuzz(test_object, outs)
-    sys.exit(0)
 
+  # fuzzing params
+  if args.fuzzing:
+    deepconcolic_fuzz(test_object, outs, args.model, int(args.stime), file_list,
+                      num_tests = int(args.num_tests),
+                      num_processes = int(args.num_processes))
+    sys.exit(0)
 
   test_object.check_layer_indices (criterion)
   deepconcolic (criterion, norm, test_object,

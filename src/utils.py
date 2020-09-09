@@ -309,12 +309,6 @@ class test_objectt:
     self.trace_flag=None
     self.layer_indices=None
     self.feature_indices=None
-
-    # fuzzing params
-    self.num_tests = None
-    self.num_processes = None
-    self.file_list = None
-    self.model_name = None
   
 
   def tests_layer(self, cl):
