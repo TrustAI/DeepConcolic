@@ -4,6 +4,7 @@ import os
 import cv2
 import yaml
 import warnings
+from deepconcolic_fuzz import deepconcolic_fuzz
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -134,11 +135,20 @@ def main():
   parser.add_argument("--feature-index", dest="feature_index", default="-1",
                       help="to test a particular feature map", metavar="INT")
 
-  # DBNC-specific
+  # fuzzing params
+  parser.add_argument("--fuzzing", dest='fuzzing', help="to start fuzzing", action="store_true")
+  parser.add_argument("--num-tests", dest="num_tests", default="1000",
+                    help="number of tests to generate", metavar="INT")
+  parser.add_argument("--num-processes", dest="num_processes", default="1",
+                    help="number of processes to use", metavar="INT")
+  parser.add_argument("--sleep-time", dest="stime", default="4",
+                    help="fuzzing sleep time", metavar="INT")
+
+  # DBNC-specific params
   parser.add_argument("--dbnc-spec", dest="dbnc_spec", default="{}",
                       help="Feature extraction and discretisation specification",
                       metavar="SPEC")
-
+  
   args=parser.parse_args()
 
 
@@ -154,7 +164,9 @@ def main():
   dnn = None
   inp_ub = 1
   save_input = None
-  if args.model!='-1':
+  if args.fuzzing:
+      pass
+  elif args.model!='-1':
     dnn = keras.models.load_model (args.model)
     dnn.summary()
     save_input = save_an_image
@@ -169,11 +181,14 @@ def main():
 
   if args.inputs!='-1':
 
+    file_list = [] # fuzzing_params
+
     xs=[]
     print ('Loading input data... ', end = '', flush = True)
     for path, subdirs, files in os.walk(args.inputs):
       for name in files:
         fname=(os.path.join(path, name))
+        file_list.append(fname) # fuzzing params
         if fname.endswith('.jpg') or fname.endswith('.png'):
           try:
             image = cv2.imread(fname)
@@ -264,6 +279,15 @@ def main():
     test_object.labels=labels
 
   init_tests = int (args.init_tests) if args.init_tests is not None else None
+  # fuzzing params
+  test_object.num_tests, test_object.num_processes = int(args.num_tests), int(args.num_processes)
+  test_object.stime = int(args.stime)
+  test_object.file_list = file_list
+  test_object.model_name = args.model
+  if args.fuzzing:
+    deepconcolic_fuzz(test_object, outs)
+    sys.exit(0)
+
 
   # DBNC-specific parameters:
   try:
