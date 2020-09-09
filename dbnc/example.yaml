@@ -104,4 +104,14 @@
     # for scoring and reporting:
     bn_abstr_test_size: 200,
     #
+    #
+    # Process Customization
+    # =====================
+    #
+    # The `*_n_jobs` values below default to `1` (unless some `joblib`
+    # context is setup).  Use `-1` to use all processors (see
+    # https://scikit-learn.org/stable/glossary.html#term-n-jobs)
+    #
+    # Number of jobs used to bake and fit the BN abstraction:
+    bn_abstr_n_jobs: 3,
 }

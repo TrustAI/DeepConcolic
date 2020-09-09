@@ -1,3 +1,4 @@
+import warnings
 from typing import *
 from utils import *
 from engine import *
@@ -10,7 +11,9 @@ from sklearn.preprocessing import StandardScaler, KBinsDiscretizer, Binarizer
 from sklearn.decomposition import PCA, FastICA
 from sklearn.metrics import log_loss, classification_report
 from pomegranate import Node, BayesianNetwork
-from pomegranate.distributions import DiscreteDistribution, ConditionalProbabilityTable
+from pomegranate.distributions import (DiscreteDistribution,
+                                       ConditionalProbabilityTable,
+                                       JointProbabilityTable)
 
 
 # ---
@@ -53,7 +56,7 @@ class FeatureDiscretizer:
     raise NotImplementedError
 
   @abstractmethod
-  def fit_wrt (self, x, y) -> None:
+  def fit_wrt (self, x, y, feat_extr) -> None:
     raise NotImplementedError
 
 
@@ -63,14 +66,15 @@ class FeatureBinarizer (FeatureDiscretizer, Binarizer):
     return 2
 
   def edges (self, feature: int, value: float) -> Interval:
-    thr = self.threshold
+    thr = self.threshold[0, feature]
     return (thr, np.inf) if value >= thr else (-np.inf, thr)
 
   def part_edges (self, feature: int, part: int) -> Interval:
-    thr = self.threshold
+    thr = self.threshold[0, feature]
     return (-np.inf, thr) if part == 0 else (thr, np.inf)
 
-  def fit_wrt (self, x, y, transform) -> None:
+  def fit_wrt (self, x, y, feat_extr) -> None:
+    self.threshold = feat_extr.transform (np.zeros (shape = x[:1].shape)).reshape (1, -1)
     self.fit (y)
 
 
@@ -124,6 +128,7 @@ class KBinsNOutFeatureDiscretizer (KBinsFeatureDiscretizer):
   def fit_wrt (self, _x, y, _transform) -> None:
     self.fit (y)
 
+
 # ---
 
 
@@ -149,25 +154,35 @@ class DiscretizedFeatureNode (Node):
 class DiscretizedInputFeatureNode (DiscretizedFeatureNode):
 
   def __init__(self, flayer, feature, **kwds):
-    fparts = range (flayer.discr.feature_parts (feature))
+    n = flayer.discr.feature_parts (feature)
     super().__init__(flayer, feature,
-                     DiscreteDistribution ({ fbin: 0.0 for fbin in fparts }),
+                     DiscreteDistribution ({ fbin: 0.0 for fbin in range (n) }),
                      **kwds)
 
 
 class DiscretizedHiddenFeatureNode (DiscretizedFeatureNode):
 
   def __init__(self, flayer, feature, prev_nodes, **kwds):
+    prev_nodes = list (pn for pn in prev_nodes
+                       if len (pn.discretized_range ()) > 1)
     prev_distrs = [ n.distribution for n in prev_nodes ]
-    prev_fparts = list ([ bin for bin in prev_node.discretized_range () ]
-                        for prev_node in prev_nodes)
-    fparts = range (flayer.discr.feature_parts (feature))
-    condprobtbl = [ list (p) + [0.0] for p in product (*prev_fparts, fparts) ]
-    del prev_fparts
-    super().__init__(flayer, feature,
-                     ConditionalProbabilityTable (condprobtbl, prev_distrs),
-                     **kwds)
-    del condprobtbl
+    prev_fparts = list ([ bin for bin in pn.discretized_range () ]
+                        for pn in prev_nodes)
+    n = flayer.discr.feature_parts (feature)
+    if prev_fparts == [] or n == 1:
+      del prev_distrs, prev_fparts
+      self.prev_nodes_ = []
+      super().__init__(flayer, feature,
+                       DiscreteDistribution ({ fbin: 0.0 for fbin in range (n) }),
+                       **kwds)
+    else:
+      condprobtbl = [ list (p) + [0.0] for p in product (*prev_fparts, range (n)) ]
+      del prev_fparts
+      self.prev_nodes_ = prev_nodes
+      super().__init__(flayer, feature,
+                       ConditionalProbabilityTable (condprobtbl, prev_distrs),
+                       **kwds)
+      del condprobtbl
 
 
 # ---
@@ -178,10 +193,10 @@ class _BaseBFcCriterion (Criterion):
   def __init__(self,
                clayers: Sequence[CoverableLayer],
                *args,
-               epsilon = 0.001,
+               epsilon = 1e-4,
                bn_abstr_train_size = 0.5,
                bn_abstr_test_size = None,
-               bn_n_jobs = 1,
+               bn_abstr_n_jobs = 1,
                print_classification_reports = True,
                score_layer_likelihoods = False,
                report_on_feature_extractions = None,
@@ -192,7 +207,7 @@ class _BaseBFcCriterion (Criterion):
     assert (report_on_feature_extractions is None or callable (report_on_feature_extractions))
     assert (close_reports_on_feature_extractions is None or callable (close_reports_on_feature_extractions))
     self.epsilon = epsilon
-    self.bn_n_jobs = bn_n_jobs
+    self.bn_abstr_n_jobs = bn_abstr_n_jobs
     self.bn_abstr_params = { 'train_size': bn_abstr_train_size,
                              'test_size': bn_abstr_test_size }
     self.print_classification_reports = print_classification_reports
@@ -234,11 +249,11 @@ class _BaseBFcCriterion (Criterion):
 
 
   def dimred_n_discretize_activations (self, acts):
-    facts = np.array([], dtype = int)
+    facts = None
     for fl in self.flayers:
       x = np.vstack((a.flatten () for a in acts[fl.layer_index]))
       y = fl.discr.transform (fl.transform.transform (x))
-      facts = np.hstack ((facts, y.astype (int))) if facts.any () else y.astype (int)
+      facts = np.hstack ((facts, y.astype (int))) if facts is not None else y.astype (int)
       del x, y
     return facts
 
@@ -250,7 +265,7 @@ class _BaseBFcCriterion (Criterion):
     super().reset ()
     self.base_dimreds = None
     assert (self.num_test_cases == 0)
-    
+
 
   def fit_activations (self, acts):
     # Assumes `num_test_cases' has already been updated with the
@@ -259,7 +274,8 @@ class _BaseBFcCriterion (Criterion):
     facts = self.dimred_n_discretize_activations (acts)
     nbase = self.num_test_cases - len (facts)
     self.N.fit (facts,
-                inertia = nbase / self.num_test_cases if nbase >= 0 else 0.0)
+                inertia = (nbase / self.num_test_cases if nbase >= 0 else 0.0),
+                n_jobs = int (self.bn_abstr_n_jobs))
 
 
   def update_coverage (self, tl: Sequence[Input]) -> None:
@@ -316,23 +332,28 @@ class _BaseBFcCriterion (Criterion):
   # ----
 
 
-  def _marginals (self, p):
+  def _probas (self, p):
     return [ p.parameters[0][i]
              for i in range (len (p.parameters[0])) ]
 
 
   def _all_marginals (self):
     marginals = self.N.marginal ()
-    res = [ self._marginals (p) for p in marginals ]
+    res = [ self._probas (p) for p in marginals ]
     del marginals
     return res
 
 
-  def _all_cpts (self):
-    # Rely on self.N.states to get conditional probability tables:
-    return [ np.array (self._marginals (j.distribution))
+  def _all_cond_marginals (self):
+    return [ j.distribution # np.array (self._probas (j.distribution.marginal()))
              for j in self.N.states
-             if not isinstance (j, DiscretizedInputFeatureNode) ]
+             # if isinstance (j.distribution, JointProbabilityTable)
+             ]
+
+  def _all_cpts (self):
+    return [ np.array (self._probas (j.distribution))
+             for j in self.N.states
+             if isinstance (j.distribution, ConditionalProbabilityTable) ]
 
 
   def _all_cond_probs (self):
@@ -357,11 +378,15 @@ class _BaseBFcCriterion (Criterion):
     abstraction.
     """
     assert (self.num_test_cases > 0)
-    # Count 0s in all joint mass functions in the BN abstraction
-    cndps = self._all_cond_probs ()
-    props = sum (np.count_nonzero (np.array(p) >= self.epsilon) / len (p)
-                 for p in cndps)
-    return Coverage (covered = props, total = len (cndps))
+    # Count 0s (or < epsilon)s in all prob. mass functions in the BN
+    # abstraction:
+    cpts = self._all_cond_probs ()
+    if cpts == []:
+      return Coverage (covered = 1) # * bfc
+    else:
+      props = sum (np.count_nonzero (np.array(p) >= self.epsilon) / len (p)
+                   for p in cpts)
+      return Coverage (covered = props, total = len (cpts))
 
 
   # ---
@@ -395,7 +420,7 @@ class _BaseBFcCriterion (Criterion):
     """
     Called through :meth:`stat_based_train_cv_initializers` above.
     """
-    
+
     cnp1 ('| Given training data of size {}'
           .format(len(acts[self.flayers[0].layer_index])))
 
@@ -406,7 +431,7 @@ class _BaseBFcCriterion (Criterion):
       # print (x.shape, x)
       y = fl.transform.fit_transform (x)
       fl.discr.fit_wrt (x, y, fl.transform)
-      np1 ('{} nodes.'.format (y.shape[1]))
+      np1 ('{} node{}.'.format (y.shape[1], 's' if y.shape[1] > 1 else ''))
       del x, y
 
     self.total_variance_ratios_ = np.array([
@@ -442,14 +467,14 @@ class _BaseBFcCriterion (Criterion):
     """
     Actual BN instantiation.
     """
-    
+
     import gc
     nc = sum (f.num_features for f in self.flayers)
-    ec = sum (f.num_features * g.num_features
-              for f, g in zip (self.flayers[:-1], self.flayers[1:]))
+    max_ec = sum (f.num_features * g.num_features
+                  for f, g in zip (self.flayers[:-1], self.flayers[1:]))
 
-    ctp1 ('| Creating Bayesian Network of {} nodes and {} edges...'
-          .format (nc, ec))
+    ctp1 ('| Creating Bayesian Network of {} nodes and a maximum of {} edges...'
+          .format (nc, max_ec))
     N = BayesianNetwork (name = 'BN Abstraction')
 
     fl0 = self.flayers[0]
@@ -464,10 +489,11 @@ class _BaseBFcCriterion (Criterion):
                 for fidx in range (fl.num_features) ]
       N.add_nodes (*(n for n in nodes))
 
-      for pn, n in product (*(prev_nodes, nodes)):
-        N.add_edge (pn, n)
+      for n in nodes:
+        for pn in n.prev_nodes_:
+          N.add_edge (pn, n)
       tp1 ('| Creating Bayesian Network: {}/{} nodes, {}/{} edges done...'
-           .format (N.node_count (), nc, N.edge_count (), ec))
+           .format (N.node_count (), nc, N.edge_count (), max_ec))
 
       del prev_nodes
       gc.collect ()
@@ -475,6 +501,7 @@ class _BaseBFcCriterion (Criterion):
 
     del prev_nodes
     gc.collect ()
+    ec = N.edge_count ()
     tp1 ('| Creating Bayesian Network of {} nodes and {} edges: baking...'
          .format (nc, ec))
     N.bake ()
@@ -490,7 +517,7 @@ class _BaseBFcCriterion (Criterion):
     """
     Basic scores for manual investigations.
     """
-    
+
     p1 ('| Given test sample of size {}'
          .format(len(acts[self.flayers[0].layer_index])))
 
@@ -507,7 +534,6 @@ class _BaseBFcCriterion (Criterion):
   def _score_feature_extractions (self, acts, labels = None):
     racc = None
     idx = 1
-    first_feature_idx = 0
     self.average_log_likelihoods_ = []
     for fl in self.flayers:
       flatacts = self.flatten_for_layer (acts, (fl,))
@@ -526,7 +552,6 @@ class _BaseBFcCriterion (Criterion):
 
       idx += 1
       del flatacts
-      first_feature_idx += fl.num_features
 
     if self.close_reports_on_feature_extractions is not None:
       self.close_reports_on_feature_extractions (racc)
@@ -588,7 +613,7 @@ class _BaseBFcCriterion (Criterion):
     ftest = ytest.copy ()
     def estimate_feature_probas (fidx, nbfeats):
       ftest[..., fidx : fidx + nbfeats] = np.nan
-      probas = np.array (self.N.predict_proba (ftest, n_jobs = self.bn_n_jobs))
+      probas = np.array (self.N.predict_proba (ftest, n_jobs = self.bn_abstr_n_jobs))
       ftest[..., fidx : fidx + nbfeats] = truth[..., fidx : fidx + nbfeats]
       lprobas = probas[..., fidx : fidx + nbfeats]
       del probas
@@ -667,7 +692,7 @@ class BFcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
   '''
 
   def __init__(self,
-               clayers: Sequence[CoverableLayer], 
+               clayers: Sequence[CoverableLayer],
                analyzer: BFcAnalyzer,
                *args,
                **kwds):
@@ -735,7 +760,7 @@ class BFcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
 
     if res is None:
       raise EarlyTermination ('Unable to find a new candidate input!')
-    
+
     return res
 
 
@@ -805,12 +830,12 @@ class BFDcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
   '''
 
   def __init__(self,
-               clayers: Sequence[CoverableLayer], 
+               clayers: Sequence[CoverableLayer],
                analyzer: BFDcAnalyzer,
                *args,
                **kwds):
     assert isinstance (analyzer, BFDcAnalyzer)
-    super().__init__(clayers, analyzer = analyzer, *args, epsilon = 0.01, **kwds)
+    super().__init__(clayers, analyzer = analyzer, *args, **kwds)
     assert len(self.flayers) >= 2
     self.ban = { fl: set () for fl in self.flayers }
 
@@ -866,7 +891,7 @@ class BFDcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
 
     if res is None:
       raise EarlyTermination ('Unable to find a new candidate input!')
-    
+
     return res
 
 
@@ -921,34 +946,38 @@ def abstract_layer_feature_discretization (l, li, discr = None):
               discr     if isinstance (discr, int)  else
               discr[li] if isinstance (discr, list) else
               discr(li) if callable (discr) else
-              builtins.eval(discr, {})(li) if isinstance (discr, str) else None)
+              builtins.eval(discr, {})(li) if (isinstance (discr, str) and
+                                               discr not in ('binarizer', 'bin')) else
+              None)
   if li_discr in (None, 'binarizer', 'bin'):
     p1 ('Using binarizer for layer {.name}'.format (l))
     return FeatureBinarizer ()
   else:
     k = (li_discr if isinstance (li_discr, int) else
-         li_discr['n_bins'] if isinstance (li_discr, dict) else
+         li_discr['n_bins'] if (isinstance (li_discr, dict)
+                                and 'n_bins' in li_discr) else
          # TODO: per feature discretization strategy?
-         2)
+         None)
     s = (li_discr['strategy'] if (isinstance (li_discr, dict)
                                   and 'strategy' in li_discr)
          else 'quantile')
     extended = (isinstance (li_discr, dict) and 'extended' in li_discr
                 and li_discr['extended'])
-    if extended is None or not extended:
-      p1 ('Using {}-bins discretizer with {} strategy for layer {.name}'
-          .format (k, s, l))
-      return KBinsFeatureDiscretizer (n_bins = k, encode = 'ordinal',
-                                      strategy = s)
-    else:
-      p1 ('Using extended {}-bins discretizer with {} strategy for layer {.name}'
-          .format (k, s, l))
-      return KBinsNOutFeatureDiscretizer (n_bins = k, encode = 'ordinal',
-                                          strategy = s)
+    extended = extended is not None and extended
+    p1 ('Using {}{}discretizer with {} strategy for layer {.name}'
+        .format ('extended ' if extended else '',
+                 '{}-bin '.format (k) if k is not None else '',
+                 s, l))
+    cstr = KBinsNOutFeatureDiscretizer if extended else KBinsFeatureDiscretizer
+    return cstr (**{
+      **(li_discr if isinstance (li_discr, dict) else {}),
+      'n_bins': k,
+      'encode': 'ordinal',
+      'strategy': s,
+    })
 
 
-
-def abstract_layer_setup (l, i, feats = None, discr = None):
+def abstract_layer_setup (l, i, feats = None, discr = None, **kwds):
   options = abstract_layer_features (i, feats, discr)
   if isinstance (options, dict) and 'decomp' in options:
     decomp = options['decomp']
@@ -966,7 +995,7 @@ def abstract_layer_setup (l, i, feats = None, discr = None):
                                          ),
                          PCA (**options, copy = False)) if decomp == 'pca' else
           make_pipeline (FastICA (**options)))
-  feature_discretization = abstract_layer_feature_discretization (l, i, discr)
+  feature_discretization = abstract_layer_feature_discretization (l, i, discr, **kwds)
   return BFcLayer (layer = l, layer_index = i,
                    transform = fext,
                    discretization = feature_discretization)
@@ -974,8 +1003,6 @@ def abstract_layer_setup (l, i, feats = None, discr = None):
 
 # ---
 
-
-import matplotlib.pyplot as plt
 
 def plot_report_on_feature_extractions (fl, flatacts, fdimred, labels, acc = None):
   from matplotlib import cm
@@ -1036,12 +1063,14 @@ def setup (
   feats = { 'n_components': 2, 'svd_solver': 'randomized' },
   # discr = (lambda li: { 'n_bins': 4, 'strategy': 'uniform' } if li in (15,) else
   #          None),
-  discr = { 'n_bins': 1, 'extended': True, 'strategy': 'uniform' },
+  discr = 'bin', # { 'n_bins': 2, 'extended': True, 'strategy': 'uniform' },
   # discr = (lambda li: { 'n_bins': 3, 'strategy': 'kmeans' }),
   # discr = { 'n_bins': 2, 'extended': True, 'strategy': 'quantile' },
+  epsilon = 1e-4,
   report_on_feature_extractions = False,
   bn_abstr_train_size = 1000,
   bn_abstr_test_size = 200,
+  bn_abstr_n_jobs = None,
   **kwds):
 
   if setup_criterion is None:
@@ -1056,8 +1085,11 @@ def setup (
     'bn_abstr_train_size': bn_abstr_train_size,
     'bn_abstr_test_size': bn_abstr_test_size,
     'print_classification_reports': True,
-    **({'report_on_feature_extractions': plot_report_on_feature_extractions,
-        'close_reports_on_feature_extractions': (lambda _: plt.show ()) }
+    'epsilon': epsilon,
+    **({ 'bn_abstr_n_jobs': bn_abstr_n_jobs }
+       if bn_abstr_n_jobs is not None else {}),
+    **({ 'report_on_feature_extractions': plot_report_on_feature_extractions,
+         'close_reports_on_feature_extractions': (lambda _: plt.show ()) }
        if report_on_feature_extractions else {})
   }
 
