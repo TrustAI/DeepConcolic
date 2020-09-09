@@ -1,0 +1,367 @@
+
+
+<!doctype html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modified Condition/Decision Coverage &#8212; deepconcolic  documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Linear Program Solving" href="lp.html" />
+    <link rel="prev" title="Neuron Coverage" href="nc.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="lp.html" title="Linear Program Solving"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="nc.html" title="Neuron Coverage"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">deepconcolic  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="api.html" accesskey="U">DeepConcolic API</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Modified Condition/Decision Coverage</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="modified-condition-decision-coverage">
+<h1>Modified Condition/Decision Coverage<a class="headerlink" href="#modified-condition-decision-coverage" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-ssc">
+<span id="sign-sign-coverage"></span><h2>Sign-Sign Coverage<a class="headerlink" href="#module-ssc" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="ssc.ssc_pairt">
+<em class="property">class </em><code class="sig-prename descclassname">ssc.</code><code class="sig-name descname">ssc_pairt</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cond_flags</span></em>, <em class="sig-param"><span class="n">dec_flag</span></em>, <em class="sig-param"><span class="n">test_object</span></em>, <em class="sig-param"><span class="n">cond_layer</span></em>, <em class="sig-param"><span class="n">dec_layer</span></em>, <em class="sig-param"><span class="n">dec_pos</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ssc.ssc_pairt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="ssc.local_search">
+<code class="sig-prename descclassname">ssc.</code><code class="sig-name descname">local_search</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">eval_batch</span></em>, <em class="sig-param"><span class="n">local_input</span></em>, <em class="sig-param"><span class="n">ssc_pair</span></em>, <em class="sig-param"><span class="n">adv_crafter</span></em>, <em class="sig-param"><span class="n">e_max_input</span></em>, <em class="sig-param"><span class="n">ssc_ratio</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ssc.local_search" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="ssc.ssc_search">
+<code class="sig-prename descclassname">ssc.</code><code class="sig-name descname">ssc_search</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">eval_batch</span></em>, <em class="sig-param"><span class="n">raw_data</span></em>, <em class="sig-param"><span class="n">cond_ratio</span></em>, <em class="sig-param"><span class="n">cond_layer</span></em>, <em class="sig-param"><span class="n">dec_layer</span></em>, <em class="sig-param"><span class="n">dec_pos</span></em>, <em class="sig-param"><span class="n">adv_crafter</span></em>, <em class="sig-param"><span class="n">adv_object</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ssc.ssc_search" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="ssc.local_v_search">
+<code class="sig-prename descclassname">ssc.</code><code class="sig-name descname">local_v_search</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dnn</span></em>, <em class="sig-param"><span class="n">local_input</span></em>, <em class="sig-param"><span class="n">ssc_pair</span></em>, <em class="sig-param"><span class="n">adv_crafter</span></em>, <em class="sig-param"><span class="n">e_max_input</span></em>, <em class="sig-param"><span class="n">ssc_ratio</span></em>, <em class="sig-param"><span class="n">dec_ub</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ssc.local_v_search" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="ssc.svc_search">
+<code class="sig-prename descclassname">ssc.</code><code class="sig-name descname">svc_search</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">test_object</span></em>, <em class="sig-param"><span class="n">cond_layer</span></em>, <em class="sig-param"><span class="n">dec_layer</span></em>, <em class="sig-param"><span class="n">dec_pos</span></em>, <em class="sig-param"><span class="n">adv_crafter</span></em>, <em class="sig-param"><span class="n">dec_ub</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ssc.svc_search" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt id="ssc.SScLayer">
+<em class="property">class </em><code class="sig-prename descclassname">ssc.</code><code class="sig-name descname">SScLayer</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ssc.SScLayer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="core.html#engine.BoolMappedCoverableLayer" title="engine.BoolMappedCoverableLayer"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.BoolMappedCoverableLayer</span></code></a></p>
+<dl class="py method">
+<dt id="ssc.SScLayer.coverage">
+<code class="sig-name descname">coverage</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">_feature_indices</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="core.html#utils.Coverage" title="utils.Coverage">utils.Coverage</a><a class="headerlink" href="#ssc.SScLayer.coverage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ignores <cite>feature_indices</cite> for now.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ssc.SScLayer.cover">
+<code class="sig-name descname">cover</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cond_pos</span></em>, <em class="sig-param"><span class="n">dec_pos</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a><a class="headerlink" href="#ssc.SScLayer.cover" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ssc.SScTarget">
+<em class="property">class </em><code class="sig-prename descclassname">ssc.</code><code class="sig-name descname">SScTarget</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">decision_layer</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ssc.SScLayer" title="ssc.SScLayer">ssc.SScLayer</a></span></em>, <em class="sig-param"><span class="n">decision_pos</span><span class="p">:</span> <span class="n">Tuple[int, …]</span></em>, <em class="sig-param"><span class="n">condition_layer</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference internal" href="core.html#engine.BoolMappedCoverableLayer" title="engine.BoolMappedCoverableLayer">engine.BoolMappedCoverableLayer</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">condition_pos</span><span class="p">:</span> <span class="n">Optional[Tuple[int, …]]</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ssc.SScTarget" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a></p>
+<p>Note positions are w.r.t a sequence of activations (i.e. actual
+neurons indexes consist in all but the first components).</p>
+<p>Create new instance of SScTarget(decision_layer, decision_pos, condition_layer, condition_pos)</p>
+<dl class="py attribute">
+<dt id="ssc.SScTarget.decision_layer">
+<code class="sig-name descname">decision_layer</code><em class="property">: <a class="reference internal" href="#ssc.SScLayer" title="ssc.SScLayer">ssc.SScLayer</a></em><a class="headerlink" href="#ssc.SScTarget.decision_layer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ssc.SScTarget.decision_pos">
+<code class="sig-name descname">decision_pos</code><em class="property">: Tuple[int, …]</em><a class="headerlink" href="#ssc.SScTarget.decision_pos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ssc.SScTarget.condition_layer">
+<code class="sig-name descname">condition_layer</code><em class="property">: Optional<span class="p">[</span><a class="reference internal" href="core.html#engine.BoolMappedCoverableLayer" title="engine.BoolMappedCoverableLayer">engine.BoolMappedCoverableLayer</a><span class="p">]</span></em><a class="headerlink" href="#ssc.SScTarget.condition_layer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ssc.SScTarget.condition_pos">
+<code class="sig-name descname">condition_pos</code><em class="property">: Optional[Tuple[int, …]]</em><a class="headerlink" href="#ssc.SScTarget.condition_pos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 3</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ssc.SScTarget.cover">
+<code class="sig-name descname">cover</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a><a class="headerlink" href="#ssc.SScTarget.cover" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="ssc.SScTarget.decision_position">
+<em class="property">property </em><code class="sig-name descname">decision_position</code><a class="headerlink" href="#ssc.SScTarget.decision_position" title="Permalink to this definition">¶</a></dt>
+<dd><p>This property identifies one particular activation (within a list
+of activations).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ssc.SScTarget.condition_position">
+<em class="property">property </em><code class="sig-name descname">condition_position</code><a class="headerlink" href="#ssc.SScTarget.condition_position" title="Permalink to this definition">¶</a></dt>
+<dd><p>This property identifies one particular activation (within a list
+of activations).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ssc.SScTarget.decision_neuron">
+<em class="property">property </em><code class="sig-name descname">decision_neuron</code><a class="headerlink" href="#ssc.SScTarget.decision_neuron" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decision neuron</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ssc.SScTarget.condition_neuron">
+<em class="property">property </em><code class="sig-name descname">condition_neuron</code><a class="headerlink" href="#ssc.SScTarget.condition_neuron" title="Permalink to this definition">¶</a></dt>
+<dd><p>Condition neuron.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ssc.SScTarget.log_repr">
+<code class="sig-name descname">log_repr</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><a class="headerlink" href="#ssc.SScTarget.log_repr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ssc.SScAnalyzer4FreeSearch">
+<em class="property">class </em><code class="sig-prename descclassname">ssc.</code><code class="sig-name descname">SScAnalyzer4FreeSearch</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">analyzed_dnn</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ssc.SScAnalyzer4FreeSearch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="core.html#engine.Analyzer4FreeSearch" title="engine.Analyzer4FreeSearch"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.Analyzer4FreeSearch</span></code></a></p>
+<p>Analyzer that finds pairs of close enough inputs that fulfill a
+given SSC test target.</p>
+<dl class="py method">
+<dt id="ssc.SScAnalyzer4FreeSearch.search_close_inputs">
+<em class="property">abstract </em><code class="sig-name descname">search_close_inputs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">target</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ssc.SScTarget" title="ssc.SScTarget">ssc.SScTarget</a></span></em><span class="sig-paren">)</span> &#x2192; Optional[Tuple[float, NewType.&lt;locals&gt;.new_type, NewType.&lt;locals&gt;.new_type]]<a class="headerlink" href="#ssc.SScAnalyzer4FreeSearch.search_close_inputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a new concrete input that fulfills test target <cite>target</cite>.</p>
+<p>Returns a tuple <cite>(d, base, new)</cite> where <cite>base</cite> is a concrete
+element from a set given on initialization (typically for now, raw
+data from <cite>test_object</cite>) and <cite>new</cite> is a new concrete input at
+distance <cite>d</cite> from <cite>base</cite>, or <cite>None</cite> is unsuccessful.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ssc.SScAnalyzer4RootedSearch">
+<em class="property">class </em><code class="sig-prename descclassname">ssc.</code><code class="sig-name descname">SScAnalyzer4RootedSearch</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">analyzed_dnn</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ssc.SScAnalyzer4RootedSearch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="core.html#engine.Analyzer4RootedSearch" title="engine.Analyzer4RootedSearch"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.Analyzer4RootedSearch</span></code></a></p>
+<p>Analyzer that finds a new input close to a given input so that a
+given SSC test target is fulfilled.</p>
+<dl class="py method">
+<dt id="ssc.SScAnalyzer4RootedSearch.search_input_close_to">
+<em class="property">abstract </em><code class="sig-name descname">search_input_close_to</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">target</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ssc.SScTarget" title="ssc.SScTarget">ssc.SScTarget</a></span></em><span class="sig-paren">)</span> &#x2192; Optional[Tuple[float, NewType.&lt;locals&gt;.new_type, NewType.&lt;locals&gt;.new_type]]<a class="headerlink" href="#ssc.SScAnalyzer4RootedSearch.search_input_close_to" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a new concrete input close to <cite>x</cite>, that fulfills test
+target <cite>target</cite>.</p>
+<p>Returns a tuple <cite>(d, y)</cite>, that is a new concrete input <cite>y</cite> along
+with its distance <cite>d</cite> w.r.t the input metric, or <cite>None</cite> is
+unsuccessful.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ssc.SScCriterion">
+<em class="property">class </em><code class="sig-prename descclassname">ssc.</code><code class="sig-name descname">SScCriterion</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">clayers</span><span class="p">:</span> <span class="n">Sequence<span class="p">[</span><a class="reference internal" href="#ssc.SScLayer" title="ssc.SScLayer">ssc.SScLayer</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">analyzer</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference internal" href="#ssc.SScAnalyzer4FreeSearch" title="ssc.SScAnalyzer4FreeSearch">ssc.SScAnalyzer4FreeSearch</a><span class="p">, </span><a class="reference internal" href="#ssc.SScAnalyzer4RootedSearch" title="ssc.SScAnalyzer4RootedSearch">ssc.SScAnalyzer4RootedSearch</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">injecting_layer</span><span class="p">:</span> <span class="n"><a class="reference internal" href="core.html#engine.BoolMappedCoverableLayer" title="engine.BoolMappedCoverableLayer">engine.BoolMappedCoverableLayer</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ssc.SScCriterion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="core.html#engine.LayerLocalCriterion" title="engine.LayerLocalCriterion"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.LayerLocalCriterion</span></code></a>, <a class="reference internal" href="core.html#engine.Criterion4FreeSearch" title="engine.Criterion4FreeSearch"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.Criterion4FreeSearch</span></code></a>, <a class="reference internal" href="core.html#engine.Criterion4RootedSearch" title="engine.Criterion4RootedSearch"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.Criterion4RootedSearch</span></code></a></p>
+<p>A criterion operates based on an <cite>analyzer</cite> to find new concrete
+inputs.</p>
+<p>Flag <cite>prefer_rooted_search</cite> can be used in case both the criterion
+and the analyzer support the two kinds of search; the default
+behavior is to select rooted search.</p>
+<dl class="py method">
+<dt id="ssc.SScCriterion.find_next_test_target">
+<code class="sig-name descname">find_next_test_target</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#ssc.SScTarget" title="ssc.SScTarget">ssc.SScTarget</a><a class="headerlink" href="#ssc.SScCriterion.find_next_test_target" title="Permalink to this definition">¶</a></dt>
+<dd><p>Seeks and returns a new test target.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ssc.SScCriterion.find_next_rooted_test_target">
+<code class="sig-name descname">find_next_rooted_test_target</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Tuple[NewType.&lt;locals&gt;.new_type, ssc.SScTarget]<a class="headerlink" href="#ssc.SScCriterion.find_next_rooted_test_target" title="Permalink to this definition">¶</a></dt>
+<dd><p>Seeks a new test target associated with an existing test input
+taken from the set of recorded test cases.</p>
+<p>Note this method MUST perform enough bookkeeping so that two
+successive calls that are not interleaved with any call to
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">Criterion.add_new_test_cases()</span></code> return different results.
+This property is to enforce progress upon unsuccessful search of
+concrete inputs.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="ssc.setup">
+<code class="sig-prename descclassname">ssc.</code><code class="sig-name descname">setup</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">test_object</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">setup_analyzer</span><span class="p">:</span> <span class="n">Callable<span class="p">[</span><span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a><span class="p">]</span><span class="p">, </span>Union<span class="p">[</span><a class="reference internal" href="#ssc.SScAnalyzer4FreeSearch" title="ssc.SScAnalyzer4FreeSearch">ssc.SScAnalyzer4FreeSearch</a><span class="p">, </span><a class="reference internal" href="#ssc.SScAnalyzer4RootedSearch" title="ssc.SScAnalyzer4RootedSearch">ssc.SScAnalyzer4RootedSearch</a><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">criterion_args</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a></span> <span class="o">=</span> <span class="default_value">{}</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="core.html#engine.Engine" title="engine.Engine">engine.Engine</a><a class="headerlink" href="#ssc.setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper to build an engine for sign-sign-coverage (using
+<a class="reference internal" href="#ssc.SScCriterion" title="ssc.SScCriterion"><code class="xref py py-class docutils literal notranslate"><span class="pre">SScCriterion</span></code></a> and an analyzer constructed using
+<cite>setup_analyzer</cite>).</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="ssc.SScGANBasedAnalyzer">
+<em class="property">class </em><code class="sig-prename descclassname">ssc.</code><code class="sig-name descname">SScGANBasedAnalyzer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">linf_args</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">cond_ratio</span><span class="o">=</span><span class="default_value">0.01</span></em>, <em class="sig-param"><span class="n">ref_data</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ssc.SScGANBasedAnalyzer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ssc.SScAnalyzer4FreeSearch" title="ssc.SScAnalyzer4FreeSearch"><code class="xref py py-class docutils literal notranslate"><span class="pre">ssc.SScAnalyzer4FreeSearch</span></code></a></p>
+<dl class="py method">
+<dt id="ssc.SScGANBasedAnalyzer.input_metric">
+<code class="sig-name descname">input_metric</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ssc.SScGANBasedAnalyzer.input_metric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the metric used to compare concrete inputs.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ssc.SScGANBasedAnalyzer.search_close_inputs">
+<code class="sig-name descname">search_close_inputs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">target</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#ssc.SScTarget" title="ssc.SScTarget">ssc.SScTarget</a></span></em><span class="sig-paren">)</span> &#x2192; Optional[Tuple[float, NewType.&lt;locals&gt;.new_type, NewType.&lt;locals&gt;.new_type]]<a class="headerlink" href="#ssc.SScGANBasedAnalyzer.search_close_inputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a new concrete input that fulfills test target <cite>target</cite>.</p>
+<p>Returns a tuple <cite>(d, base, new)</cite> where <cite>base</cite> is a concrete
+element from a set given on initialization (typically for now, raw
+data from <cite>test_object</cite>) and <cite>new</cite> is a new concrete input at
+distance <cite>d</cite> from <cite>base</cite>, or <cite>None</cite> is unsuccessful.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-mcdc_pulp">
+<span id="analyzers"></span><h2>Analyzers<a class="headerlink" href="#module-mcdc_pulp" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="mcdc_pulp.SScPulpAnalyzer">
+<em class="property">class </em><code class="sig-prename descclassname">mcdc_pulp.</code><code class="sig-name descname">SScPulpAnalyzer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_metric</span><span class="p">:</span> <span class="n"><a class="reference internal" href="lp.html#lp.PulpLinearMetric" title="lp.PulpLinearMetric">lp.PulpLinearMetric</a></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwds</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mcdc_pulp.SScPulpAnalyzer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ssc.SScAnalyzer4RootedSearch" title="ssc.SScAnalyzer4RootedSearch"><code class="xref py py-class docutils literal notranslate"><span class="pre">ssc.SScAnalyzer4RootedSearch</span></code></a>, <a class="reference internal" href="core.html#engine.LayerLocalAnalyzer" title="engine.LayerLocalAnalyzer"><code class="xref py py-class docutils literal notranslate"><span class="pre">engine.LayerLocalAnalyzer</span></code></a>, <a class="reference internal" href="lp.html#lp.PulpSolver4DNN" title="lp.PulpSolver4DNN"><code class="xref py py-class docutils literal notranslate"><span class="pre">lp.PulpSolver4DNN</span></code></a></p>
+<p>Pulp-based analyzer for sign-sign coverage.</p>
+<dl class="py method">
+<dt id="mcdc_pulp.SScPulpAnalyzer.finalize_setup">
+<code class="sig-name descname">finalize_setup</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">clayers</span><span class="p">:</span> <span class="n">Sequence<span class="p">[</span><a class="reference internal" href="core.html#engine.CoverableLayer" title="engine.CoverableLayer">engine.CoverableLayer</a><span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mcdc_pulp.SScPulpAnalyzer.finalize_setup" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="mcdc_pulp.SScPulpAnalyzer.input_metric">
+<code class="sig-name descname">input_metric</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="lp.html#lp.PulpLinearMetric" title="lp.PulpLinearMetric">lp.PulpLinearMetric</a><a class="headerlink" href="#mcdc_pulp.SScPulpAnalyzer.input_metric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the metric used to compare concrete inputs.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="mcdc_pulp.SScPulpAnalyzer.search_input_close_to">
+<code class="sig-name descname">search_input_close_to</code><span class="sig-paren">(</span><em class="sig-param">x: NewType.&lt;locals&gt;.new_type</em>, <em class="sig-param">target: ssc.SScTarget</em><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span>Tuple<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a><span class="p">, </span>Any<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#mcdc_pulp.SScPulpAnalyzer.search_input_close_to" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a new concrete input close to <cite>x</cite>, that fulfills test
+target <cite>target</cite>.</p>
+<p>Returns a tuple <cite>(d, y)</cite>, that is a new concrete input <cite>y</cite> along
+with its distance <cite>d</cite> w.r.t the input metric, or <cite>None</cite> is
+unsuccessful.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Modified Condition/Decision Coverage</a><ul>
+<li><a class="reference internal" href="#module-ssc">Sign-Sign Coverage</a></li>
+<li><a class="reference internal" href="#module-mcdc_pulp">Analyzers</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="nc.html"
+                        title="previous chapter">Neuron Coverage</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="lp.html"
+                        title="next chapter">Linear Program Solving</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/mcdc.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="lp.html" title="Linear Program Solving"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="nc.html" title="Neuron Coverage"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">deepconcolic  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="api.html" >DeepConcolic API</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Modified Condition/Decision Coverage</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, TrustAI.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+  </body>
+</html>

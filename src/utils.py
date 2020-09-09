@@ -315,7 +315,6 @@ class test_objectt:
     self.num_processes = None
     self.file_list = None
     self.model_name = None
-
   
 
   def tests_layer(self, cl):

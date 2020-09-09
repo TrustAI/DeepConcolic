@@ -2,6 +2,9 @@ import numpy as np
 from utils import *
 
 class L0Analyzer:
+  """
+  Custom analyzer for generating new inputs, based on the L0 norm.
+  """
 
   def __init__(self, input_shape, eval_batch, gran = 2):
     self.shape = input_shape

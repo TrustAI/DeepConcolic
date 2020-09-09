@@ -1,0 +1,171 @@
+
+
+<!doctype html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepConcolic API &#8212; deepconcolic  documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Engine" href="core.html" />
+    <link rel="prev" title="Welcome to DeepConcolic’s Documentation!" href="index.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="core.html" title="Engine"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to DeepConcolic’s Documentation!"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">deepconcolic  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">DeepConcolic API</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="deepconcolic-api">
+<h1>DeepConcolic API<a class="headerlink" href="#deepconcolic-api" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="core">
+<h2>Core<a class="headerlink" href="#core" title="Permalink to this headline">¶</a></h2>
+<p>DeepConcolic’s test input generation algorithm is embodied in an
+<em>Engine</em>, whose role is to fulfill a coverage <em>Criterion</em> by
+generating inputs using an <em>Analyzer</em>.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="core.html">Engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core.html#module-norms">Norms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core.html#module-utils">Utilities</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="available-coverage-metrics-analyzers">
+<h2>Available Coverage Metrics &amp; Analyzers<a class="headerlink" href="#available-coverage-metrics-analyzers" title="Permalink to this headline">¶</a></h2>
+<p>Several coverage metrics are currently implemented in DeepConcolic,
+along with one or more associated analyzers for each of them.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="nc.html">Neuron Coverage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nc.html#module-nc_pulp">Analyzers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="mcdc.html">Modified Condition/Decision Coverage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="mcdc.html#module-ssc">Sign-Sign Coverage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mcdc.html#module-mcdc_pulp">Analyzers</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="internals">
+<h2>Internals<a class="headerlink" href="#internals" title="Permalink to this headline">¶</a></h2>
+<p>Most analyzers above make use of various internal modules for problem
+solving and encoding.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="lp.html">Linear Program Solving</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="lp.html#module-lp">Solvers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lp.html#module-pulp_encoding">Specialized Encoders</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="l0.html">Specialized L0 Search</a></li>
+</ul>
+</div>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">DeepConcolic API</a><ul>
+<li><a class="reference internal" href="#core">Core</a></li>
+<li><a class="reference internal" href="#available-coverage-metrics-analyzers">Available Coverage Metrics &amp; Analyzers</a></li>
+<li><a class="reference internal" href="#internals">Internals</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to DeepConcolic’s Documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="core.html"
+                        title="next chapter">Engine</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/api.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="core.html" title="Engine"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to DeepConcolic’s Documentation!"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">deepconcolic  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">DeepConcolic API</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, TrustAI.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+  </body>
+</html>

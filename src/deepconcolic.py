@@ -109,7 +109,7 @@ def main():
                     help="number of processes to use", metavar="INT")
   parser.add_argument("--sleep-time", dest="stime", default="4",
                     help="fuzzing sleep time", metavar="INT")
-
+  
   args=parser.parse_args()
 
 
@@ -143,6 +143,7 @@ def main():
   if args.inputs!='-1':
 
     file_list = [] # fuzzing_params
+
     xs=[]
     print ('Loading input data... ', end = '', flush = True)
     for path, subdirs, files in os.walk(args.inputs):
@@ -247,6 +248,7 @@ def main():
   if args.fuzzing:
     deepconcolic_fuzz(test_object, outs)
     sys.exit(0)
+
 
   test_object.check_layer_indices (criterion)
   deepconcolic (criterion, norm, test_object,

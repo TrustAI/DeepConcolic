@@ -100,14 +100,14 @@ python src/deepconcolic.py --fuzzing --model ./saved_models/mnist2.h5 --inputs d
 To run Lipschitz Constant Testing, please refer to instructions in folder "Lipschitz Constant Testing".
 
 # Dependencies
-We suggest create an environment using `conda`, `tensorflow>=2.0.0`
+We suggest create an environment using `conda`, `tensorflow==2.0`
 ```
 conda create --name deepconcolic
 source activate deepconcolic
 conda install keras
 conda install opencv 
 conda install pillow
-pip install pulp
+pip install pulp\>=2
 pip install adversarial-robustness-toolbox
 ```
 

@@ -1,28 +1,28 @@
-# from numpy import linalg as LA
 from typing import *
 from time import time
 from norms import L0
+from engine import Input
 from nc import NcAnalyzer, NcTarget
 from l0_encoding import L0Analyzer
 import numpy as np
 
 
 class NcL0Analyzer (NcAnalyzer, L0Analyzer):
-  '''
+  """
   Neuron-cover analyzer that is dedicated to find close inputs w.r.t
   L0 norm.
-  '''
+  """
 
-  def __init__(self, _clayers, l0_args = {}, **kwds):
+  def __init__(self, l0_args = {}, **kwds):
     super().__init__(**kwds)
     self.norm = L0 (**l0_args)
 
 
-  def input_metric(self):
+  def input_metric(self) -> L0:
     return self.norm
 
 
-  def search_input_close_to(self, x, target: NcTarget) -> Optional[Tuple[float, Any]]:
+  def search_input_close_to(self, x: Input, target: NcTarget) -> Optional[Tuple[float, Any]]:
     mani_range = 100
 
     tic = time()
