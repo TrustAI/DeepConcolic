@@ -23,12 +23,21 @@ from utils import *
 from variables import *
 
 ## to be refined
-apps = ['run_template.py']
+apps = ['./src/run_template.py']
 
 def deepconcolic_fuzz(test_object, outs):
-  report_args = { 'save_input_func': test_object.save_input_func,
-                  'inp_ub': test_object.inp_ub,
-                  'outs': outs}
+  #report_args = { 'save_input_func': test_object.save_input_func,
+  #                'inp_ub': test_object.inp_ub,
+  #                'outs': outs}
+  
+  if not os.path.isdir(outs):
+      os.system('mkdir -p {0}'.format(outs))
+  mutant_path = outs + '/mutants'
+  if not os.path.isdir(mutant_path):
+      os.system('mkdir -p {0}'.format(mutant_path))
+  adv_path = outs + '/advs'
+  if not os.path.isdir(adv_path):
+      os.system('mkdir -p {0}'.format(adv_path))
 
   num_tests = test_object.num_tests
   num_processes = test_object.num_processes
@@ -54,13 +63,13 @@ def deepconcolic_fuzz(test_object, outs):
               rn = random.randrange(len(buf))
               buf[rn] = rbyte
               
-          fuzz_output = 'mutant-iter{0}-p{1}'.format(i, j)
+          fuzz_output = mutant_path + '/mutant-iter{0}-p{1}'.format(i, j)
           fuzz_outputs.append(fuzz_output)
-          f = open('mutants/' + fuzz_output, 'wb')
+          f = open(fuzz_output, 'wb')
           f.write(buf)
           f.close()
   
-          commandline = ['python', apps[0], '--model', model_name, '--origins', file_choice, '--mutants', 'mutants/'+fuzz_output, '--input-rows', str(img_rows), '--input-cols', str(img_cols), '--input-channels', str(img_channels)]
+          commandline = ['python', apps[0], '--model', model_name, '--origins', file_choice, '--mutants', fuzz_output, '--input-rows', str(img_rows), '--input-cols', str(img_cols), '--input-channels', str(img_channels)]
           process = subprocess.Popen(commandline)
           processes.append(process)
   
@@ -78,13 +87,13 @@ def deepconcolic_fuzz(test_object, outs):
               process.terminate()
           elif crashed == SIG_ADV:
               num_crashes += 1
-              output = open("advs.list", 'a')
+              output = open(outs+"/advs.list", 'a')
               output.write("Adv# {0}: command {1}\n".format(num_crashes, commandline))
               output.close()
-              adv_output = 'advs/' + fuzz_output
+              adv_output = adv_path+'/' + fuzz_output.split('/')[-1]
               f = open(adv_output, 'wb')
               f.write(buf)
               f.close()
           else: pass
 
-  print (report_args)
+  #print (report_args)
