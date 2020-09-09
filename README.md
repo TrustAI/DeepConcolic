@@ -123,7 +123,7 @@ conda install opencv
 conda install pillow
 pip install pulp\>=2
 pip install adversarial-robustness-toolbox
-pip install pomegranate==0.12.0
+pip install pomegranate\>=0.13.4
 ```
 
 # Publications
