@@ -89,6 +89,12 @@ To run Concolic Sign-sign-coverage (MC/DC) for DNNs on the MNIST model
 python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --criterion ssclp --mnist-data --outputs outs
 ```
 
+DeepConcolic nows supports an experimental fuzzing engine. Try ``--fuzzing`` to use it. The following command will result in: one ``mutants`` folder, one ``advs`` folder for adversarial examples and an adversarial list ``adv.list``.
+
+```
+python src/deepconcolic.py --fuzzing --model ./saved_models/mnist2.h5 --inputs data/mnist-seeds/ --outputs outs --input-rows 28 --input-cols 28
+```
+
 ### Concolic Testing on Lipschitz Constants for DNNs
 
 To run Lipschitz Constant Testing, please refer to instructions in folder "Lipschitz Constant Testing".
