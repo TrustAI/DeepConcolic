@@ -32,7 +32,7 @@ def deepconcolic(criterion, norm, test_object, report_args, engine_args = {}):
       engine = nc_setup (test_object = test_object,
                          setup_analyzer = NcL0Analyzer,
                          input_shape = test_object.raw_data.data[0].shape,
-                         eval_batch = test_object.eval_batch)
+                         eval_batch = eval_batch_func (test_object.dnn))
     else:
       print('\n not supported norm... {0}\n'.format(norm))
       sys.exit(0)

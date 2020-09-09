@@ -284,6 +284,9 @@ def eval_batch(o, ims, allow_input_layer = False):
 def eval(o, im, having_input_layer = False):
   return eval_batch (o, np.array([im]), having_input_layer)
 
+def eval_batch_func (dnn):
+  return lambda imgs, **kwds: eval_batch (dnn, imgs, **kwds)
+
 # ---
 
 class raw_datat:
