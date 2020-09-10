@@ -11,13 +11,10 @@ import time
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-try:
-  import tensorflow as tf
-  from tensorflow import keras
-  # NB: Eager execution needs to be disabled before any model loading.
-  tf.compat.v1.disable_eager_execution ()
-except:
-  import keras
+import tensorflow as tf
+from tensorflow import keras
+# NB: Eager execution needs to be disabled before any model loading.
+tf.compat.v1.disable_eager_execution ()
 
 from utils import *
 from variables import *

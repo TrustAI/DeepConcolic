@@ -73,13 +73,12 @@ def local_search(eval_batch, local_input, ssc_pair, adv_crafter, e_max_input, ss
 
 def ssc_search(eval_batch, raw_data, cond_ratio, cond_layer, dec_layer, dec_pos, adv_crafter, adv_object=None):
 
-  keras.backend.set_learning_phase(False)
-  import tensorflow
+  tensorflow.keras.backend.set_learning_phase(False)
   try:
     sess = tensorflow.compat.v1.Session ()
     sess.run(tensorflow.compat.v1.global_variables_initializer())
   except:
-    sess = keras.backend.get_session()
+    sess = tensorflow.keras.backend.get_session()
     sess.run(tensorflow.global_variables_initializer())
 
   data = raw_data.data

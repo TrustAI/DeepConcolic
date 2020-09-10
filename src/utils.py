@@ -1,11 +1,7 @@
 #import matplotlib.pyplot as plt
 from abc import abstractmethod
 from datetime import datetime
-
-try:
-  from tensorflow import keras
-except:
-  import keras
+from tensorflow import keras
 
 import numpy as np
 import copy
