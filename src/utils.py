@@ -2,10 +2,13 @@
 from abc import abstractmethod
 from datetime import datetime
 
-try:
-  from tensorflow import keras
-except:
-  import keras
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+import tensorflow as tf
+from tensorflow import keras
+# NB: Eager execution needs to be disabled before any model loading.
+tf.compat.v1.disable_eager_execution ()
 
 import numpy as np
 import copy
@@ -284,6 +287,9 @@ def eval_batch(o, ims, allow_input_layer = False):
 def eval(o, im, having_input_layer = False):
   return eval_batch (o, np.array([im]), having_input_layer)
 
+def eval_batch_func (dnn):
+  return lambda imgs, **kwds: eval_batch (dnn, imgs, **kwds)
+
 # ---
 
 class raw_datat:
@@ -309,12 +315,6 @@ class test_objectt:
     self.trace_flag=None
     self.layer_indices=None
     self.feature_indices=None
-
-    # fuzzing params
-    self.num_tests = None
-    self.num_processes = None
-    self.file_list = None
-    self.model_name = None
   
 
   def tests_layer(self, cl):

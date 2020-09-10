@@ -3,14 +3,13 @@ import sys
 import os
 from datetime import datetime
 
-import keras
-from keras.models import *
-from keras.datasets import cifar10
-from keras.datasets import mnist
-from keras.applications.vgg16 import VGG16
-from keras.preprocessing.image import load_img
-from keras.layers import *
-from keras import *
+from tensorflow.keras.models import *
+from tensorflow.keras.datasets import cifar10
+from tensorflow.keras.datasets import mnist
+from tensorflow.keras.applications.vgg16 import VGG16
+from tensorflow.keras.preprocessing.image import load_img
+from tensorflow.keras.layers import *
+from tensorflow.keras import *
 from utils import *
 from ssc import *
 

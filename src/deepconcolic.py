@@ -3,20 +3,8 @@ import sys
 import os
 import cv2
 import yaml
-import warnings
-from deepconcolic_fuzz import deepconcolic_fuzz
-
-warnings.filterwarnings("ignore", category=FutureWarning)
-
-try:
-  import tensorflow as tf
-  from tensorflow import keras
-  # NB: Eager execution needs to be disabled before any model loading.
-  tf.compat.v1.disable_eager_execution ()
-except:
-  import keras
-
 from utils import *
+from deepconcolic_fuzz import deepconcolic_fuzz
 
 def deepconcolic(criterion, norm, test_object, report_args, engine_args = {},
                  dbnc_spec = {}):
@@ -34,7 +22,7 @@ def deepconcolic(criterion, norm, test_object, report_args, engine_args = {},
       engine = nc_setup (test_object = test_object,
                          setup_analyzer = NcL0Analyzer,
                          input_shape = test_object.raw_data.data[0].shape,
-                         eval_batch = test_object.eval_batch)
+                         eval_batch = eval_batch_func (test_object.dnn))
     else:
       print('\n not supported norm... {0}\n'.format(norm))
       sys.exit(0)
@@ -179,12 +167,11 @@ def main():
     print (' \n == Please specify the input neural network == \n')
     sys.exit(0)
 
+  # fuzzing_params
   if args.inputs!='-1':
-
-    file_list = [] # fuzzing_params
-
+    file_list = []
     xs=[]
-    print ('Loading input data... ', end = '', flush = True)
+    np1 ('Loading input data from {}... '.format (args.inputs))
     for path, subdirs, files in os.walk(args.inputs):
       for name in files:
         fname=(os.path.join(path, name))
@@ -201,7 +188,7 @@ def main():
     test_data = raw_datat(x_test, None)
     print (len(xs), 'loaded.')
   elif args.mnist:
-    from keras.datasets import mnist
+    from tensorflow.keras.datasets import mnist
     print ('Loading MNIST data... ', end = '', flush = True)
     img_rows, img_cols, img_channels = 28, 28, 1
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
@@ -215,7 +202,7 @@ def main():
     train_data = raw_datat(x_train, y_train, 'mnist')
     print ('done.')
   elif args.cifar10:
-    from keras.datasets import cifar10
+    from tensorflow.keras.datasets import cifar10
     print ('Loading CIFAR10 data... ', end='', flush = True)
     img_rows, img_cols, img_channels = 32, 32, 3
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
@@ -279,15 +266,13 @@ def main():
     test_object.labels=labels
 
   init_tests = int (args.init_tests) if args.init_tests is not None else None
-  # fuzzing params
-  test_object.num_tests, test_object.num_processes = int(args.num_tests), int(args.num_processes)
-  test_object.stime = int(args.stime)
-  test_object.file_list = file_list
-  test_object.model_name = args.model
-  if args.fuzzing:
-    deepconcolic_fuzz(test_object, outs)
-    sys.exit(0)
 
+  # fuzzing params
+  if args.fuzzing:
+    deepconcolic_fuzz(test_object, outs, args.model, int(args.stime), file_list,
+                      num_tests = int(args.num_tests),
+                      num_processes = int(args.num_processes))
+    sys.exit(0)
 
   # DBNC-specific parameters:
   try:

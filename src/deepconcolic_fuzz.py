@@ -2,30 +2,19 @@ import argparse
 import sys
 import os
 import cv2
-import warnings
 import math
 import random
 import string
 import subprocess
 import time
-
-warnings.filterwarnings("ignore", category=FutureWarning)
-
-try:
-  import tensorflow as tf
-  from tensorflow import keras
-  # NB: Eager execution needs to be disabled before any model loading.
-  tf.compat.v1.disable_eager_execution ()
-except:
-  import keras
-
 from utils import *
 from variables import *
 
 ## to be refined
 apps = ['./src/run_template.py']
 
-def deepconcolic_fuzz(test_object, outs):
+def deepconcolic_fuzz(test_object, outs, model_name, stime, file_list,
+                      num_tests = 1000, num_processes = 1):
   #report_args = { 'save_input_func': test_object.save_input_func,
   #                'inp_ub': test_object.inp_ub,
   #                'outs': outs}
@@ -39,16 +28,11 @@ def deepconcolic_fuzz(test_object, outs):
   if not os.path.isdir(adv_path):
       os.system('mkdir -p {0}'.format(adv_path))
 
-  num_tests = test_object.num_tests
-  num_processes = test_object.num_processes
-  stime = test_object.stime
-  file_list = test_object.file_list
   data = test_object.raw_data.data
   if data.shape[1] == 28: # todo: this is mnist hacking
     img_rows, img_cols, img_channels = data.shape[1], data.shape[2], 1
   else:
     img_rows, img_cols, img_channels = data.shape[1], data.shape[2], data.shape[3]
-  model_name = test_object.model_name
 
   num_crashes = 0
   for i in range(num_tests):

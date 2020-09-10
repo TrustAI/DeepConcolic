@@ -114,17 +114,18 @@ python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --criterion 
 To run Lipschitz Constant Testing, please refer to instructions in folder "Lipschitz Constant Testing".
 
 # Dependencies
-We suggest create an environment using `conda`, `tensorflow==2.0` (or `tensorflow>=2.3`)
+We suggest to create an environment using [miniconda](https://docs.conda.io/en/latest/miniconda.html) as follows:
 ```
 conda create --name deepconcolic
-source activate deepconcolic
-conda install keras
+conda activate deepconcolic
 conda install opencv 
-conda install pillow
-pip install pulp\>=2
-pip install adversarial-robustness-toolbox
-pip install pomegranate\>=0.13.4
+pip3 install tensorflow\>=2.3
+pip3 install pulp\>=2
+pip3 install adversarial-robustness-toolbox
+pip3 install pomegranate\>=0.13.4
 ```
+
+Note as of September 2020 one may need to append `--use-feature=2020-resolver` at the end of each `pip3 install` command-line to work-around errors in dependency resolution.  Further missing dependency errors for a package _p_ can then be solved by uninstalling/installing _p_.
 
 # Publications
 
