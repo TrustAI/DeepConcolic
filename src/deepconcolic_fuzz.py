@@ -2,20 +2,11 @@ import argparse
 import sys
 import os
 import cv2
-import warnings
 import math
 import random
 import string
 import subprocess
 import time
-
-warnings.filterwarnings("ignore", category=FutureWarning)
-
-import tensorflow as tf
-from tensorflow import keras
-# NB: Eager execution needs to be disabled before any model loading.
-tf.compat.v1.disable_eager_execution ()
-
 from utils import *
 from variables import *
 

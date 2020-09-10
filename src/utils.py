@@ -1,7 +1,14 @@
 #import matplotlib.pyplot as plt
 from abc import abstractmethod
 from datetime import datetime
+
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+import tensorflow as tf
 from tensorflow import keras
+# NB: Eager execution needs to be disabled before any model loading.
+tf.compat.v1.disable_eager_execution ()
 
 import numpy as np
 import copy

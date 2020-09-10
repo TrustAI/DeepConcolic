@@ -2,17 +2,8 @@ import argparse
 import sys
 import os
 import cv2
-import warnings
-from deepconcolic_fuzz import deepconcolic_fuzz
-
-warnings.filterwarnings("ignore", category=FutureWarning)
-
-import tensorflow as tf
-from tensorflow import keras
-# NB: Eager execution needs to be disabled before any model loading.
-tf.compat.v1.disable_eager_execution ()
-
 from utils import *
+from deepconcolic_fuzz import deepconcolic_fuzz
 
 def deepconcolic(criterion, norm, test_object, report_args, engine_args = {}):
   engine = None
@@ -141,7 +132,7 @@ def main():
   if args.inputs!='-1':
     file_list = []
     xs=[]
-    print ('Loading input data... ', end = '', flush = True)
+    np1 ('Loading input data from {}... '.format (args.inputs))
     for path, subdirs, files in os.walk(args.inputs):
       for name in files:
         fname=(os.path.join(path, name))
