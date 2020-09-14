@@ -479,3 +479,24 @@ class Coverage:
 
 
 # ---
+
+
+from collections import UserDict
+
+class NPArrayDict (UserDict):
+  '''
+  Custom dictionary that accepts numpy arrays as keys.
+  '''
+
+  def __getitem__(self, x: np.ndarray):
+    return self.data[hash (x.tobytes ())]
+
+  def __delitem__(self, x: np.ndarray):
+    del self.data[hash (x.tobytes ())]
+
+  def __setitem__(self, x: np.ndarray, val):
+    x.flags.writeable = False
+    self.data[hash (x.tobytes ())] = val
+
+
+# ---

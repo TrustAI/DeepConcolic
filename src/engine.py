@@ -9,6 +9,9 @@ from sklearn.model_selection import train_test_split
 # Define an alias type for inputs
 Input = NewType("Input", np.ndarray)
 
+class InputsDict (NPArrayDict):
+  pass
+
 
 # ---
 
@@ -635,6 +638,8 @@ def setup_basic_report(criterion: Criterion, **kwds) -> Report:
                  **kwds)
 
 
+# ---
+
 
 class Engine:
   '''
@@ -698,6 +703,7 @@ class Engine:
   def run(self,
           setup_report: Callable[[Criterion], Report] = setup_basic_report,
           initial_test_cases = None,
+          trace_origins: bool = False,
           max_iterations = None,
           **kwds):
     '''
@@ -725,6 +731,8 @@ class Engine:
                  '#adversarial examples: 0\n')
 
     iteration = 1
+    origin = (None if not trace_origins else
+              InputsDict ([(x, i) for i, x in enumerate (criterion.test_cases)]))
 
     try:
 
@@ -736,12 +744,15 @@ class Engine:
         search_attempt, target = criterion.search_next ()
         if search_attempt != None:
           x0, x1, d = search_attempt
-  
+
           # Test oracle for adversarial testing
-          close_enough = filter.close_to (self.ref_data.data, x1)
+          close_enough = filter.close_to (self.ref_data.data if origin is None else
+                                          [criterion.test_cases[origin[x0]]], x1)
           if close_enough:
             target.cover ()
             criterion.add_new_test_cases ([x1])
+            if origin is not None:
+              origin[x1] = origin[x0]
             coverage = criterion.coverage ()
             y0 = self._run_test (x0)
             y1 = self._run_test (x1)
@@ -759,7 +770,9 @@ class Engine:
                      'with {} at {} distance {}: {}'
                      .format('new test case' if close_enough else 'failed attempt',
                              criterion.metric, d,
-                             'too far from raw data' if not close_enough else
+                             'too far from raw input' if (not close_enough and
+                                                          not trace_origins) else
+                             'too far from original input' if not close_enough else
                              'adversarial' if adversarial else 'passed')
                      if search_attempt != None else 'after failed attempt'))
   
