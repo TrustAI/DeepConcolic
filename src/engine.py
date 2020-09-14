@@ -13,35 +13,31 @@ Input = NewType("Input", np.ndarray)
 # ---
 
 
-class Oracle:
+class Filter:
   '''
-  Oracles can be used to compare any concrete input against a
+  Filters can be used to compare any concrete input against a
   reference set.
   '''
 
   @abstractmethod
-  def __repr__(self):
+  def close_to(self, refs: Sequence[Input], x: Input):
     raise NotImplementedError
 
-
-  @abstractmethod
-  def close_to(self, refs, x):
-    raise NotImplementedError
 
 
 # ---
 
 
-class Metric (Oracle):
+class Metric (Filter):
   '''
-  A metric can also be used as an oracle to compare and assess
-  concrete inputs.
+  For now, we can assume that every metric can also be used as a
+  filter to compare and assess concrete inputs.
   '''
-  
+
   def __init__(self, factor = 0.25, scale = 1, **kwds):
     '''
     The `factor` argument determines closeness when the object is used
-    as an oracle; defaults to 1/4.  In turn, `scale` is applied on
+    as a filter; defaults to 1/4.  In turn, `scale` is applied on
     involved scalar values (e.g. pixels) when computing distances.
     '''
     self.factor = factor
@@ -272,6 +268,7 @@ class Report:
     append_in_file (self.report_file, *args)
 
 
+
 # ---
 
 
@@ -384,9 +381,9 @@ class Criterion:
 
 
   @property
-  def oracle(self) -> Oracle:
+  def filter(self) -> Filter:
     '''
-    Returns the oracle used to compare concrete inputs.  By default
+    Returns the filter used to compare concrete inputs.  By default
     this is in input metric used by the analyzer.
     '''
     return self.metric
@@ -646,20 +643,20 @@ class Engine:
 
   def __init__(self, ref_data, train_data,
                criterion: Criterion,
-               custom_oracle: Oracle = None,
+               custom_filter: Filter = None,
                **kwds):
     """
     Builds a test engine with the given DNN, reference data, and test
     criterion.  Uses the input metric provided by the
-    criterion-specific analyzer as oracle, unless `custom_oracle` is
-    not `None`.
+    criterion-specific analyzer as filter for assessing legitimacy of
+    new test inputs, unless `custom_filter` is not `None`.
     """
     
     self.ref_data = ref_data
     self.train_data = train_data
     self.criterion = criterion
-    self.oracle = custom_oracle or criterion.oracle
-    assert isinstance (self.oracle, Oracle)
+    self.filter = custom_filter or criterion.filter
+    assert isinstance (self.filter, Filter)
     super().__init__(**kwds)
     self._stat_based_inits ()
     self.criterion.finalize_setup ()
@@ -712,7 +709,7 @@ class Engine:
     '''
 
     criterion = self.criterion
-    oracle = self.oracle
+    filter = self.filter
 
     p1 ('Starting tests for {}{}.'
         .format (self, '' if max_iterations == None else
@@ -734,13 +731,14 @@ class Engine:
       while ((max_iterations == None or iteration <= max_iterations) and
              not coverage.done):
   
-        filtered, adversarial = False, False
+        adversarial = False
 
         search_attempt, target = criterion.search_next ()
         if search_attempt != None:
           x0, x1, d = search_attempt
   
-          close_enough = oracle.close_to (self.ref_data.data, x1)
+          # Test oracle for adversarial testing
+          close_enough = filter.close_to (self.ref_data.data, x1)
           if close_enough:
             target.cover ()
             criterion.add_new_test_cases ([x1])
