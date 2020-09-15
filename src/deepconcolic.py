@@ -2,20 +2,8 @@ import argparse
 import sys
 import os
 import cv2
-import warnings
-from deepconcolic_fuzz import deepconcolic_fuzz
-
-warnings.filterwarnings("ignore", category=FutureWarning)
-
-try:
-  import tensorflow as tf
-  from tensorflow import keras
-  # NB: Eager execution needs to be disabled before any model loading.
-  tf.compat.v1.disable_eager_execution ()
-except:
-  import keras
-
 from utils import *
+from deepconcolic_fuzz import deepconcolic_fuzz
 
 def deepconcolic(criterion, norm, test_object, report_args, engine_args = {}):
   engine = None
@@ -144,7 +132,7 @@ def main():
   if args.inputs!='-1':
     file_list = []
     xs=[]
-    print ('Loading input data... ', end = '', flush = True)
+    np1 ('Loading input data from {}... '.format (args.inputs))
     for path, subdirs, files in os.walk(args.inputs):
       for name in files:
         fname=(os.path.join(path, name))
@@ -161,7 +149,7 @@ def main():
     test_data = raw_datat(x_test, None)
     print (len(xs), 'loaded.')
   elif args.mnist:
-    from keras.datasets import mnist
+    from tensorflow.keras.datasets import mnist
     print ('Loading MNIST data... ', end = '', flush = True)
     img_rows, img_cols, img_channels = 28, 28, 1
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
@@ -175,7 +163,7 @@ def main():
     train_data = raw_datat(x_train, y_train, 'mnist')
     print ('done.')
   elif args.cifar10:
-    from keras.datasets import cifar10
+    from tensorflow.keras.datasets import cifar10
     print ('Loading CIFAR10 data... ', end='', flush = True)
     img_rows, img_cols, img_channels = 32, 32, 3
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
