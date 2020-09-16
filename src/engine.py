@@ -521,9 +521,10 @@ class Criterion:
 
     - train: a callable taking some training data as mapping (as a
       dictionary) from each layer index given in `layer_indexes` to
-      activation values for the corresponding layer, and returns some
-      arbitrary object; this is to be called only once during
-      initialization;
+      activation values for the corresponding layer, and two keyword
+      arguments `true_labels` and `pred_labels` that hold the
+      corresponding true and predicted labels. Returns some arbitrary
+      object, and is to be called only once during initialization;
 
     - test: a callable taking some extra training data and associated
       labels as two separate mappings (as a dictionary) from each
@@ -556,9 +557,10 @@ class Criterion:
 
     - train: a callable taking some test data as mapping (as a
       dictionary) from each layer index given in `layer_indexes` to
-      activation values for the corresponding layer, and returns some
-      arbitrary object; this is to be called only once during
-      initialization;
+      activation values for the corresponding layer, and two keyword
+      arguments `true_labels` and `pred_labels` that hold the
+      corresponding true and predicted labels. Returns some arbitrary
+      object, and is to be called only once during initialization;
 
     - test: a callable taking some extra test data and associated
       labels as two separate mappings (as a dictionary) from each
@@ -858,13 +860,16 @@ class Engine:
       np1 ('Computing {}... ' .format(x['name']))
       train_idxs, test_idxs = train_test_split (
         idxs, test_size = x['test_size'], train_size = x['train_size'])
-      acts = self._activations_on_indexed_data (data, train_idxs)
-      acc = x['train']({ j: acts[j] for j in x['layer_indexes'] })
+      acts, preds = self._activations_on_indexed_data (data, train_idxs)
+      acc = x['train']({ j: acts[j] for j in x['layer_indexes'] },
+                       true_labels = data.labels[train_idxs],
+                       pred_labels = preds)
 
       if 'test' in x:
-        acts = self._activations_on_indexed_data (data, test_idxs)
-        lbls = data.labels[test_idxs]
-        x['test']({ j: acts[j] for j in x['layer_indexes'] }, lbls)
+        acts, preds = self._activations_on_indexed_data (data, test_idxs)
+        x['test']({ j: acts[j] for j in x['layer_indexes'] },
+                  true_labels = data.labels[test_idxs],
+                  pred_labels = preds)
 
 
   def _batched_activations_on_raw_data(self):
@@ -876,7 +881,8 @@ class Engine:
 
   def _activations_on_indexed_data(self, data, indexes):
     batch = data.data[indexes]
-    return self.criterion.analyzer.eval_batch (batch, allow_input_layer = True)
+    return (self.criterion.analyzer.eval_batch (batch, allow_input_layer = True),
+            self._run_tests (batch))
 
 
   # ---
