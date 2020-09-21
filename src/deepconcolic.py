@@ -5,7 +5,8 @@ import cv2
 from utils import *
 from deepconcolic_fuzz import deepconcolic_fuzz
 
-def deepconcolic(criterion, norm, test_object, report_args, engine_args = {}):
+def deepconcolic(criterion, norm, test_object, report_args,
+                 engine_args = {}, **engine_run_args):
   engine = None
   if criterion=='nc':                   ## neuron cover
     from nc import setup as nc_setup
@@ -13,11 +14,13 @@ def deepconcolic(criterion, norm, test_object, report_args, engine_args = {}):
       from pulp_norms import LInfPulp
       from nc_pulp import NcPulpAnalyzer
       engine = nc_setup (test_object = test_object,
+                         engine_args = engine_args,
                          setup_analyzer = NcPulpAnalyzer,
                          input_metric = LInfPulp ())
     elif norm=='l0':
       from nc_l0 import NcL0Analyzer
       engine = nc_setup (test_object = test_object,
+                         engine_args = engine_args,
                          setup_analyzer = NcL0Analyzer,
                          input_shape = test_object.raw_data.data[0].shape,
                          eval_batch = eval_batch_func (test_object.dnn))
@@ -27,6 +30,7 @@ def deepconcolic(criterion, norm, test_object, report_args, engine_args = {}):
   elif criterion=='ssc':
     from ssc import SScGANBasedAnalyzer, setup as ssc_setup
     engine = ssc_setup (test_object = test_object,
+                        engine_args = engine_args,
                         setup_analyzer = SScGANBasedAnalyzer,
                         ref_data = test_object.raw_data)
   elif criterion=='ssclp':
@@ -34,19 +38,19 @@ def deepconcolic(criterion, norm, test_object, report_args, engine_args = {}):
     from mcdc_pulp import SScPulpAnalyzer
     from ssc import setup as ssc_setup
     engine = ssc_setup (test_object = test_object,
+                        engine_args = engine_args,
                         setup_analyzer = SScPulpAnalyzer,
                         input_metric = LInfPulp ())
   elif criterion=='svc':
-    outs = setup_output_dir (report_args['outs'])
     from run_ssc import run_svc
     print('\n== Starting DeepConcolic tests for {0} =='.format (test_object))
-    run_svc(test_object, report_args['outs'])
+    run_svc(test_object, report_args['outdir'].path)
   else:
     print('\n not supported coverage criterion... {0}\n'.format(criterion))
     sys.exit(0)
 
   if engine != None:
-    engine.run (**engine_args, **report_args)
+    engine.run (**report_args, **engine_run_args)
 
 
 def main():
@@ -169,7 +173,7 @@ def main():
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
     x_test = x_test[0:3000]             # select only a few...
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
-    x_test = x_test.astype('float32')  / 255.
+    x_test = x_test.astype('float32') / 255.
     test_data = raw_datat(x_test, y_test[0:3000], 'cifar10')
     x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, img_channels)
     x_train = x_train.astype('float32') / 255.
@@ -237,11 +241,12 @@ def main():
 
   test_object.check_layer_indices (criterion)
   deepconcolic (criterion, norm, test_object,
-                report_args = { 'save_input_func': save_input,
-                                'inp_ub': inp_ub,
-                                'outs': outs },
-                engine_args = { 'initial_test_cases': init_tests,
-                                'max_iterations': None })
+                report_args = { 'outdir': OutputDir (outs, log = True),
+                                'save_new_tests': True,
+                                'save_input_func': save_input,
+                                'inp_ub': inp_ub },
+                initial_test_cases = init_tests,
+                max_iterations = None)
 
 if __name__=="__main__":
   try:

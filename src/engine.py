@@ -1,5 +1,6 @@
 from typing import *
 from utils import *
+from datetime import datetime
 from sklearn.model_selection import train_test_split
 
 
@@ -194,7 +195,7 @@ class Report:
 
   def __init__(self,
                base_name = '',
-               outs = '/tmp',
+               outdir: OutputDir = None,
                save_new_tests = False,
                adv_dist_period = 100,
                save_input_func = None,
@@ -205,11 +206,12 @@ class Report:
     self.base_name = base_name
     self.save_new_tests = save_new_tests
     self.adv_dist_period = adv_dist_period
-    self.dir = setup_output_dir (outs)
-    report_file, base = setup_output_files (self.dir, self.base_name,
-                                            suff = '', log = False)
-    self.report_file = report_file + '_report.txt'
-    self.base = base
+    self.outdir = outdir or OutputDir ()
+    assert isinstance (self.outdir, OutputDir)
+    self.base = ('{0}-{1}'
+                 .format (self.base_name, str (datetime.now ()).replace (' ', '-'))
+                 .replace (':', '-'))
+    self.report_file = self.outdir.filepath (self.base + '_report.txt')
     self.save_input_func = save_input_func
     self.inp_ub = inp_up
     p1 ('Reporting into: {0}'.format (self.report_file))
@@ -220,7 +222,7 @@ class Report:
     if self.save_input_func != None:
       self.save_input_func (self.inp_ub * 0.5 + (im / self.inp_ub * 0.5) if fit
                             else (im / self.inp_ub * 1.0),
-                            name, self.dir, log)
+                            name, self.outdir.path, log)
 
 
   def _save_derived_input(self, new, origin, diff = None, log = None):
@@ -259,7 +261,7 @@ class Report:
     if self.num_adversarials % self.adv_dist_period == 0:
       print_adversarial_distribution (
         [ d for o, n, d in self.adversarials ],
-        self.dir + self.base + '_adversarial-distribution.txt',
+        self.outdir.filepath (self.base + '_adversarial-distribution.txt'),
         int_flag = is_int)
     self.ntests += 1
 
@@ -636,8 +638,7 @@ def setup_basic_report(criterion: Criterion, **kwds) -> Report:
   Extra keyword arguments are passed on to the constructor of
   :class:`Report`.
   '''
-  return Report (base_name = '{0}_{0.metric}'.format (criterion),
-                 **kwds)
+  return Report (base_name = '{0}_{0.metric}'.format (criterion), **kwds)
 
 
 # ---
@@ -658,7 +659,6 @@ class Engine:
     criterion-specific analyzer as filter for assessing legitimacy of
     new test inputs, unless `custom_filter` is not `None`.
     """
-    
     self.ref_data = ref_data
     self.train_data = train_data
     self.criterion = criterion
@@ -666,7 +666,6 @@ class Engine:
     assert isinstance (self.filter, Filter)
     super().__init__(**kwds)
     self._stat_based_inits ()
-    self.criterion.finalize_setup ()
 
 
   def __repr__(self):
@@ -714,9 +713,13 @@ class Engine:
     `max_iterations` iterations (i.e. number of runs of the analyzer)
     if `max_iterations = None`, or until full coverage is reached, or
     the criterion is fulfilled (whichever happens first).
+
+    Set `trace_origins` to `True` to keep track of the origin of
+    generated test cases and speed up filtering by the oracle.
     '''
 
     criterion = self.criterion
+    criterion.finalize_setup ()
     filter = self.filter
 
     p1 ('Starting tests for {}{}.'
@@ -897,6 +900,7 @@ def setup (test_object: test_objectt = None,
            setup_analyzer: Callable[[dict], Analyzer] = None,
            setup_criterion: Callable[[Sequence[CL], Analyzer, dict], Criterion] = None,
            criterion_args: dict = {},
+           engine_args: dict = {},
            **kwds) -> Engine:
   """
   Helper to build engine instances.  Extra arguments are passed to the
@@ -913,7 +917,8 @@ def setup (test_object: test_objectt = None,
          sep='\n', end = '\n\n')
   analyzer = setup_analyzer (analyzed_dnn = test_object.dnn, **kwds)
   criterion = setup_criterion (cover_layers, analyzer, **criterion_args)
-  return Engine (test_object.raw_data, test_object.train_data, criterion)
+  return Engine (test_object.raw_data, test_object.train_data, criterion,
+                 **engine_args)
 
 
 # ------------------------------------------------------------------------------
@@ -994,9 +999,9 @@ class BoolMappedCoverableLayer (CoverableLayer):
   ## to get the index of the next property to be satisfied
   # [ eq. (15,17,18)? ]
   def find(self, f):
-    acts = np.array(self.activations)
+    acts = np.array (self.activations)
     spos = f (acts)
-    pos = np.unravel_index(spos, acts.shape)
+    pos = np.unravel_index (spos, acts.shape)
     return pos, acts.item (spos)
 
 
@@ -1065,6 +1070,9 @@ class LayerLocalAnalyzer (Analyzer):
 class LayerLocalCriterion (Criterion):
   '''
   Criteria whose definition involves layer-local coverage properties.
+
+  - `shallow_first = True` indicates that shallower layers are given
+    priority when selecting new test targets.
   '''
 
   def __init__(self,
