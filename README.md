@@ -107,7 +107,7 @@ conda activate deepconcolic
 conda install opencv 
 pip3 install tensorflow\>=2.3
 pip3 install pulp\>=2
-pip3 install adversarial-robustness-toolbox
+pip3 install adversarial-robustness-toolbox\>=1.3
 ```
 
 Note as of September 2020 one may need to append `--use-feature=2020-resolver` at the end of each `pip3 install` command-line to work-around errors in dependency resolution.  Further missing dependency errors for a package _p_ can then be solved by uninstalling/installing _p_.

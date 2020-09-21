@@ -73,13 +73,13 @@ def local_search(eval_batch, local_input, ssc_pair, adv_crafter, e_max_input, ss
 
 def ssc_search(eval_batch, raw_data, cond_ratio, cond_layer, dec_layer, dec_pos, adv_crafter, adv_object=None):
 
-  tensorflow.keras.backend.set_learning_phase(False)
+  tf.keras.backend.set_learning_phase(False)
   try:
-    sess = tensorflow.compat.v1.Session ()
-    sess.run(tensorflow.compat.v1.global_variables_initializer())
+    sess = tf.compat.v1.Session ()
+    sess.run(tf.compat.v1.global_variables_initializer())
   except:
-    sess = tensorflow.keras.backend.get_session()
-    sess.run(tensorflow.global_variables_initializer())
+    sess = tf.keras.backend.get_session()
+    sess.run(tf.global_variables_initializer())
 
   data = raw_data.data
   labels = raw_data.labels
@@ -579,12 +579,8 @@ def setup (test_object = None,
 # ---
 
 # TODO: put that in a `ssc_gan' module?
-
-try:
-  from art.attacks.fast_gradient import FastGradientMethod
-  from art.classifiers import KerasClassifier
-except:
-  pass
+from art.attacks.evasion import FastGradientMethod
+from art.estimators.classification import KerasClassifier
 
 from norms import LInf
 
