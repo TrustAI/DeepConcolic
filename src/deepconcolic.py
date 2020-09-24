@@ -2,6 +2,7 @@ import argparse
 import sys
 import os
 import cv2
+import datasets
 from utils import *
 from deepconcolic_fuzz import deepconcolic_fuzz
 
@@ -71,8 +72,7 @@ def main():
   parser.add_argument("--labels", dest="labels", default="-1",
                       help="the default labels", metavar="FILE")
   parser.add_argument("--dataset", dest='dataset',
-                      help="Dataset",
-                      choices=['mnist', 'fashion_mnist', 'cifar10'])
+                      help="selected dataset", choices=datasets.choices)
   parser.add_argument("--vgg16-model", dest='vgg16',
                       help="vgg16 model", action="store_true")
   parser.add_argument("--norm", dest="norm", default="l0",
@@ -150,42 +150,12 @@ def main():
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
     test_data = raw_datat(x_test, None)
     print (len(xs), 'loaded.')
-  elif args.dataset == 'mnist':
-    from tensorflow.keras.datasets import mnist
-    print ('Loading MNIST data... ', end = '', flush = True)
-    img_rows, img_cols, img_channels = 28, 28, 1
-    (x_train, y_train), (x_test, y_test) = mnist.load_data()
-    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
-    x_test = x_test.astype('float32') / 255.
-    test_data = raw_datat(x_test, y_test, 'mnist')
-    x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, img_channels)
-    x_train = x_train.astype('float32') / 255.
-    train_data = raw_datat(x_train, y_train, 'mnist')
-    print ('done.')
-  elif args.dataset == 'fashion_mnist':
-    from tensorflow.keras.datasets import fashion_mnist
-    print ('Loading Fashion-MNIST data... ', end = '', flush = True)
-    img_rows, img_cols, img_channels = 28, 28, 1
-    (x_train, y_train), (x_test, y_test) = fashion_mnist.load_data()
-    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
-    x_test = x_test.astype('float32') / 255.
-    test_data = raw_datat(x_test, y_test, 'fashion_mnist')
-    x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, img_channels)
-    x_train = x_train.astype('float32') / 255.
-    train_data = raw_datat(x_train, y_train, 'fashion_mnist')
-    print ('done.')
-  elif args.dataset == 'cifar10':
-    from tensorflow.keras.datasets import cifar10
-    print ('Loading CIFAR10 data... ', end='', flush = True)
-    img_rows, img_cols, img_channels = 32, 32, 3
-    (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-    # x_test, x_train = x_test[:3000], x_train[:3000]             # select only a few...
-    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
-    x_test = x_test.astype('float32') / 255.
-    test_data = raw_datat(x_test, y_test, 'cifar10')
-    x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, img_channels)
-    x_train = x_train.astype('float32') / 255.
-    train_data = raw_datat(x_train, y_train, 'cifar10')
+  elif args.dataset in datasets.choices:
+    print ('Loading {} dataset... '.format (args.dataset), end = '', flush = True)
+    (x_train, y_train), (x_test, y_test), \
+    (img_rows, img_cols, img_channels), _ = datasets.load_by_name (args.dataset)
+    test_data = raw_datat(x_test, y_test, args.dataset)
+    train_data = raw_datat(x_train, y_train, args.dataset)
     print ('done.')
   else:
     sys.exit ('Missing input dataset')
