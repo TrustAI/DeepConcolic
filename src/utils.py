@@ -5,8 +5,14 @@ from datetime import datetime
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
+# NB: importing sklearn before tensorflow seems to solve an issue with
+# static TLS I've been having on an "oldish" version of Linux (cf
+# https://github.com/scikit-learn/scikit-learn/issues/14485#issuecomment-633452991):
+import sklearn
+
 import tensorflow as tf
 from tensorflow import keras
+print ("Using TensorFlow version:", tf.__version__)
 # NB: Eager execution needs to be disabled before any model loading.
 tf.compat.v1.disable_eager_execution ()
 
