@@ -62,18 +62,17 @@ def main():
                       help="the input test data directory", metavar="DIR")
   parser.add_argument("--outputs", dest="outputs", default="-1",
                       help="the outputput test data directory", metavar="DIR")
-  parser.add_argument("--training-data", dest="training_data", default="-1",
-                      help="the extra training dataset", metavar="DIR")
+  # parser.add_argument("--training-data", dest="training_data", default="-1",
+  #                     help="the extra training dataset", metavar="DIR")
   parser.add_argument("--criterion", dest="criterion", default="nc",
                       help="the test criterion", metavar="nc, ssc...")
   parser.add_argument("--init", dest="init_tests", metavar="INT",
                       help="number of test samples to initialize the engine")
   parser.add_argument("--labels", dest="labels", default="-1",
                       help="the default labels", metavar="FILE")
-  parser.add_argument("--mnist-dataset", dest="mnist",
-                      help="MNIST dataset", action="store_true")
-  parser.add_argument("--cifar10-dataset", dest="cifar10",
-                      help="CIFAR-10 dataset", action="store_true")
+  parser.add_argument("--dataset", dest='dataset',
+                      help="Dataset",
+                      choices=['mnist', 'fashion_mnist', 'cifar10'])
   parser.add_argument("--vgg16-model", dest='vgg16',
                       help="vgg16 model", action="store_true")
   parser.add_argument("--norm", dest="norm", default="l0",
@@ -118,7 +117,7 @@ def main():
   inp_ub = 1
   save_input = None
   if args.fuzzing:
-      pass
+    pass
   elif args.model!='-1':
     dnn = keras.models.load_model (args.model)
     dnn.summary()
@@ -129,8 +128,7 @@ def main():
     dnn.summary()
     save_input = save_an_image
   else:
-    print (' \n == Please specify the input neural network == \n')
-    sys.exit(0)
+    sys.exit ('Missing input neural network')
 
   # fuzzing_params
   if args.inputs!='-1':
@@ -152,36 +150,45 @@ def main():
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
     test_data = raw_datat(x_test, None)
     print (len(xs), 'loaded.')
-  elif args.mnist:
+  elif args.dataset == 'mnist':
     from tensorflow.keras.datasets import mnist
     print ('Loading MNIST data... ', end = '', flush = True)
     img_rows, img_cols, img_channels = 28, 28, 1
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
-    x_test = x_test.astype('float32')
-    x_test /= 255
+    x_test = x_test.astype('float32') / 255.
     test_data = raw_datat(x_test, y_test, 'mnist')
     x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, img_channels)
-    x_train = x_train.astype('float32')
-    x_train /= 255
+    x_train = x_train.astype('float32') / 255.
     train_data = raw_datat(x_train, y_train, 'mnist')
     print ('done.')
-  elif args.cifar10:
+  elif args.dataset == 'fashion_mnist':
+    from tensorflow.keras.datasets import fashion_mnist
+    print ('Loading Fashion-MNIST data... ', end = '', flush = True)
+    img_rows, img_cols, img_channels = 28, 28, 1
+    (x_train, y_train), (x_test, y_test) = fashion_mnist.load_data()
+    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
+    x_test = x_test.astype('float32') / 255.
+    test_data = raw_datat(x_test, y_test, 'fashion_mnist')
+    x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, img_channels)
+    x_train = x_train.astype('float32') / 255.
+    train_data = raw_datat(x_train, y_train, 'fashion_mnist')
+    print ('done.')
+  elif args.dataset == 'cifar10':
     from tensorflow.keras.datasets import cifar10
     print ('Loading CIFAR10 data... ', end='', flush = True)
     img_rows, img_cols, img_channels = 32, 32, 3
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-    x_test = x_test[0:3000]             # select only a few...
+    # x_test, x_train = x_test[:3000], x_train[:3000]             # select only a few...
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
     x_test = x_test.astype('float32') / 255.
-    test_data = raw_datat(x_test, y_test[0:3000], 'cifar10')
+    test_data = raw_datat(x_test, y_test, 'cifar10')
     x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, img_channels)
     x_train = x_train.astype('float32') / 255.
     train_data = raw_datat(x_train, y_train, 'cifar10')
     print ('done.')
   else:
-    print (' \n == Please input dataset == \n')
-    sys.exit(0)
+    sys.exit ('Missing input dataset')
 
   outs=None
   if args.outputs!='-1':
@@ -206,21 +213,21 @@ def main():
       test_object.feature_indices=[]
       test_object.feature_indices.append(int(args.feature_index))
       print ('feature index specified:', test_object.feature_indices)
-  if args.training_data!='-1':          # NB: never actually used
-    tdata=[]
-    print ('To load the extra training data...')
-    for path, subdirs, files in os.walk(args.training_data):
-      for name in files:
-        fname=(os.path.join(path, name))
-        if fname.endswith('.jpg') or fname.endswith('.png'):
-          try:
-            image = cv2.imread(fname)
-            image = cv2.resize(image, (img_rows, img_cols))
-            image=image.astype('float')
-            tdata.append((image))
-          except: pass
-    print ('The extra training data loaded: ', len(tdata))
-    # test_object.training_data=tdata
+  # if args.training_data!='-1':          # NB: never actually used
+  #   tdata=[]
+  #   print ('To load the extra training data...')
+  #   for path, subdirs, files in os.walk(args.training_data):
+  #     for name in files:
+  #       fname=(os.path.join(path, name))
+  #       if fname.endswith('.jpg') or fname.endswith('.png'):
+  #         try:
+  #           image = cv2.imread(fname)
+  #           image = cv2.resize(image, (img_rows, img_cols))
+  #           image=image.astype('float')
+  #           tdata.append((image))
+  #         except: pass
+  #   print ('The extra training data loaded: ', len(tdata))
+  #   # test_object.training_data=tdata
 
   if args.labels!='-1':             # NB: only used in run_scc.run_svc
     labels=[]
