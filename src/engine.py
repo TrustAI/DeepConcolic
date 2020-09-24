@@ -74,9 +74,10 @@ class TestTarget:
   '''
 
   @abstractmethod
-  def cover(self) -> None:
+  def cover(self, acts) -> None:
     '''
-    Record that the target has been covered.
+    Record that the target has been covered by the given set of
+    activations.
     '''
     raise NotImplementedError
 
@@ -403,18 +404,27 @@ class Criterion:
 
 
   # final as well
-  def add_new_test_cases(self, tl: Sequence[Input]) -> None:
+  def add_new_test_cases(self, tl: Sequence[Input],
+                         covered_target: TestTarget = None) -> None:
     """
     As its name says, this method adds a given series of inputs into
-    the set of test cases.  It then calls :meth:`update_coverage`.
+    the set of test cases.  It then calls :meth:`register_new_activations`.
     """
     tp1 ('Adding {} test case{}'.format (len (tl), 's' if len (tl) > 1 else ''))
     self.test_cases.extend (tl)
-    self.update_coverage (tl)
+    for acts in self._batched_activations (tl, allow_input_layer = True):
+      if covered_target is not None:
+        covered_target.cover (acts)
+      self.register_new_activations (acts)
+
+  def _batched_activations(self, tl: Sequence[Input], **kwds):
+    batches = np.array_split (tl, len (tl) // 1000 + 1)
+    for batch in batches:
+      yield (self.analyzer.eval_batch (batch, **kwds))
 
 
   @abstractmethod
-  def update_coverage(self, tl: Sequence[Input]) -> None:
+  def register_new_activations(self, acts) -> None:
     """
     Method called whenever new test cases are registered.  Overload
     this method to update coverage.
@@ -754,8 +764,7 @@ class Engine:
           close_enough = filter.close_to (self.ref_data.data if origin is None else
                                           [criterion.test_cases[origin[x0]]], x1)
           if close_enough:
-            target.cover ()
-            criterion.add_new_test_cases ([x1])
+            criterion.add_new_test_cases ([x1], covered_target = target)
             if origin is not None:
               origin[x1] = origin[x0]
             coverage = criterion.coverage ()
@@ -1005,15 +1014,15 @@ class BoolMappedCoverableLayer (CoverableLayer):
     return pos, acts.item (spos)
 
 
-  def cover(self, pos) -> None:
+  def cover_neuron(self, pos) -> None:
     self.map[pos] = False
 
 
   def inhibit_activation(self, pos) -> None:
     '''
     Inhibit any activation at the given position so that it is not
-    returned by any direct subsequent call to `find` (i.e not
-    precededed by a call to `update_with_new_activations`).
+    returned by any direct subsequent call to `find` (i.e not preceded
+    by a call to `update_with_new_activations`).
     '''
     act = self.activations
     while len(pos) != 1:
@@ -1022,15 +1031,15 @@ class BoolMappedCoverableLayer (CoverableLayer):
     act[pos] = self.bottom_act_value
 
 
-  def update_with_new_activations(self, act) -> None:
-    act = copy.copy (act[self.layer_index])
-    assert len (act) == 1
-    # Keep only negative new activation values:
-    # TODO: parameterize this (ditto bottom_act_value)
-    act[act >= 0] = 0
-    self.map = np.logical_and (self.map, act[0])
-    # Append activations after map change
-    self._append_activations (act)
+  def update_with_new_activations(self, acts) -> None:
+    for act in acts[self.layer_index]:
+      act = np.array([copy.copy(act)])
+      # Keep only negative new activation values:
+      # TODO: parameterize this (ditto bottom_act_value)
+      act[act >= 0] = 0
+      self.map = np.logical_and (self.map, act[0])
+      # Append activations after map change
+      self._append_activations (act)
 
 
   def _append_activations(self, act):
@@ -1148,20 +1157,18 @@ class LayerLocalCriterion (Criterion):
   # ---
 
 
-  def update_coverage (self, tl: Sequence[Input]):
+  def register_new_activations(self, acts):
     """
     Register new test cases
     """
-    for t in tl:
-      acts = self.analyzer.eval (t, allow_input_layer = True)
-      for cl in self._updatable_layers:
-        cl.update_with_new_activations (acts)
+    for cl in self._updatable_layers:
+      cl.update_with_new_activations (acts)
 
 
   def get_max(self) -> Tuple[BoolMappedCoverableLayer, Tuple[int, ...], float, Input]:
     '''
     '''
-    layer, pos, value = None, None, MIN
+    layer, pos, value = None, None, -np.inf
     for i, cl in enumerate(self.cover_layers):
       p, v = cl.find (np.argmax)
       v *= cl.pfactor
