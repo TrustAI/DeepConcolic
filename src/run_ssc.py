@@ -13,12 +13,8 @@ from tensorflow.keras import *
 from utils import *
 from ssc import *
 
-try:
-  from art.attacks.fast_gradient import FastGradientMethod
-  from art.classifiers import KerasClassifier
-except:
-  pass
-
+from art.attacks.evasion import FastGradientMethod
+from art.estimators.classification import KerasClassifier
 
 # def run_ssc(test_object, outs):
 #   f_results, cover_layers, _ = ssc_setup (test_object, outs)

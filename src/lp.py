@@ -150,7 +150,7 @@ class PulpSolver4DNN (LpSolver4DNN):
     available_solvers = list_solvers (onlyAvailable = True)
     print ('PuLP: Available solvers: {}.'.format (', '.join (available_solvers)))
     args = { 'timeLimit': time_limit,
-             'timelimit': time_limit,
+             # 'timelimit': time_limit,
              # 'maxSeconds': time_limit,
              'mip': False, 'msg': False }
     for solver in try_solvers:

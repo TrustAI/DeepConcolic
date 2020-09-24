@@ -90,11 +90,13 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
 
     elif is_conv_layer(layer):
       idx = gen_vars(idx, layer.output.shape, var_names)
+      self.u_var_names = var_names[-1]
       if activation_is_relu (layer):    # 'conv+relu'
         idx = gen_vars(idx, layer.output.shape, var_names)
 
     elif is_dense_layer(layer):
       idx = gen_vars(idx, layer.output.shape, var_names)
+      self.u_var_names = var_names[-1]
       if activation_is_relu (layer):    # 'dense+relu'
         idx = gen_vars(idx, layer.output.shape, var_names)
 
@@ -137,11 +139,12 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
       pass
 
     elif is_conv_layer(layer):
+      u_vars = self.u_var_names
       weights = layer.get_weights ()[0]
       biases = layer.get_weights ()[1]
-      for nidx in np.ndindex (osp):
-        out_var = self.output_var_names[nidx]
-        affine_expr = [(out_var, -1)]
+      for nidx in np.ndindex (u_vars.shape):
+        u_var = u_vars[nidx]
+        affine_expr = [(u_var, -1)]
         for kidx in np.ndindex(layer.kernel_size):
           for KK in range(0, weights.shape[-1]):
             try:
@@ -152,23 +155,24 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
               pass
         base_prob += LpConstraint(LpAffineExpression(affine_expr),
                                   LpConstraintEQ,
-                                  'c_name_{0}'.format(out_var),
+                                  'c_name_{0}'.format(u_var),
                                   -float(biases[nidx[-1]]))
- 
+
       if activation_is_relu (layer):
         base_prob_dict[self.layer_index] = base_prob.copy()
 
     elif is_dense_layer(layer):
+      u_vars = self.u_var_names
       weights = layer.get_weights ()[0]
       biases = layer.get_weights ()[1]
-      for nidx in np.ndindex(osp):
-        out_var = self.output_var_names[nidx]
-        affine_expr = [(out_var, -1)]
+      for nidx in np.ndindex(u_vars.shape):
+        u_var = u_vars[nidx]
+        affine_expr = [(u_var, -1)]
         for II in range(0, isp[-1]):
           affine_expr.append((in_exprs[0][II], float(weights[II][nidx[-1]])))
         base_prob += LpConstraint(LpAffineExpression(affine_expr),
                                   LpConstraintEQ,
-                                  'c_name_{0}'.format(out_var),
+                                  'c_name_{0}'.format(u_var),
                                   -float(biases[nidx[-1]]))
 
       if activation_is_relu (layer):
@@ -184,7 +188,7 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
     elif is_maxpooling_layer(layer):
       pass
 
-    elif is_activation_layer (layer):   # Assuming ReLU activation
+    elif is_activation_layer(layer):    # Assuming ReLU activation
       base_prob_dict[self.layer_index] = base_prob.copy()
 
     else:
@@ -194,31 +198,34 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
   def pulp_replicate_activations(self, ap_x, prev: PulpLayerOutput,
                                  exclude = (lambda _: False)) -> Sequence[LpConstraint]:
     layer = self.layer
-    if (is_conv_layer (layer) and not activation_is_relu (layer) or
-        is_dense_layer (layer) and not activation_is_relu (layer) or
-        is_input_layer (layer) or
-        is_flatten_layer (layer)):
-      return []                         # skip
+    if is_input_layer (layer) or is_flatten_layer (layer):
+      return []
+    # assert not is_input_layer (layer)
+    # assert not is_flatten_layer (layer)
 
-    out_vars = self.output_var_names
-    in_exprs = prev.pulp_out_exprs ()
-    osp = out_vars.shape
+    u_exprs = prev.pulp_out_exprs ()
+    v_vars = self.output_var_names
+    v_sp = v_vars.shape
     cstrs = []
 
     if (is_conv_layer (layer) or is_dense_layer (layer) or is_activation_layer (layer)):
-      for oidx in np.ndindex (osp):
+      constrain_output = not (is_conv_layer (layer) and not activation_is_relu (layer) or
+                              is_dense_layer (layer) and not activation_is_relu (layer))
+      u_exprs = u_exprs if is_activation_layer (layer) else self.u_var_names
+      v_vars = v_vars if constrain_output else None
+      v_idx = self.layer_index - 1 if is_activation_layer (layer) else self.layer_index
+      for oidx in np.ndindex (v_sp):
         if exclude (oidx): continue
-        cstrs.extend (same_act (self.layer_index, out_vars, in_exprs, oidx,
-                                ap_x[self.layer_index]))
+        cstrs.extend (same_act (self.layer_index, v_vars, u_exprs, oidx, ap_x[v_idx]))
 
     elif is_maxpooling_layer (layer):
       # XXX: ignoreing oidx here...
       pool_size = layer.pool_size
-      for oidx in np.ndindex (osp):
+      for oidx in np.ndindex (v_vars.shape):
         for II in range(oidx[0] * pool_size[0], (oidx[0] + 1) * pool_size[0]):
           for JJ in range(oidx[1] * pool_size[1], (oidx[1] + 1) * pool_size[1]):
-            c = LpAffineExpression([(out_vars[0][oidx[0]][oidx[1]][oidx[2]], +1),
-                                    (in_exprs[0][II][JJ][oidx[2]], -1)])
+            c = LpAffineExpression([(v_vars[0][oidx[0]][oidx[1]][oidx[2]], +1),
+                                    (u_exprs[0][II][JJ][oidx[2]], -1)])
             cname = '_'.join(str(i) for i in ("mpcr__", self.layer_index, ) + oidx + (II, JJ,))
             cstrs.append(LpConstraint(c, LpConstraintGE, cname, 0.))
 
@@ -233,33 +240,32 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
     layer = self.layer
     assert not is_input_layer (layer)
     assert not is_flatten_layer (layer)
-    if (is_conv_layer (layer) and not activation_is_relu (layer) or
-        is_dense_layer (layer) and not activation_is_relu (layer)):
-      return []                         # skip
 
-    in_exprs = prev.pulp_out_exprs ()
-    out_vars = self.output_var_names
-    osp = out_vars.shape
+    u_exprs = prev.pulp_out_exprs ()
+    v_vars = self.output_var_names
     cstrs = []
 
-    if (is_conv_layer (layer) or is_dense_layer (layer) or
-        is_activation_layer (layer)):
-      cstrs.extend (neg_act (self.layer_index, out_vars, in_exprs, oidx,
-                             ap_x[self.layer_index]))
+    if (is_conv_layer (layer) or is_dense_layer (layer) or is_activation_layer (layer)):
+      constrain_output = not (is_conv_layer (layer) and not activation_is_relu (layer) or
+                              is_dense_layer (layer) and not activation_is_relu (layer))
+      u_exprs = u_exprs if is_activation_layer (layer) else self.u_var_names
+      v_vars = v_vars if constrain_output else None
+      v_idx = self.layer_index - 1 if is_activation_layer (layer) else self.layer_index
+      cstrs.extend (neg_act (self.layer_index, v_vars, u_exprs, oidx, ap_x[v_idx]))
 
     elif is_maxpooling_layer (layer):
       # XXX: Ignoring oidx and constrain activation of max.
       pool_size = layer.pool_size
       max_found = False
-      for oidx in np.ndindex (osp):
+      for oidx in np.ndindex (v_vars.shape):
         for II in range(oidx[0] * pool_size[0], (oidx[0] + 1) * pool_size[0]):
           for JJ in range(oidx[1] * pool_size[1], (oidx[1] + 1) * pool_size[1]):
             if not max_found and (ap_x[self.layer_index][0][oidx[0]][oidx[1]][oidx[2]] ==
                                   ap_x[self.layer_index - 1][0][II][JJ][oidx[2]]):
               max_found = True
               cname = '_'.join(str(i) for i in ("mpcn__", self.layer_index, ) + oidx + (II, JJ,))
-              c = LpAffineExpression([(out_vars[0][oidx[0]][oidx[1]][oidx[2]], +1),
-                                      (in_exprs[0][II][JJ][oidx[2]], -1)])
+              c = LpAffineExpression([(v_vars[0][oidx[0]][oidx[1]][oidx[2]], +1),
+                                      (u_exprs[0][II][JJ][oidx[2]], -1)])
               cstrs.append(LpConstraint(c, LpConstraintEQ, cname, 0.))
 
     else:
@@ -488,76 +494,74 @@ def gen_vars(layer_index, sp, var_names, flatten = False):
 
 # ---
 
-def same_act (base_name, out_vars, in_exprs, idx, ap_x):
+def same_act (base_name, v_vars, u_exprs, pos, ap_x):
   """
   Returns a set of constraints that reproduces the activation pattern
-  `ap_x` at neuron `idx`, based on:
+  `ap_x` at position `pos` ((0,) + neuron), based on:
 
-  - pulp variables `out_vars` that encode neuron outputs; and
+  - pulp variables `v_vars` that encode neuron outputs; and
 
-  - pulp expressions `in_exprs` that encode the inputs of each neuron.
+  - pulp expressions `u_exprs` that encode the pre-activation value of
+    each neuron.
   """
 
-  cname = '_'.join(str(i) for i in ("sa__", base_name, ) + idx)
+  cname = '_'.join(str(i) for i in ("sa__", base_name, ) + pos)
 
-  if ap_x [idx] > 0:
-    return [
-      LpConstraint (LpAffineExpression ([(out_vars[idx], +1), (in_exprs[idx], -1)]),
-                    LpConstraintEQ, cname + '_eq', 0.),
-      LpConstraint (LpAffineExpression ([(in_exprs[idx], +1)]),
-                    LpConstraintGE, cname + '_ge', epsilon)
-    ]
+  if ap_x [pos] >= 0:
+    x  = [ LpConstraint (LpAffineExpression ([(v_vars[pos], +1), (u_exprs[pos], -1)]),
+                        LpConstraintEQ, cname + '_eq', 0.) ] if v_vars is not None else []
+    x += [ LpConstraint (LpAffineExpression ([(u_exprs[pos], +1)]),
+                         LpConstraintGE, cname + '_ge', epsilon)]
+    return x
   else:
-    return [
-      LpConstraint (LpAffineExpression ([(out_vars[idx], +1)]),
-                    LpConstraintEQ, cname + '_eq', 0.),
-      LpConstraint (LpAffineExpression ([(in_exprs[idx], +1)]),
-                    LpConstraintLE, cname + '_le', -epsilon)
-    ]
+    x  = [ LpConstraint (LpAffineExpression ([(v_vars[pos], +1)]),
+                         LpConstraintEQ, cname + '_eq', 0.) ] if v_vars is not None else []
+    x += [ LpConstraint (LpAffineExpression ([(u_exprs[pos], +1)]),
+                         LpConstraintLE, cname + '_le', -epsilon) ]
+    return x
 
-
-def neg_act (base_name, out_vars, in_exprs, idx, ap_x):
+def neg_act (base_name, v_vars, u_exprs, pos, ap_x):
   """
   Returns a set of constraints that negates the activation pattern
-  `ap_x` at neuron `idx`, based on:
+  `ap_x` at position `pos` ((0,) + neuron), based on:
 
-  - pulp variables `out_vars` that encode neuron outputs; and
+  - pulp variables `v_vars` that encode neuron outputs; and
 
-  - pulp expressions `in_exprs` that encode the inputs of each neuron.
+  - pulp expressions `u_exprs` that encode the pre-activation value of
+    each neuron.
   """
 
-  cname = '_'.join(str(i) for i in ("na__", base_name, ) + idx)
+  cname = '_'.join(str(i) for i in ("na__", base_name, ) + pos)
 
-  if not (ap_x [idx] > 0):
-    return [
-      LpConstraint (LpAffineExpression ([(out_vars[idx], +1), (in_exprs[idx], -1)]),
-                    LpConstraintEQ, cname + '_eq', 0.),
-      LpConstraint (LpAffineExpression ([(in_exprs[idx], +1)]),
-                    LpConstraintGE, cname + '_ge', epsilon)
-    ]
+  # print (pos, u_exprs[pos], v_vars[pos] if v_vars is not None else None, ap_x [pos])
+  if ap_x [pos] < 0:
+    x = [ LpConstraint (LpAffineExpression ([(v_vars[pos], +1), (u_exprs[pos], -1)]),
+                        LpConstraintEQ, cname + '_eq', 0.) ] if v_vars is not None else []
+    x += [ LpConstraint (LpAffineExpression ([(u_exprs[pos], +1)]),
+                         LpConstraintGE, cname + '_ge', epsilon) ]
+    return x
   else:
-    return [
-      LpConstraint (LpAffineExpression ([(out_vars[idx], +1)]),
-                    LpConstraintEQ, cname + '_eq', 0.),
-      LpConstraint (LpAffineExpression ([(in_exprs[idx], +1)]),
-                    LpConstraintLE, cname + '_le', -epsilon)
-    ]
+    x = [ LpConstraint (LpAffineExpression ([(v_vars[pos], +1)]),
+                        LpConstraintEQ, cname + '_eq', 0.) ] if v_vars is not None else []
+    x += [ LpConstraint (LpAffineExpression ([(u_exprs[pos], +1)]),
+                         LpConstraintLE, cname + '_le', -epsilon) ]
+    return x
 
 # Those are now just aliases:
 
-def build_conv_constraint(base_name, out_vars, in_exprs, idx, ap_x):
+def build_conv_constraint(base_name, v_vars, u_exprs, pos, ap_x):
   """Alias for :func:`same_act`"""
-  return same_act (base_name, out_vars, in_exprs, idx, ap_x)
+  return same_act (base_name, v_vars, u_exprs, pos, ap_x)
 
-def build_dense_constraint(base_name, out_vars, in_exprs, idx, ap_x):
+def build_dense_constraint(base_name, v_vars, u_exprs, pos, ap_x):
   """Alias for :func:`same_act`"""
-  return same_act (base_name, out_vars, in_exprs, idx, ap_x)
+  return same_act (base_name, v_vars, u_exprs, pos, ap_x)
 
-def build_conv_constraint_neg(base_name, out_vars, in_exprs, idx, ap_x):
+def build_conv_constraint_neg(base_name, v_vars, u_exprs, pos, ap_x):
   """Alias for :func:`neg_act`"""
-  return neg_act (base_name, out_vars, in_exprs, idx, ap_x)
+  return neg_act (base_name, v_vars, u_exprs, pos, ap_x)
 
-def build_dense_constraint_neg(base_name, out_vars, in_exprs, idx, ap_x):
+def build_dense_constraint_neg(base_name, v_vars, u_exprs, pos, ap_x):
   """Alias for :func:`neg_act`"""
-  return neg_act (base_name, out_vars, in_exprs, idx, ap_x)
+  return neg_act (base_name, v_vars, u_exprs, pos, ap_x)
   

@@ -73,8 +73,6 @@ class NcCriterion (LayerLocalCriterion, Criterion4RootedSearch):
 
   def find_next_rooted_test_target(self) -> Tuple[Input, NcTarget]:
     cl, nc_pos, nc_value, test_case = self.get_max ()
-    # ppos = (lambda p: p if len(p) > 1 else p[0])(nc_pos[2:])
-    # p1 ('Targeting activation of {} in {} (value = {})'.format(ppos, cl, nc_value))
     cl.inhibit_activation (nc_pos)
     return test_case, NcTarget(cl, nc_pos[1:])
 

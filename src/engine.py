@@ -412,13 +412,13 @@ class Criterion:
     """
     tp1 ('Adding {} test case{}'.format (len (tl), 's' if len (tl) > 1 else ''))
     self.test_cases.extend (tl)
-    for acts in self._batched_activations (tl, allow_input_layer = True):
+    for acts in self._batched_activations (tl, allow_input_layer = False):
       if covered_target is not None:
         covered_target.cover (acts)
       self.register_new_activations (acts)
 
   def _batched_activations(self, tl: Sequence[Input], **kwds):
-    batches = np.array_split (tl, len (tl) // 1000 + 1)
+    batches = np.array_split (tl, len (tl) // 100 + 1)
     for batch in batches:
       yield (self.analyzer.eval_batch (batch, **kwds))
 
@@ -449,7 +449,7 @@ class Criterion:
     '''
     if self.rooted_search:
       x0, target = self.find_next_rooted_test_target ()
-      tp1 ('| Targeting {}'.format(target))
+      p1 ('| Targeting {}'.format(target))
       x1_attempt = self.analyzer.search_input_close_to (x0, target)
       if x1_attempt == None:
         return None, target
@@ -458,7 +458,7 @@ class Criterion:
         return (x0, x1, d), target
     else:
       target = self.find_next_test_target ()
-      tp1 ('| Targeting {}'.format(target))
+      p1 ('| Targeting {}'.format(target))
       attempt = self.analyzer.search_close_inputs (target)
       if attempt == None:
         return None, target
@@ -1040,7 +1040,7 @@ class BoolMappedCoverableLayer (CoverableLayer):
       self.map = np.logical_and (self.map, act[0])
       # Append activations after map change
       self._append_activations (act)
-
+    
 
   def _append_activations(self, act):
     '''
@@ -1198,7 +1198,7 @@ class LayerLocalCriterion (Criterion):
           pos += 1
         if pos < tot_s and cl.map.item(pos):
           break
-    return cl, np.unravel_index(pos, cl.map.shape)
+    return cl, (0,) + np.unravel_index(pos, cl.map.shape)
 
 
 # ---

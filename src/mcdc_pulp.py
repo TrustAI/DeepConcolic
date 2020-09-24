@@ -32,13 +32,11 @@ class SScPulpAnalyzer (SScAnalyzer4RootedSearch, LayerLocalAnalyzer, PulpSolver4
 
 
   def search_input_close_to(self, x: Input, target: SScTarget) -> Optional[Tuple[float, Any, Any]]:
-    activations = eval_batch (self.dnn, np.array([x]))
-
-    dec_layer, dec_pos, dec_neuron, cond_layer, cond_pos, cond_neuron = (
-      target.decision_layer, target.decision_position, target.decision_neuron,
-      target.condition_layer, target.condition_position, target.condition_neuron)
+    activations = self.eval (x)
+    dec_layer, dec_pos = target.decision_layer, target.decision_position
+    cond_layer, cond_pos = target.condition_layer, target.condition_position
     assert cond_layer is not None
-    
+
     problem = self.for_layer (dec_layer)
     cstrs = []
 
@@ -47,13 +45,13 @@ class SScPulpAnalyzer (SScAnalyzer4RootedSearch, LayerLocalAnalyzer, PulpSolver4
     prev = self.input_layer_encoder
     for lc in self.layer_encoders:
       if lc.layer_index < cond_layer.layer_index: # < k
-        cstrs.extend(lc.pulp_replicate_activations (problem, activations, prev))
+        cstrs.extend(lc.pulp_replicate_activations (activations, prev))
       elif lc.layer_index == cond_layer.layer_index: # == k
-        cstrs.extend(lc.pulp_replicate_activations (problem, activations, prev,
-                                                    exclude = (lambda nidx: nidx == cond_neuron)))
-        cstrs.extend(lc.pulp_negate_activation (problem, activations, cond_neuron, prev))
+        cstrs.extend(lc.pulp_replicate_activations (\
+          activations, prev, exclude = (lambda nidx: nidx == cond_pos)))
+        cstrs.extend(lc.pulp_negate_activation (activations, cond_pos, prev))
       elif lc.layer_index == dec_layer.layer_index:  # == k + 1
-        cstrs.extend(lc.pulp_negate_activation (problem, activations, dec_neuron, prev))
+        cstrs.extend(lc.pulp_negate_activation (activations, dec_pos, prev))
         break
       prev = lc
 
