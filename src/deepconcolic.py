@@ -3,11 +3,12 @@ import sys
 import os
 import cv2
 import yaml
+import datasets
 from utils import *
 from deepconcolic_fuzz import deepconcolic_fuzz
 
 def deepconcolic(criterion, norm, test_object, report_args, engine_args = {},
-                 dbnc_spec = {}):
+                 dbnc_spec = {}, **engine_run_args):
   engine = None
   if criterion=='nc':                   ## neuron cover
     from nc import setup as nc_setup
@@ -15,11 +16,13 @@ def deepconcolic(criterion, norm, test_object, report_args, engine_args = {},
       from pulp_norms import LInfPulp
       from nc_pulp import NcPulpAnalyzer
       engine = nc_setup (test_object = test_object,
+                         engine_args = engine_args,
                          setup_analyzer = NcPulpAnalyzer,
                          input_metric = LInfPulp ())
     elif norm=='l0':
       from nc_l0 import NcL0Analyzer
       engine = nc_setup (test_object = test_object,
+                         engine_args = engine_args,
                          setup_analyzer = NcL0Analyzer,
                          input_shape = test_object.raw_data.data[0].shape,
                          eval_batch = eval_batch_func (test_object.dnn))
@@ -60,6 +63,7 @@ def deepconcolic(criterion, norm, test_object, report_args, engine_args = {},
   elif criterion=='ssc':
     from ssc import SScGANBasedAnalyzer, setup as ssc_setup
     engine = ssc_setup (test_object = test_object,
+                        engine_args = engine_args,
                         setup_analyzer = SScGANBasedAnalyzer,
                         ref_data = test_object.raw_data)
   elif criterion=='ssclp':
@@ -67,19 +71,19 @@ def deepconcolic(criterion, norm, test_object, report_args, engine_args = {},
     from mcdc_pulp import SScPulpAnalyzer
     from ssc import setup as ssc_setup
     engine = ssc_setup (test_object = test_object,
+                        engine_args = engine_args,
                         setup_analyzer = SScPulpAnalyzer,
                         input_metric = LInfPulp ())
   elif criterion=='svc':
-    outs = setup_output_dir (report_args['outs'])
     from run_ssc import run_svc
     print('\n== Starting DeepConcolic tests for {0} =='.format (test_object))
-    run_svc(test_object, report_args['outs'])
+    run_svc(test_object, report_args['outdir'].path)
   else:
     print('\n not supported coverage criterion... {0}\n'.format(criterion))
     sys.exit(0)
 
   if engine != None:
-    engine.run (**engine_args, **report_args)
+    engine.run (**report_args, **engine_run_args)
 
 
 def main():
@@ -91,18 +95,16 @@ def main():
                       help="the input test data directory", metavar="DIR")
   parser.add_argument("--outputs", dest="outputs", default="-1",
                       help="the outputput test data directory", metavar="DIR")
-  parser.add_argument("--training-data", dest="training_data", default="-1",
-                      help="the extra training dataset", metavar="DIR")
+  # parser.add_argument("--training-data", dest="training_data", default="-1",
+  #                     help="the extra training dataset", metavar="DIR")
   parser.add_argument("--criterion", dest="criterion", default="nc",
                       help="the test criterion", metavar="nc, ssc...")
   parser.add_argument("--init", dest="init_tests", metavar="INT",
                       help="number of test samples to initialize the engine")
   parser.add_argument("--labels", dest="labels", default="-1",
                       help="the default labels", metavar="FILE")
-  parser.add_argument("--mnist-dataset", dest="mnist",
-                      help="MNIST dataset", action="store_true")
-  parser.add_argument("--cifar10-dataset", dest="cifar10",
-                      help="CIFAR-10 dataset", action="store_true")
+  parser.add_argument("--dataset", dest='dataset',
+                      help="selected dataset", choices=datasets.choices)
   parser.add_argument("--vgg16-model", dest='vgg16',
                       help="vgg16 model", action="store_true")
   parser.add_argument("--norm", dest="norm", default="l0",
@@ -153,7 +155,7 @@ def main():
   inp_ub = 1
   save_input = None
   if args.fuzzing:
-      pass
+    pass
   elif args.model!='-1':
     dnn = keras.models.load_model (args.model)
     dnn.summary()
@@ -164,8 +166,7 @@ def main():
     dnn.summary()
     save_input = save_an_image
   else:
-    print (' \n == Please specify the input neural network == \n')
-    sys.exit(0)
+    sys.exit ('Missing input neural network')
 
   # fuzzing_params
   if args.inputs!='-1':
@@ -187,36 +188,15 @@ def main():
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
     test_data = raw_datat(x_test, None)
     print (len(xs), 'loaded.')
-  elif args.mnist:
-    from tensorflow.keras.datasets import mnist
-    print ('Loading MNIST data... ', end = '', flush = True)
-    img_rows, img_cols, img_channels = 28, 28, 1
-    (x_train, y_train), (x_test, y_test) = mnist.load_data()
-    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
-    x_test = x_test.astype('float32')
-    x_test /= 255
-    test_data = raw_datat(x_test, y_test, 'mnist')
-    x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, img_channels)
-    x_train = x_train.astype('float32')
-    x_train /= 255
-    train_data = raw_datat(x_train, y_train, 'mnist')
-    print ('done.')
-  elif args.cifar10:
-    from tensorflow.keras.datasets import cifar10
-    print ('Loading CIFAR10 data... ', end='', flush = True)
-    img_rows, img_cols, img_channels = 32, 32, 3
-    (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-    x_test = x_test[0:3000]             # select only a few...
-    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
-    x_test = x_test.astype('float32')  / 255.
-    test_data = raw_datat(x_test, y_test[0:3000], 'cifar10')
-    x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, img_channels)
-    x_train = x_train.astype('float32') / 255.
-    train_data = raw_datat(x_train, y_train, 'cifar10')
+  elif args.dataset in datasets.choices:
+    print ('Loading {} dataset... '.format (args.dataset), end = '', flush = True)
+    (x_train, y_train), (x_test, y_test), \
+    (img_rows, img_cols, img_channels), _ = datasets.load_by_name (args.dataset)
+    test_data = raw_datat(x_test, y_test, args.dataset)
+    train_data = raw_datat(x_train, y_train, args.dataset)
     print ('done.')
   else:
-    print (' \n == Please input dataset == \n')
-    sys.exit(0)
+    sys.exit ('Missing input dataset')
 
   outs=None
   if args.outputs!='-1':
@@ -241,21 +221,21 @@ def main():
       test_object.feature_indices=[]
       test_object.feature_indices.append(int(args.feature_index))
       print ('feature index specified:', test_object.feature_indices)
-  if args.training_data!='-1':          # NB: never actually used
-    tdata=[]
-    print ('To load the extra training data...')
-    for path, subdirs, files in os.walk(args.training_data):
-      for name in files:
-        fname=(os.path.join(path, name))
-        if fname.endswith('.jpg') or fname.endswith('.png'):
-          try:
-            image = cv2.imread(fname)
-            image = cv2.resize(image, (img_rows, img_cols))
-            image=image.astype('float')
-            tdata.append((image))
-          except: pass
-    print ('The extra training data loaded: ', len(tdata))
-    # test_object.training_data=tdata
+  # if args.training_data!='-1':          # NB: never actually used
+  #   tdata=[]
+  #   print ('To load the extra training data...')
+  #   for path, subdirs, files in os.walk(args.training_data):
+  #     for name in files:
+  #       fname=(os.path.join(path, name))
+  #       if fname.endswith('.jpg') or fname.endswith('.png'):
+  #         try:
+  #           image = cv2.imread(fname)
+  #           image = cv2.resize(image, (img_rows, img_cols))
+  #           image=image.astype('float')
+  #           tdata.append((image))
+  #         except: pass
+  #   print ('The extra training data loaded: ', len(tdata))
+  #   # test_object.training_data=tdata
 
   if args.labels!='-1':             # NB: only used in run_scc.run_svc
     labels=[]
@@ -287,12 +267,13 @@ def main():
   test_object.check_layer_indices (criterion)
 
   deepconcolic (criterion, norm, test_object,
-                report_args = { 'save_input_func': save_input,
-                                'inp_ub': inp_ub,
-                                'outs': outs },
-                engine_args = { 'initial_test_cases': init_tests,
-                                'max_iterations': None },
-                dbnc_spec = dbnc_spec)
+                report_args = { 'outdir': OutputDir (outs, log = True),
+                                'save_new_tests': True,
+                                'save_input_func': save_input,
+                                'inp_ub': inp_ub },
+                dbnc_spec = dbnc_spec,
+                initial_test_cases = init_tests,
+                max_iterations = None)
 
 if __name__=="__main__":
   try:

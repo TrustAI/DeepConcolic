@@ -41,7 +41,7 @@ def local_search(eval_batch, local_input, ssc_pair, adv_crafter, e_max_input, ss
     adv_cond_flags[adv_cond_flags<=0]=0
     adv_cond_flags=adv_cond_flags.astype(bool)
     adv_dec_flag=None
-    if adv_acts[ssc_pair.dec_layer.layer_index][0].item(ssc_pair.dec_pos)>0:
+    if adv_acts[ssc_pair.dec_layer.layer_index][ssc_pair.dec_pos]>0:
       adv_dec_flag=True
     else:
       adv_dec_flag=False
@@ -73,13 +73,13 @@ def local_search(eval_batch, local_input, ssc_pair, adv_crafter, e_max_input, ss
 
 def ssc_search(eval_batch, raw_data, cond_ratio, cond_layer, dec_layer, dec_pos, adv_crafter, adv_object=None):
 
-  tensorflow.keras.backend.set_learning_phase(False)
+  tf.keras.backend.set_learning_phase(False)
   try:
-    sess = tensorflow.compat.v1.Session ()
-    sess.run(tensorflow.compat.v1.global_variables_initializer())
+    sess = tf.compat.v1.Session ()
+    sess.run(tf.compat.v1.global_variables_initializer())
   except:
-    sess = tensorflow.keras.backend.get_session()
-    sess.run(tensorflow.global_variables_initializer())
+    sess = tf.keras.backend.get_session()
+    sess.run(tf.global_variables_initializer())
 
   data = raw_data.data
   labels = raw_data.labels
@@ -109,8 +109,8 @@ def ssc_search(eval_batch, raw_data, cond_ratio, cond_layer, dec_layer, dec_pos,
       adv_inp_vect=np.clip(adv_inp_vect, adv_object.lb_v, adv_object.max_v)
     acts = eval_batch (inp_vect, allow_input_layer = True)
     adv_acts = eval_batch (adv_inp_vect, allow_input_layer = True)
-    dec1=(acts[dec_layer.layer_index][0].item(dec_pos))
-    dec2=(adv_acts[dec_layer.layer_index][0].item(dec_pos))
+    dec1=(acts[dec_layer.layer_index][dec_pos])
+    dec2=(adv_acts[dec_layer.layer_index][dec_pos])
     if not np.logical_xor(dec1>0, dec2>0): continue
 
     count+=1
@@ -118,7 +118,7 @@ def ssc_search(eval_batch, raw_data, cond_ratio, cond_layer, dec_layer, dec_pos,
     cond_flags=acts[dec_layer.prev_layer_index][0]
     cond_flags[cond_flags<=0]=0
     cond_flags=cond_flags.astype(bool)
-    ssc_pair = ssc_pairt(cond_flags, acts[dec_layer.layer_index][0].item(dec_pos)>0, None, cond_layer, dec_layer, dec_pos)
+    ssc_pair = ssc_pairt(cond_flags, acts[dec_layer.layer_index][dec_pos]>0, None, cond_layer, dec_layer, dec_pos)
 
     diff, x_ret, diff_map_ret = local_search(eval_batch, data[i], ssc_pair, adv_crafter, e_max_input, ssc_ratio)
 
@@ -162,7 +162,7 @@ def local_v_search(dnn, local_input, ssc_pair, adv_crafter, e_max_input, ssc_rat
     adv_cond_flags[adv_cond_flags<=0]=0
     adv_cond_flags=adv_cond_flags.astype(bool)
     found=False
-    if adv_acts[ssc_pair.dec_layer.layer_index][0].item(ssc_pair.dec_pos)>dec_ub:
+    if adv_acts[ssc_pair.dec_layer.layer_index][ssc_pair.dec_pos]>dec_ub:
       d=np.count_nonzero(np.logical_xor(adv_cond_flags, ssc_pair.cond_flags))
       if d<=d_min and d>0:
         found=True
@@ -201,7 +201,7 @@ def svc_search(test_object, cond_layer, dec_layer, dec_pos, adv_crafter, dec_ub)
   for i in indices:
     inp_vect=np.array([data[i]])
     acts = test_object.eval_batch(inp_vect, allow_input_layer = True)
-    dec1=(acts[dec_layer.layer_index][0].item(dec_pos))
+    dec1=(acts[dec_layer.layer_index][dec_pos])
     if dec1<=0: continue
     if dec_ub>2*dec1: continue
 
@@ -229,7 +229,7 @@ def svc_search(test_object, cond_layer, dec_layer, dec_pos, adv_crafter, dec_ub)
       adv_inp_vect=adv_crafter.generate(x=inp_vect)
       adv_acts = test_object.eval_batch(adv_inp_vect, allow_input_layer = True)
 
-      dec2=(adv_acts[dec_layer.layer_index][0].item(dec_pos))
+      dec2=(adv_acts[dec_layer.layer_index][dec_pos])
       if dec2<=old_dec:
          trend-=1
       else: trend=0
@@ -252,7 +252,7 @@ def svc_search(test_object, cond_layer, dec_layer, dec_pos, adv_crafter, dec_ub)
         to_stop=True
         break
 
-      ssc_pair = ssc_pairt(cond_flags, acts[dec_layer.layer_index][0].item(dec_pos)>0, test_object, cond_layer, dec_layer, dec_pos)
+      ssc_pair = ssc_pairt(cond_flags, acts[dec_layer.layer_index][dec_pos]>0, test_object, cond_layer, dec_layer, dec_pos)
 
       print ('start local v search')
       diff, x_ret=local_v_search(test_object.dnn, data[i], ssc_pair, adv_crafter, e_max_input, ssc_ratio, dec_ub)
@@ -303,14 +303,27 @@ class SScLayer (BoolMappedCoverableLayer):
 
 
   def _initialize_conditions_map(self):
+    # Attach conditions map on current (decision) layer:
     self.cond_map = np.ones(self.map.shape +
-                            (self.layer.kernel_size if is_conv_layer (self.layer) else
+                            (self.layer.kernel_size if self.is_conv else
                              self.layer.get_weights ()[0].shape[:-1]),
                             dtype = bool)
     base_count = np.count_nonzero (self.cond_map)
-    self.cond_map[self.map == True] = True
     self.filtered_out_conds = base_count - np.count_nonzero (self.cond_map)
+    self.map[self._where_cond_map_holds ()] = True
+    # if self.is_conv:
+    #   self.the_feature = np.random.randint(0, np.prod (self.layer.output.shape))
+    #   print ('the_feature:', self.the_feature)
+    # print ('input:', self.layer.input.shape)
+    # print ('output:', self.layer.output.shape)
+    # print ('weights:', self.layer.get_weights ()[0].shape)
+    # print ('used weights:', used_weights)
+    # print ('map.shape:', self.map.shape)
+    # print ('cond_map.shape:', self.cond_map.shape)
+    # print ('non-zero:', np.count_nonzero (self.map))
+    # print ('')
 
+    
 
   def coverage(self, _feature_indices = None) -> Coverage:
     """Ignores `feature_indices` for now."""
@@ -320,16 +333,44 @@ class SScLayer (BoolMappedCoverableLayer):
     return Coverage (covered = tot - nc, total = tot)
 
 
-  def cover(self, cond_pos, dec_pos) -> None:
-    if cond_pos is None:
+  # We use this method to update coverage maps as it needs to be
+  # computed based on both the test target and activations.
+  def update_with_new_activations(self, acts) -> None:
+    for act in acts[self.layer_index]:
+      act = np.array([copy.copy(act)])
+      # Keep only negative new activation values:
+      # TODO: parameterize this (ditto bottom_act_value)
+      act = -1 * np.abs (act)
+      act[act == 0] = -0.000001
+      act = np.multiply(act, self.map)
+      act[act == 0] = -np.inf
+      # Append activations after map change
+      self._append_activations (act)
+
+
+
+  def cover_decision(self, acts, dec_neuron, cond_neuron) -> None:
+    if cond_neuron is None:
       # Assume the decision is covered when no condition position is
       # given
-      self.cond_map[dec_pos, :] = False
+      #
+      # NB: well that's a wrong assumption (ie still over-simplifying)
+      self.cond_map[dec_neuron, :] = False
     else:
-      self.cond_map[dec_pos, cond_pos] = False
+      # print (self, self.cond_map.shape, dec_neuron, cond_neuron)
+      self.cond_map[dec_neuron, cond_neuron] = False
 
-    if not self.cond_map[dec_pos].any ():
-      super().cover (dec_pos)
+    if not self.cond_map[dec_neuron].any ():
+      super().cover_neuron (dec_neuron)
+
+    self.map = np.logical_and (self.map, self._where_cond_map_holds ())
+
+
+  def _where_cond_map_holds (self):
+    used_weights = (self.layer.kernel_size if self.is_conv else
+                    self.layer.get_weights ()[0].shape[:-1])
+    return self.cond_map[(Ellipsis,) + (-1,) * len (used_weights)] == True
+    
 
 
   # def initialize_ubs(self):
@@ -356,12 +397,9 @@ class SScTarget (NamedTuple, TestTarget):
   condition_pos: Optional[Tuple[int, ...]]
 
 
-  def cover(self) -> None:
-    # XXX: this assumes a single condition position is eligible...
-    self.decision_layer.cover (self.condition_pos[1:] if self.condition_pos is not None else None,
-                               self.decision_pos)
-    if self.condition_layer is not None and self.condition_pos is not None:
-      self.condition_layer.cover (self.condition_pos[1:])
+  def cover(self, acts) -> None:
+    self.decision_layer.cover_decision (acts, self.decision_neuron,
+                                        self.condition_neuron)
 
 
   @property
@@ -387,7 +425,7 @@ class SScTarget (NamedTuple, TestTarget):
     '''
     Decision neuron
     '''
-    return self.decision_pos[0]
+    return self.decision_pos[1:]
 
 
   @property
@@ -395,27 +433,27 @@ class SScTarget (NamedTuple, TestTarget):
     '''
     Condition neuron.
     '''
-    return self.condition_pos[0] if self.condition_pos is not None else None
+    return self.condition_pos[1:] if self.condition_pos is not None else None
 
 
   def __repr__(self) -> str:
     if self.condition_pos is not None:
       return ('decision {} in {}, subject to condition {}{}'
-              .format (xtuple (self.decision_pos), self.decision_layer,
-                       xtuple (self.condition_pos[1:]),
+              .format (xtuple (self.decision_neuron), self.decision_layer,
+                       xtuple (self.condition_neuron),
                        '' if self.condition_layer is None else
                        ' in {}'.format(self.condition_layer)))
     else:
       return ('decision {} in {}, subject to any condition'
-              .format (xtuple (self.decision_pos), self.decision_layer))
+              .format (xtuple (self.decision_neuron), self.decision_layer))
 
 
   def log_repr(self) -> str:
     return ('#dec_layer: {} #dec_pos: {} #cond_pos {}'
             .format(self.decision_layer,
-                    xtuple (self.decision_pos),
-                    ' #cond_pos {}'.format(xtuple (self.condition_pos[1:]))
-                    if self.condition_pos is not None else ''))
+                    xtuple (self.decision_position),
+                    ' #cond_pos {}'.format(xtuple (self.condition_position))
+                    if self.condition_position is not None else ''))
 
 
 # ---
@@ -489,22 +527,17 @@ class SScCriterion (LayerLocalCriterion, Criterion4FreeSearch, Criterion4RootedS
       raise EarlyTermination ('All decision features have been covered.')
     dec_cl, dec_pos = decision_search_attempt
     cond_cl = self.layer_imap[dec_cl.prev_layer_index]
-    assert not (is_padding (dec_pos, dec_cl, cond_cl,
+    assert not (is_padding (dec_pos[1:], dec_cl, cond_cl,
                             post = True, unravel_pos = False))
     try:
       # Try and find an appropriate condition neuron (i.e. based on
       # Eq. (18)).
-      cond_pos, cond_val = cond_cl.find (np.argmax)
-      # print (cond_cl.activations[cond_pos[0]][cond_pos[1:]])
-      cond_cl.inhibit_activation (cond_pos)
-      # print (cond_cl.activations[cond_pos[0]][cond_pos[1:]])
-      return SScTarget (dec_cl, dec_pos, cond_cl, cond_pos[1:])
+      cond_apos, cond_val = cond_cl.find (np.argmax)
+      cond_cl.inhibit_activation (cond_apos)
+      return SScTarget (dec_cl, dec_pos, cond_cl, cond_apos[1:])
     except ValueError:
       # XXX this case may only happen upon cold start.
       return SScTarget (dec_cl, dec_pos, None, None)
-    # ppos = (lambda p: p if len(p) > 1 else p[0])(ssc_pos[1:])
-    # tp1 ('Targeting decision {} in {}'.format(ppos, cl))
-    # return cl, ssc_pos[1:]
 
 
   def find_next_rooted_test_target(self) -> Tuple[Input, SScTarget]:
@@ -514,14 +547,14 @@ class SScCriterion (LayerLocalCriterion, Criterion4FreeSearch, Criterion4RootedS
       raise EarlyTermination ('All decision features have been covered.')
     dec_cl, dec_pos = decision_search_attempt
     cond_cl = self.layer_imap[dec_cl.prev_layer_index]
-    assert not (is_padding (dec_pos, dec_cl, cond_cl,
+    assert not (is_padding (dec_pos[1:], dec_cl, cond_cl,
                             post = True, unravel_pos = False))
     # Try and find an appropriate condition neuron (i.e. based on
     # Eq. (18)).
-    cond_pos, cond_val = cond_cl.find (np.argmax)
-    cond_cl.inhibit_activation (cond_pos)
-    return (self.test_cases[-1-cond_pos[0]],
-            SScTarget (dec_cl, dec_pos, cond_cl, cond_pos[1:]))
+    cond_apos, cond_val = cond_cl.find (np.argmax)
+    cond_cl.inhibit_activation (cond_apos)
+    return (self.test_cases[-1-cond_apos[0]],
+            SScTarget (dec_cl, dec_pos, cond_cl, cond_apos[1:]))
 
 
   # ---
@@ -579,12 +612,8 @@ def setup (test_object = None,
 # ---
 
 # TODO: put that in a `ssc_gan' module?
-
-try:
-  from art.attacks.fast_gradient import FastGradientMethod
-  from art.classifiers import KerasClassifier
-except:
-  pass
+from art.attacks.evasion import FastGradientMethod
+from art.estimators.classification import KerasClassifier
 
 from norms import LInf
 

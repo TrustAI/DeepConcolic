@@ -14,11 +14,7 @@ class NcLayer (BoolMappedCoverableLayer):
   '''
   Covered layer that tracks per-neuron activation.
   '''
-
-  def update_with_new_activations(self, act) -> None:
-    # if activation_is_relu (self.layer): # todo (???)
-    #   sys.exit ('Unsupported NC-update for activation layer (bug/todo?)')
-    super().update_with_new_activations (act)
+  pass
 
 
 # ---
@@ -30,8 +26,8 @@ class NcTarget (NamedTuple, TestTarget):
   position: Tuple[int, ...]
 
 
-  def cover(self) -> None:
-    self.layer.cover (self.position[1:])
+  def cover(self, acts) -> None:
+    self.layer.cover_neuron (self.position[1:])
 
 
   def __repr__(self) -> str:
@@ -62,7 +58,9 @@ class NcAnalyzer (Analyzer4RootedSearch):
 
 
 class NcCriterion (LayerLocalCriterion, Criterion4RootedSearch):
-  """Neuron coverage criterion"""
+  """
+  Neuron coverage criterion
+  """
 
   def __init__(self, clayers: Sequence[NcLayer], analyzer: NcAnalyzer, **kwds):
     assert isinstance (analyzer, NcAnalyzer)
@@ -75,8 +73,6 @@ class NcCriterion (LayerLocalCriterion, Criterion4RootedSearch):
 
   def find_next_rooted_test_target(self) -> Tuple[Input, NcTarget]:
     cl, nc_pos, nc_value, test_case = self.get_max ()
-    # ppos = (lambda p: p if len(p) > 1 else p[0])(nc_pos[2:])
-    # p1 ('Targeting activation of {} in {} (value = {})'.format(ppos, cl, nc_value))
     cl.inhibit_activation (nc_pos)
     return test_case, NcTarget(cl, nc_pos[1:])
 

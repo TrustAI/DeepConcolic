@@ -18,76 +18,85 @@ The paper is available in https://arxiv.org/abs/1805.00089.
 
 ```
 usage: deepconcolic.py [-h] [--model MODEL] [--inputs DIR] [--outputs DIR]
-                       [--training-data DIR] [--criterion nc, ssc...]
-                       [--labels FILE] [--mnist-dataset] [--cifar10-dataset]
+                       [--criterion nc, ssc...] [--init INT] [--labels FILE]
+                       [--dataset {mnist,fashion_mnist,cifar10}]
                        [--vgg16-model] [--norm linf, l0] [--input-rows INT]
                        [--input-cols INT] [--input-channels INT]
                        [--cond-ratio FLOAT] [--top-classes INT]
-                       [--layer-index INT] [--dbnc-spec SPEC]
+                       [--layer-index INT [INT ...]] [--feature-index INT]
+                       [--dbnc-spec SPEC]
+                       [--fuzzing] [--num-tests INT] [--num-processes INT]
+                       [--sleep-time INT]
 
 Concolic testing for neural networks
 
 optional arguments:
-  -h, --help                   show this help message and exit
-  --model MODEL                the input neural network model (.h5)
-  --inputs DIR                 the input test data directory
-  --outputs DIR                the outputput test data directory
-  --training-data DIR          the extra training dataset
-  --criterion nc, ssc...       
-                               the test criterion
-  --labels FILE                the default labels
-  --mnist-dataset              MNIST dataset
-  --cifar10-dataset            CIFAR-10 dataset
-  --vgg16-model                vgg16 model
-  --norm linf, l0              the norm metric
-  --input-rows INT             input rows
-  --input-cols INT             input cols
-  --input-channels INT         input channels
-  --cond-ratio FLOAT           the condition feature size parameter (0, 1]
-  --top-classes INT            check the top-xx classifications
-  --layer-index INT0 ... INTn  to test particular layers
+  -h, --help            show this help message and exit
+  --model MODEL         the input neural network model (.h5)
+  --inputs DIR          the input test data directory
+  --outputs DIR         the outputput test data directory
+  --criterion nc, ssc...
+                        the test criterion
+  --init INT            number of test samples to initialize the engine
+  --labels FILE         the default labels
+  --dataset {mnist,fashion_mnist,cifar10}
+                        selected dataset
+  --vgg16-model         vgg16 model
+  --norm linf, l0       the norm metric
+  --input-rows INT      input rows
+  --input-cols INT      input cols
+  --input-channels INT  input channels
+  --cond-ratio FLOAT    the condition feature size parameter (0, 1]
+  --top-classes INT     check the top-xx classifications
+  --layer-index INT [INT ...]
+                        to test a particular layer
+  --feature-index INT   to test a particular feature map
   --dbnc-spec SPEC             to give options for DBN-based coverage
+  --fuzzing             to start fuzzing
+  --num-tests INT       number of tests to generate
+  --num-processes INT   number of processes to use
+  --sleep-time INT      fuzzing sleep time
 ```
 
 The neural network model under tested is specified by ``--model`` and a set of raw test data should be given
-by using ``--inputs``. Some popular datasets like MNIST and CIFAR10 can be directly specified by using
-``--mnist-dataset`` and ``--cifar10-dataset`` directly. ``--criterion`` is used to choose the coverage 
+by using ``--inputs``. Some popular datasets like MNIST and CIFAR10 can be directly specified by using the
+``--dataset`` option directly. ``--criterion`` is used to choose the coverage
 criterion and ``--norm`` helps select the norm metric to measure the distance between inputs. Some examples
 to run DeepConcolic are in the following.
 
 To run an MNIST model
 
 ```
-python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --mnist-data --outputs outs/
+python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --dataset mnist --outputs outs/
 ```
 
 To run an CIFAR10 model
 
 ```
-python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --cifar10-data --outputs outs/
+python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --dataset cifar10 --outputs outs/
 ```
 
 To test a particular layer
 ```
-python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --cifar10-data --outputs outs/ --layer-index 2
+python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --dataset cifar10 --outputs outs/ --layer-index 2
 ```
 
 To run MC/DC for DNNs on the CIFAR-10 model
 
 ```
-python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --criterion ssc --cond-ratio 0.1 --cifar10-data --outputs outs
+python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --criterion ssc --cond-ratio 0.1 --dataset cifar10 --outputs outs
 ```
 
-To run MC/DC for DNNs on the VGG16 model
+To run MC/DC for DNNs on the VGG16 model (with input images from the ``data`` sub-directory)
 
 ```
-python  deepconcolic.py --vgg16-model --inputs data/ --outputs outs --cond-ratio 0.1 --top-classes 5 --labels labels.txt --criterion ssc
+python deepconcolic.py --vgg16-model --inputs data/ --outputs outs --cond-ratio 0.1 --top-classes 5 --labels labels.txt --criterion ssc
 ```
 
 To run Concolic Sign-sign-coverage (MC/DC) for DNNs on the MNIST model
 
 ```
-python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --criterion ssclp --mnist-data --outputs outs
+python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --dataset mnist --outputs outs --criterion ssclp
 ```
 
 DeepConcolic nows supports an experimental fuzzing engine. Try ``--fuzzing`` to use it. The following command will result in: one ``mutants`` folder, one ``advs`` folder for adversarial examples and an adversarial list ``adv.list``.
@@ -98,14 +107,14 @@ python src/deepconcolic.py --fuzzing --model ./saved_models/mnist2.h5 --inputs d
 
 To run Concolic BN-based Feature coverage (BFCov) for DNNs on the MNIST model
 ```
-python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --criterion bfc --norm linf --mnist-data --outputs outs --dbnc-spec ../dbnc/example.yaml
+python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --criterion bfc --norm linf --dataset mnist --outputs outs --dbnc-spec ../dbnc/example.yaml
 ```
 See [the example YAML specification](dbnc/example.yaml) for details on how to configure the BN-based abstraction.
 
 
 To run Concolic BN-based Feature-dependence coverage (BFdCov) for DNNs on the MNIST model
 ```
-python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --criterion bfdc --norm linf --mnist-data --outputs outs --dbnc-spec ../dbnc/example.yaml
+python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --criterion bfdc --norm linf --dataset mnist --outputs outs --dbnc-spec ../dbnc/example.yaml
 ```
 
 
@@ -121,7 +130,7 @@ conda activate deepconcolic
 conda install opencv 
 pip3 install tensorflow\>=2.3
 pip3 install pulp\>=2
-pip3 install adversarial-robustness-toolbox
+pip3 install adversarial-robustness-toolbox\>=1.3
 pip3 install pomegranate\>=0.13.4
 ```
 

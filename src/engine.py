@@ -1,5 +1,6 @@
 from typing import *
 from utils import *
+from datetime import datetime
 from sklearn.model_selection import train_test_split
 
 
@@ -73,9 +74,10 @@ class TestTarget:
   '''
 
   @abstractmethod
-  def cover(self) -> None:
+  def cover(self, acts) -> None:
     '''
-    Record that the target has been covered.
+    Record that the target has been covered by the given set of
+    activations.
     '''
     raise NotImplementedError
 
@@ -194,7 +196,7 @@ class Report:
 
   def __init__(self,
                base_name = '',
-               outs = '/tmp',
+               outdir: OutputDir = None,
                save_new_tests = False,
                adv_dist_period = 100,
                save_input_func = None,
@@ -205,11 +207,12 @@ class Report:
     self.base_name = base_name
     self.save_new_tests = save_new_tests
     self.adv_dist_period = adv_dist_period
-    self.dir = setup_output_dir (outs)
-    report_file, base = setup_output_files (self.dir, self.base_name,
-                                            suff = '', log = False)
-    self.report_file = report_file + '_report.txt'
-    self.base = base
+    self.outdir = outdir or OutputDir ()
+    assert isinstance (self.outdir, OutputDir)
+    self.base = ('{0}-{1}'
+                 .format (self.base_name, str (datetime.now ()).replace (' ', '-'))
+                 .replace (':', '-'))
+    self.report_file = self.outdir.filepath (self.base + '_report.txt')
     self.save_input_func = save_input_func
     self.inp_ub = inp_up
     p1 ('Reporting into: {0}'.format (self.report_file))
@@ -220,7 +223,7 @@ class Report:
     if self.save_input_func != None:
       self.save_input_func (self.inp_ub * 0.5 + (im / self.inp_ub * 0.5) if fit
                             else (im / self.inp_ub * 1.0),
-                            name, self.dir, log)
+                            name, self.outdir.path, log)
 
 
   def _save_derived_input(self, new, origin, diff = None, log = None):
@@ -259,7 +262,7 @@ class Report:
     if self.num_adversarials % self.adv_dist_period == 0:
       print_adversarial_distribution (
         [ d for o, n, d in self.adversarials ],
-        self.dir + self.base + '_adversarial-distribution.txt',
+        self.outdir.filepath (self.base + '_adversarial-distribution.txt'),
         int_flag = is_int)
     self.ntests += 1
 
@@ -401,18 +404,27 @@ class Criterion:
 
 
   # final as well
-  def add_new_test_cases(self, tl: Sequence[Input]) -> None:
+  def add_new_test_cases(self, tl: Sequence[Input],
+                         covered_target: TestTarget = None) -> None:
     """
     As its name says, this method adds a given series of inputs into
-    the set of test cases.  It then calls :meth:`update_coverage`.
+    the set of test cases.  It then calls :meth:`register_new_activations`.
     """
     tp1 ('Adding {} test case{}'.format (len (tl), 's' if len (tl) > 1 else ''))
     self.test_cases.extend (tl)
-    self.update_coverage (tl)
+    for acts in self._batched_activations (tl, allow_input_layer = False):
+      if covered_target is not None:
+        covered_target.cover (acts)
+      self.register_new_activations (acts)
+
+  def _batched_activations(self, tl: Sequence[Input], **kwds):
+    batches = np.array_split (tl, len (tl) // 100 + 1)
+    for batch in batches:
+      yield (self.analyzer.eval_batch (batch, **kwds))
 
 
   @abstractmethod
-  def update_coverage(self, tl: Sequence[Input]) -> None:
+  def register_new_activations(self, acts) -> None:
     """
     Method called whenever new test cases are registered.  Overload
     this method to update coverage.
@@ -437,7 +449,7 @@ class Criterion:
     '''
     if self.rooted_search:
       x0, target = self.find_next_rooted_test_target ()
-      tp1 ('| Targeting {}'.format(target))
+      p1 ('| Targeting {}'.format(target))
       x1_attempt = self.analyzer.search_input_close_to (x0, target)
       if x1_attempt == None:
         return None, target
@@ -446,7 +458,7 @@ class Criterion:
         return (x0, x1, d), target
     else:
       target = self.find_next_test_target ()
-      tp1 ('| Targeting {}'.format(target))
+      p1 ('| Targeting {}'.format(target))
       attempt = self.analyzer.search_close_inputs (target)
       if attempt == None:
         return None, target
@@ -521,9 +533,10 @@ class Criterion:
 
     - train: a callable taking some training data as mapping (as a
       dictionary) from each layer index given in `layer_indexes` to
-      activation values for the corresponding layer, and returns some
-      arbitrary object; this is to be called only once during
-      initialization;
+      activation values for the corresponding layer, and two keyword
+      arguments `true_labels` and `pred_labels` that hold the
+      corresponding true and predicted labels. Returns some arbitrary
+      object, and is to be called only once during initialization;
 
     - test: a callable taking some extra training data and associated
       labels as two separate mappings (as a dictionary) from each
@@ -556,9 +569,10 @@ class Criterion:
 
     - train: a callable taking some test data as mapping (as a
       dictionary) from each layer index given in `layer_indexes` to
-      activation values for the corresponding layer, and returns some
-      arbitrary object; this is to be called only once during
-      initialization;
+      activation values for the corresponding layer, and two keyword
+      arguments `true_labels` and `pred_labels` that hold the
+      corresponding true and predicted labels. Returns some arbitrary
+      object, and is to be called only once during initialization;
 
     - test: a callable taking some extra test data and associated
       labels as two separate mappings (as a dictionary) from each
@@ -634,8 +648,7 @@ def setup_basic_report(criterion: Criterion, **kwds) -> Report:
   Extra keyword arguments are passed on to the constructor of
   :class:`Report`.
   '''
-  return Report (base_name = '{0}_{0.metric}'.format (criterion),
-                 **kwds)
+  return Report (base_name = '{0}_{0.metric}'.format (criterion), **kwds)
 
 
 # ---
@@ -656,7 +669,6 @@ class Engine:
     criterion-specific analyzer as filter for assessing legitimacy of
     new test inputs, unless `custom_filter` is not `None`.
     """
-    
     self.ref_data = ref_data
     self.train_data = train_data
     self.criterion = criterion
@@ -664,7 +676,6 @@ class Engine:
     assert isinstance (self.filter, Filter)
     super().__init__(**kwds)
     self._stat_based_inits ()
-    self.criterion.finalize_setup ()
 
 
   def __repr__(self):
@@ -712,9 +723,13 @@ class Engine:
     `max_iterations` iterations (i.e. number of runs of the analyzer)
     if `max_iterations = None`, or until full coverage is reached, or
     the criterion is fulfilled (whichever happens first).
+
+    Set `trace_origins` to `True` to keep track of the origin of
+    generated test cases and speed up filtering by the oracle.
     '''
 
     criterion = self.criterion
+    criterion.finalize_setup ()
     filter = self.filter
 
     p1 ('Starting tests for {}{}.'
@@ -749,8 +764,7 @@ class Engine:
           close_enough = filter.close_to (self.ref_data.data if origin is None else
                                           [criterion.test_cases[origin[x0]]], x1)
           if close_enough:
-            target.cover ()
-            criterion.add_new_test_cases ([x1])
+            criterion.add_new_test_cases ([x1], covered_target = target)
             if origin is not None:
               origin[x1] = origin[x0]
             coverage = criterion.coverage ()
@@ -858,13 +872,16 @@ class Engine:
       np1 ('Computing {}... ' .format(x['name']))
       train_idxs, test_idxs = train_test_split (
         idxs, test_size = x['test_size'], train_size = x['train_size'])
-      acts = self._activations_on_indexed_data (data, train_idxs)
-      acc = x['train']({ j: acts[j] for j in x['layer_indexes'] })
+      acts, preds = self._activations_on_indexed_data (data, train_idxs)
+      acc = x['train']({ j: acts[j] for j in x['layer_indexes'] },
+                       true_labels = data.labels[train_idxs],
+                       pred_labels = preds)
 
       if 'test' in x:
-        acts = self._activations_on_indexed_data (data, test_idxs)
-        lbls = data.labels[test_idxs]
-        x['test']({ j: acts[j] for j in x['layer_indexes'] }, lbls)
+        acts, preds = self._activations_on_indexed_data (data, test_idxs)
+        x['test']({ j: acts[j] for j in x['layer_indexes'] },
+                  true_labels = data.labels[test_idxs],
+                  pred_labels = preds)
 
 
   def _batched_activations_on_raw_data(self):
@@ -876,7 +893,8 @@ class Engine:
 
   def _activations_on_indexed_data(self, data, indexes):
     batch = data.data[indexes]
-    return self.criterion.analyzer.eval_batch (batch, allow_input_layer = True)
+    return (self.criterion.analyzer.eval_batch (batch, allow_input_layer = True),
+            self._run_tests (batch))
 
 
   # ---
@@ -891,6 +909,7 @@ def setup (test_object: test_objectt = None,
            setup_analyzer: Callable[[dict], Analyzer] = None,
            setup_criterion: Callable[[Sequence[CL], Analyzer, dict], Criterion] = None,
            criterion_args: dict = {},
+           engine_args: dict = {},
            **kwds) -> Engine:
   """
   Helper to build engine instances.  Extra arguments are passed to the
@@ -907,7 +926,8 @@ def setup (test_object: test_objectt = None,
          sep='\n', end = '\n\n')
   analyzer = setup_analyzer (analyzed_dnn = test_object.dnn, **kwds)
   criterion = setup_criterion (cover_layers, analyzer, **criterion_args)
-  return Engine (test_object.raw_data, test_object.train_data, criterion)
+  return Engine (test_object.raw_data, test_object.train_data, criterion,
+                 **engine_args)
 
 
 # ------------------------------------------------------------------------------
@@ -988,21 +1008,21 @@ class BoolMappedCoverableLayer (CoverableLayer):
   ## to get the index of the next property to be satisfied
   # [ eq. (15,17,18)? ]
   def find(self, f):
-    acts = np.array(self.activations)
+    acts = np.array (self.activations)
     spos = f (acts)
-    pos = np.unravel_index(spos, acts.shape)
+    pos = np.unravel_index (spos, acts.shape)
     return pos, acts.item (spos)
 
 
-  def cover(self, pos) -> None:
+  def cover_neuron(self, pos) -> None:
     self.map[pos] = False
 
 
   def inhibit_activation(self, pos) -> None:
     '''
     Inhibit any activation at the given position so that it is not
-    returned by any direct subsequent call to `find` (i.e not
-    precededed by a call to `update_with_new_activations`).
+    returned by any direct subsequent call to `find` (i.e not preceded
+    by a call to `update_with_new_activations`).
     '''
     act = self.activations
     while len(pos) != 1:
@@ -1011,16 +1031,16 @@ class BoolMappedCoverableLayer (CoverableLayer):
     act[pos] = self.bottom_act_value
 
 
-  def update_with_new_activations(self, act) -> None:
-    act = copy.copy (act[self.layer_index])
-    assert len (act) == 1
-    # Keep only negative new activation values:
-    # TODO: parameterize this (ditto bottom_act_value)
-    act[act >= 0] = 0
-    self.map = np.logical_and (self.map, act[0])
-    # Append activations after map change
-    self._append_activations (act)
-
+  def update_with_new_activations(self, acts) -> None:
+    for act in acts[self.layer_index]:
+      act = np.array([copy.copy(act)])
+      # Keep only negative new activation values:
+      # TODO: parameterize this (ditto bottom_act_value)
+      act[act >= 0] = 0
+      self.map = np.logical_and (self.map, act[0])
+      # Append activations after map change
+      self._append_activations (act)
+    
 
   def _append_activations(self, act):
     '''
@@ -1059,6 +1079,9 @@ class LayerLocalAnalyzer (Analyzer):
 class LayerLocalCriterion (Criterion):
   '''
   Criteria whose definition involves layer-local coverage properties.
+
+  - `shallow_first = True` indicates that shallower layers are given
+    priority when selecting new test targets.
   '''
 
   def __init__(self,
@@ -1134,20 +1157,18 @@ class LayerLocalCriterion (Criterion):
   # ---
 
 
-  def update_coverage (self, tl: Sequence[Input]):
+  def register_new_activations(self, acts):
     """
     Register new test cases
     """
-    for t in tl:
-      acts = self.analyzer.eval (t, allow_input_layer = True)
-      for cl in self._updatable_layers:
-        cl.update_with_new_activations (acts)
+    for cl in self._updatable_layers:
+      cl.update_with_new_activations (acts)
 
 
   def get_max(self) -> Tuple[BoolMappedCoverableLayer, Tuple[int, ...], float, Input]:
     '''
     '''
-    layer, pos, value = None, None, MIN
+    layer, pos, value = None, None, -np.inf
     for i, cl in enumerate(self.cover_layers):
       p, v = cl.find (np.argmax)
       v *= cl.pfactor
@@ -1177,7 +1198,7 @@ class LayerLocalCriterion (Criterion):
           pos += 1
         if pos < tot_s and cl.map.item(pos):
           break
-    return cl, np.unravel_index(pos, cl.map.shape)
+    return cl, (0,) + np.unravel_index(pos, cl.map.shape)
 
 
 # ---

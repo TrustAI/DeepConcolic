@@ -1,6 +1,4 @@
-#import matplotlib.pyplot as plt
 from abc import abstractmethod
-from datetime import datetime
 
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -38,11 +36,11 @@ def np1(x):
 def cnp1(x):
   print ('\n', x, sep = '', end = '', flush = True)
 
-def p1(x):
-  print (P1F.format(x))
+def p1(x, **k):
+  print (P1F.format(x), **k)
 
-def cp1(x):
-  print (N1F.format(x))
+def cp1(x, **k):
+  print (N1F.format(x), **k)
 
 
 def xtuple(t):
@@ -128,24 +126,36 @@ def activation_is_relu(layer):
 # ---
 
 def setup_output_dir (outs, log = True):
-  if not os.path.exists(outs):
-    os.makedirs(outs)
-  if not outs.endswith('/'):
-    outs+='/'
-  if log: print ('Outputs will go into: {0}'.format(outs))
+  if not os.path.exists (outs):
+    os.makedirs (outs)
+  if not outs.endswith ('/'):
+    outs += '/'
+  if log: print ('Setting up output directory: {0}'.format (outs))
   return outs
 
-def setup_output_files (outs, ident, suff0 = '', suff = '.txt', log = True):
-  if not os.path.exists(outs):
-    sys.exit ('Output directory {0} was not initialized (internal bug)!'
-              .format (outs))
-  ident = ('{0}-{1}{2}'
-           .format (ident, str(datetime.now()).replace(' ', '-'), suff0)
-           .replace(':', '-'))
-  f = outs+ident+suff
-  if log: print ('Reporting into: {0}'.format (f))
-  return f, ident
-  
+# def setup_report_files (outs, ident, suff0 = '', suff = '.txt', log = True):
+#   if not os.path.exists(outs):
+#     sys.exit ('Output directory {0} was not initialized (internal bug)!'
+#               .format (outs))
+#   f = outs+ident+suff
+#   if log: print ('Reporting into: {0}'.format (f))
+#   return f, ident
+
+class OutputDir:
+  '''
+  Class to help ensure output directory is created before starting any
+  lengthy computations.
+  '''
+  def __init__(self, outs = '/tmp', log = None):
+    self.dirpath = setup_output_dir (outs, log = log)
+
+  @property
+  def path(self) -> str:
+    return self.dirpath
+
+  def filepath(self, base) -> str:
+    return self.dirpath + base
+
 # ---
 
 def _write_in_file (f, mode, *fmts):
