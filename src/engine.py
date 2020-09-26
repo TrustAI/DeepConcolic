@@ -1,6 +1,5 @@
 from typing import *
 from utils import *
-from datetime import datetime
 from sklearn.model_selection import train_test_split
 
 
@@ -209,9 +208,7 @@ class Report:
     self.adv_dist_period = adv_dist_period
     self.outdir = outdir or OutputDir ()
     assert isinstance (self.outdir, OutputDir)
-    self.base = ('{0}-{1}'
-                 .format (self.base_name, str (datetime.now ()).replace (' ', '-'))
-                 .replace (':', '-'))
+    self.base = self.outdir.stamped_filename (self.base_name)
     self.report_file = self.outdir.filepath (self.base + '_report.txt')
     self.save_input_func = save_input_func
     self.inp_ub = inp_up
@@ -271,7 +268,7 @@ class Report:
     '''
     Prints a single report line.
     '''
-    append_in_file (self.report_file, *args)
+    append_in_file (self.report_file, *args, '\n')
 
 
 
@@ -449,7 +446,7 @@ class Criterion:
     '''
     if self.rooted_search:
       x0, target = self.find_next_rooted_test_target ()
-      p1 ('| Targeting {}'.format(target))
+      tp1 ('| Targeting {}'.format(target))
       x1_attempt = self.analyzer.search_input_close_to (x0, target)
       if x1_attempt == None:
         return None, target
@@ -458,7 +455,7 @@ class Criterion:
         return (x0, x1, d), target
     else:
       target = self.find_next_test_target ()
-      p1 ('| Targeting {}'.format(target))
+      tp1 ('| Targeting {}'.format(target))
       attempt = self.analyzer.search_close_inputs (target)
       if attempt == None:
         return None, target
@@ -715,14 +712,14 @@ class Engine:
           setup_report: Callable[[Criterion], Report] = setup_basic_report,
           initial_test_cases = None,
           trace_origins: bool = False,
-          max_iterations = None,
+          max_iterations = -1,
           **kwds):
     '''
     Uses `setup_report` to construct a helper for outputing logs and
     new test cases, and then starts the engine for either: up to
     `max_iterations` iterations (i.e. number of runs of the analyzer)
-    if `max_iterations = None`, or until full coverage is reached, or
-    the criterion is fulfilled (whichever happens first).
+    if `max_iterations >= 0`, or else until full coverage is reached,
+    or the criterion is fulfilled (whichever happens first).
 
     Set `trace_origins` to `True` to keep track of the origin of
     generated test cases and speed up filtering by the oracle.
@@ -733,7 +730,7 @@ class Engine:
     filter = self.filter
 
     p1 ('Starting tests for {}{}.'
-        .format (self, '' if max_iterations == None else
+        .format (self, '' if max_iterations < 0 else
                  ' ({} max iterations)'.format (max_iterations)))
     report = setup_report (criterion, **kwds)
 
@@ -743,7 +740,7 @@ class Engine:
     p1 ('#0 {}: {.as_prop:10.8%}'.format(criterion, coverage))
     report.step ('{0}-cover: {1} #test cases: {0.num_test_cases} '
                  .format(criterion, coverage),
-                 '#adversarial examples: 0\n')
+                 '#adversarial examples: 0')
 
     iteration = 1
     origin = (None if not trace_origins else
@@ -751,7 +748,7 @@ class Engine:
 
     try:
 
-      while ((max_iterations == None or iteration <= max_iterations) and
+      while ((iteration <= max_iterations or max_iterations < 0) and
              not coverage.done):
   
         adversarial = False
@@ -789,12 +786,12 @@ class Engine:
                              'too far from original input' if not close_enough else
                              'adversarial' if adversarial else 'passed')
                      if search_attempt != None else 'after failed attempt'))
-  
+
         report.step ('{0}-cover: {1} #test cases: {0.num_test_cases} '
                      .format(criterion, coverage),
                      '#adversarial examples: {0.num_adversarials} '
                      .format(report),
-                     '#diff: {} {}\n'
+                     '#diff: {} {}'
                      .format(d if search_attempt != None else '_',
                              target.log_repr ()))
   

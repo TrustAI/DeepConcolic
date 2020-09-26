@@ -101,6 +101,9 @@ def main():
                       help="the test criterion", metavar="nc, ssc...")
   parser.add_argument("--init", dest="init_tests", metavar="INT",
                       help="number of test samples to initialize the engine")
+  parser.add_argument("--max-iterations", dest="max_iterations", metavar="INT",
+                      help="maximum number of engine iterations (use < 0 for unlimited)",
+                      default='-1')
   parser.add_argument("--labels", dest="labels", default="-1",
                       help="the default labels", metavar="FILE")
   parser.add_argument("--dataset", dest='dataset',
@@ -245,7 +248,9 @@ def main():
         labels.append(int(l))
     test_object.labels=labels
 
-  init_tests = int (args.init_tests) if args.init_tests is not None else None
+  init_tests = int (args.init_tests) if args.init_tests is not None \
+               else None
+  max_iterations = int (args.max_iterations)
 
   # fuzzing params
   if args.fuzzing:
@@ -273,7 +278,7 @@ def main():
                                 'inp_ub': inp_ub },
                 dbnc_spec = dbnc_spec,
                 initial_test_cases = init_tests,
-                max_iterations = None)
+                max_iterations = max_iterations)
 
 if __name__=="__main__":
   try:

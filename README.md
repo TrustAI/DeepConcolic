@@ -18,7 +18,8 @@ The paper is available in https://arxiv.org/abs/1805.00089.
 
 ```
 usage: deepconcolic.py [-h] [--model MODEL] [--inputs DIR] [--outputs DIR]
-                       [--criterion nc, ssc...] [--init INT] [--labels FILE]
+                       [--criterion nc, ssc...] [--init INT]
+                       [--max-iterations INT] [--labels FILE]
                        [--dataset {mnist,fashion_mnist,cifar10}]
                        [--vgg16-model] [--norm linf, l0] [--input-rows INT]
                        [--input-cols INT] [--input-channels INT]
@@ -38,6 +39,8 @@ optional arguments:
   --criterion nc, ssc...
                         the test criterion
   --init INT            number of test samples to initialize the engine
+  --max-iterations INT  maximum number of engine iterations (use < 0 for
+                        unlimited)
   --labels FILE         the default labels
   --dataset {mnist,fashion_mnist,cifar10}
                         selected dataset

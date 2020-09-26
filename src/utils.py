@@ -19,6 +19,7 @@ import copy
 import sys
 import os
 import cv2
+import datetime
 
 COLUMNS = os.getenv ('COLUMNS', default = '80')
 P1F = '{:<' + COLUMNS + '}'
@@ -146,8 +147,15 @@ class OutputDir:
   Class to help ensure output directory is created before starting any
   lengthy computations.
   '''
-  def __init__(self, outs = '/tmp', log = None):
+  def __init__(self, outs = '/tmp', log = None, stamp = None,
+               prefix_stamp = False):
     self.dirpath = setup_output_dir (outs, log = log)
+    self.prefix_stamp = prefix_stamp
+    self.reset_stamp (stamp = stamp)
+
+  def reset_stamp (self, stamp = None):
+    self.stamp = datetime.datetime.now ().strftime("%Y%m%d-%H%M%S") \
+                 if stamp is None else stamp
 
   @property
   def path(self) -> str:
@@ -155,6 +163,13 @@ class OutputDir:
 
   def filepath(self, base) -> str:
     return self.dirpath + base
+
+  def stamped_filename(self, base, sep = '-', suff = '') -> str:
+    return (self.stamp + sep + base) if self.prefix_stamp else \
+           (base + sep + self.stamp) + suff
+
+  def stamped_filepath(self, *args, **kwds) -> str:
+    return self.dirpath + self.stamped_filename (*args, **kwds)
 
 # ---
 
