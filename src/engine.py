@@ -712,14 +712,14 @@ class Engine:
           setup_report: Callable[[Criterion], Report] = setup_basic_report,
           initial_test_cases = None,
           trace_origins: bool = False,
-          max_iterations = None,
+          max_iterations = -1,
           **kwds):
     '''
     Uses `setup_report` to construct a helper for outputing logs and
     new test cases, and then starts the engine for either: up to
     `max_iterations` iterations (i.e. number of runs of the analyzer)
-    if `max_iterations = None`, or until full coverage is reached, or
-    the criterion is fulfilled (whichever happens first).
+    if `max_iterations >= 0`, or else until full coverage is reached,
+    or the criterion is fulfilled (whichever happens first).
 
     Set `trace_origins` to `True` to keep track of the origin of
     generated test cases and speed up filtering by the oracle.
@@ -730,7 +730,7 @@ class Engine:
     filter = self.filter
 
     p1 ('Starting tests for {}{}.'
-        .format (self, '' if max_iterations == None else
+        .format (self, '' if max_iterations < 0 else
                  ' ({} max iterations)'.format (max_iterations)))
     report = setup_report (criterion, **kwds)
 
@@ -748,7 +748,7 @@ class Engine:
 
     try:
 
-      while ((max_iterations == None or iteration <= max_iterations) and
+      while ((iteration <= max_iterations or max_iterations < 0) and
              not coverage.done):
   
         adversarial = False
