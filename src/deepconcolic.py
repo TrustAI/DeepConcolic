@@ -104,6 +104,9 @@ def main():
   parser.add_argument("--max-iterations", dest="max_iterations", metavar="INT",
                       help="maximum number of engine iterations (use < 0 for unlimited)",
                       default='-1')
+  parser.add_argument("--random-seed", dest="random_seed", metavar="SEED", type=int,
+                      help="Integer seed for initializing the internal random number "
+                      "generator, and therefore get some(what) reproducible results")
   parser.add_argument("--labels", dest="labels", default="-1",
                       help="the default labels", metavar="FILE")
   parser.add_argument("--dataset", dest='dataset',
@@ -144,6 +147,15 @@ def main():
   
   args=parser.parse_args()
 
+  # Initialize with random seed first, if given:
+  if args.random_seed is not None:
+    try: np.random.seed (args.random_seed)
+    except ValueError as e:
+      sys.exit ("Invalid argument given for `--random-seed': {}"
+                .format (e))
+    # In case one also uses pythons' stdlib ?
+    import random
+    random.seed (args.random_seed)
 
   criterion=args.criterion
   norm=args.norm
