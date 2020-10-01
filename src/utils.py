@@ -72,6 +72,9 @@ Layer = keras.layers.Layer
 def is_input_layer(layer):
   return isinstance (layer, keras.layers.InputLayer)
 
+def is_reshape_layer(layer):
+  return isinstance (layer, keras.layers.Reshape)
+
 def is_conv_layer(layer):
   return isinstance (layer, (keras.layers.Conv1D,
                              keras.layers.Conv2D))

@@ -132,10 +132,9 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
     elif is_maxpooling_layer(layer):
       idx = gen_vars(idx, layer.output.shape, var_names)
 
-    elif is_flatten_layer(layer):
-      # NB: why not use output shape?
+    elif is_flatten_layer(layer) or is_reshape_layer(layer):
       idx = gen_vars(idx, layer.output.shape, var_names)
-  
+
     else:
       sys.exit ('Unknown layer: layer {0}, {1}'.format(self.layer_index, layer.name))
 
@@ -201,11 +200,12 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
       if activation_is_relu (layer):
         base_prob_dict[self.layer_index] = base_prob.copy()
 
-    elif is_flatten_layer(layer):
-      for idx in range (np.prod (isp[1:])):
-        out_var = self.output_var_names[0][idx]
-        iix = in_exprs[0][np.unravel_index (idx, in_exprs[0].shape)]
-        base_prob += LpConstraint (LpAffineExpression ([(out_var, -1), (iix, +1)]),
+    elif is_flatten_layer (layer) or is_reshape_layer (layer):
+      for iidx, oidx in zip (np.ndindex (in_exprs.shape[1:]),
+                             np.ndindex (out_vars.shape[1:])):
+        in_expr = in_exprs[0][iidx]
+        out_var = out_vars[0][oidx]
+        base_prob += LpConstraint (LpAffineExpression ([(out_var, -1), (in_expr, +1)]),
                                    LpConstraintEQ, 'c_name_{0}'.format(out_var), 0.)
 
     elif is_maxpooling_layer(layer):
@@ -221,7 +221,9 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
   def pulp_replicate_activations(self, ap_x, prev: PulpLayerOutput,
                                  exclude = (lambda _: False)) -> Sequence[LpConstraint]:
     layer = self.layer
-    if is_input_layer (layer) or is_flatten_layer (layer):
+    if (is_input_layer (layer) or
+        is_flatten_layer (layer) or
+        is_reshape_layer (layer)):
       return []
     # assert not is_input_layer (layer)
     # assert not is_flatten_layer (layer)
