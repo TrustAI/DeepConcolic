@@ -17,17 +17,17 @@ The paper is available in https://arxiv.org/abs/1805.00089.
 # Run  
 
 ```
-usage: deepconcolic.py [-h] [--model MODEL] [--inputs DIR] [--outputs DIR]
+usage: deepconcolic.py [-h] [--model MODEL] [--inputs DIR] --outputs DIR
                        [--criterion nc, ssc...] [--init INT]
                        [--max-iterations INT] [--random-seed SEED]
                        [--labels FILE]
-                       [--dataset {mnist,fashion_mnist,cifar10}]
-                       [--vgg16-model] [--norm linf, l0] [--input-rows INT]
-                       [--input-cols INT] [--input-channels INT]
-                       [--cond-ratio FLOAT] [--top-classes INT]
-                       [--layer-index INT [INT ...]] [--feature-index INT]
-                       [--fuzzing] [--num-tests INT] [--num-processes INT]
-                       [--sleep-time INT]
+                       [--dataset {mnist,fashion_mnist,cifar10,OpenML:har}]
+                       [--vgg16-model] [--filters {LOF}] [--norm linf, l0]
+                       [--input-rows INT] [--input-cols INT]
+                       [--input-channels INT] [--cond-ratio FLOAT]
+                       [--top-classes INT] [--layer-index INT [INT ...]]
+                       [--feature-index INT] [--fuzzing] [--num-tests INT]
+                       [--num-processes INT] [--sleep-time INT]
 
 Concolic testing for neural networks
 
@@ -45,9 +45,13 @@ optional arguments:
                         number generator, and therefore get some(what)
                         reproducible results
   --labels FILE         the default labels
-  --dataset {mnist,fashion_mnist,cifar10}
+  --dataset {mnist,fashion_mnist,cifar10,OpenML:har}
                         selected dataset
   --vgg16-model         vgg16 model
+  --filters {LOF}       additional filters used to put aside generated test
+                        inputs that are too far from training data (there is
+                        only one filter to choose from for now; the plural is
+                        used for future-proofing)
   --norm linf, l0       the norm metric
   --input-rows INT      input rows
   --input-cols INT      input cols
@@ -120,6 +124,7 @@ We suggest to create an environment using [miniconda](https://docs.conda.io/en/l
 conda create --name deepconcolic
 conda activate deepconcolic
 conda install opencv 
+pip3 install scikit-learn\>=0.22
 pip3 install tensorflow\>=2.3
 pip3 install pulp\>=2
 pip3 install adversarial-robustness-toolbox\>=1.3

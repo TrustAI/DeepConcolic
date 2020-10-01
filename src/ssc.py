@@ -1,9 +1,4 @@
-import argparse
-import sys
-import numpy as np
-import copy
 from utils import *
-
 
 RP_SIZE=50 ## the top 50 pairs
 NNUM=1000000000
@@ -73,7 +68,6 @@ def local_search(eval_batch, local_input, ssc_pair, adv_crafter, e_max_input, ss
 
 def ssc_search(eval_batch, raw_data, cond_ratio, cond_layer, dec_layer, dec_pos, adv_crafter, adv_object=None):
 
-  tf.keras.backend.set_learning_phase(False)
   try:
     sess = tf.compat.v1.Session ()
     sess.run(tf.compat.v1.global_variables_initializer())
