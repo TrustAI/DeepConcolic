@@ -929,8 +929,21 @@ class Engine:
     idxs = np.arange (len (data.data))
     for x in cv:
       np1 ('Computing {}... ' .format(x['name']))
-      train_idxs, test_idxs = train_test_split (
-        idxs, test_size = x['test_size'], train_size = x['train_size'])
+
+      train_size = None
+      if 'train_size' in x and 'test_size' in x:
+        train_size = max (1, min (x['train_size'], len (idxs) - x['test_size']))
+      elif 'train_size' in x:
+        train_size = min (x['train_size'], len (idxs) - 1)
+
+      test_size = None
+      if train_size is not None and 'test_size' not in x:
+        test_size = min (len (idxs) - train_size, len (idxs) - 1)
+      elif 'test_size' in x:
+        test_size = min (x['test_size'], len (idxs) - 1)
+
+      train_idxs, test_idxs = train_test_split \
+                              (idxs, test_size = test_size, train_size = train_size)
       acts, input_data, preds = self._activations_on_indexed_data (data, train_idxs)
       acc = x['train']({ j: acts[j] for j in x['layer_indexes'] },
                        input_data = input_data,
