@@ -3,6 +3,7 @@ from typing import *
 import pulp
 import pulp_encoding
 import engine
+from bounds import UniformBounds
 from pulp import *
 from utils import *
 import numpy as np
@@ -11,25 +12,18 @@ import numpy as np
 # ---
 
 
-class LpLinearMetric:
+class LpLinearMetric (UniformBounds):
   """
-  Basic class to represent any linear metric.
+  Basic class to represent any linear metric for LP.
   """  
-
-  def __init__ (self, LB = 0.0, UB = 1.0, **kwds):
-    self.LB = LB
-    self.UB = UB
-    super().__init__(**kwds)
-
 
   @property
   def lower_bound (self) -> float:
-    return self.LB
-
+    return self.low[0]
 
   @property
   def upper_bound (self) -> float:
-    return self.UB
+    return self.up[0]
 
 
 # ---
@@ -44,19 +38,19 @@ class LpSolver4DNN:
   """
 
   def setup(self, dnn, build_encoder, link_encoders, create_base_problem,
-            first = 0, upto = None) -> None:
+            input_bounds: Bounds = None, first = 0, upto = None) -> None:
     """
     Constructs and sets up LP problems to encode from layer `first` up
     to layer `upto`.
     """
 
-    layer_encoders, input_layer_encoder, var_names = link_encoders (dnn, build_encoder, first, upto)
+    layer_encoders, input_layer_encoder, var_names = \
+                    link_encoders (dnn, build_encoder, input_bounds, first, upto)
     tp1 ('{} LP variables have been collected.'
          .format(sum(x.size for x in var_names)))
     self.input_layer_encoder = input_layer_encoder
     self.layer_encoders = layer_encoders
-    base_constraints = create_base_problem (layer_encoders, input_layer_encoder)
-    self.base_constraints = base_constraints
+    self.base_constraints = create_base_problem (layer_encoders, input_layer_encoder)
     p1 ('Base LP encoding of DNN {}{} has {} variables.'
         .format(dnn.name,
                 '' if upto == None else ' up to layer {}'.format(upto),
@@ -106,14 +100,15 @@ class PulpLinearMetric (LpLinearMetric):
   def dist_var_name(self):
     return 'd'
 
-    
+
   def draw_lower_bound(self):
-    return np.random.uniform (self.LB / self.LB_noise, self.UB / self.LB_noise)
+    return np.random.uniform (self.low / self.LB_noise,
+                              self.up / self.LB_noise)
 
 
   @abstractmethod
   def pulp_constrain(self, dist_var, in_vars, values,
-                     name_prefix = 'input_activations_constraint') -> Sequence[LpConstraint]:
+                     name_prefix = 'input_') -> Sequence[LpConstraint]:
     raise NotImplementedError
 
 
@@ -167,12 +162,15 @@ class PulpSolver4DNN (LpSolver4DNN):
     super().__init__(**kwds)
 
 
-  def setup(self, dnn, metric: PulpLinearMetric,
+  def setup(self, dnn,
+            metric: PulpLinearMetric,
+            input_bounds: Bounds = None,
             build_encoder = pulp_encoding.strict_encoder,
             link_encoders = pulp_encoding.setup_layer_encoders,
             create_problem = pulp_encoding.create_base_problem,
             first = 0, upto = None):
-    super().setup (dnn, build_encoder, link_encoders, create_problem, first, upto)
+    super().setup (dnn, build_encoder, link_encoders, create_problem,
+                   input_bounds, first, upto)
     # That's the objective:
     self.d_var = LpVariable(metric.dist_var_name,
                             lowBound = metric.draw_lower_bound (),
@@ -191,11 +189,12 @@ class PulpSolver4DNN (LpSolver4DNN):
                              metric: PulpLinearMetric,
                              x: np.ndarray,
                              extra_constrs = [],
-                             name_prefix = 'x_0_0'):
+                             name_prefix = None):
     in_vars = self.input_layer_encoder.pulp_in_vars ()
     assert (in_vars.shape == x.shape)
     cstrs = extra_constrs
-    cstrs.extend(metric.pulp_constrain (self.d_var, in_vars, x, name_prefix))
+    cstrs.extend (metric.pulp_constrain (self.d_var, in_vars, x,
+                                         name_prefix = name_prefix))
 
     for c in cstrs: problem += c
 

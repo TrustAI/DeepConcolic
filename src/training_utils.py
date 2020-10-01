@@ -88,7 +88,9 @@ def log_confusion_matrix(fw, model, class_names, test_data, epoch, logs, **kwds)
 def log_confusion_matrix_callback (fw, model, class_names, test_data, **kwds):
   return tf.keras.callbacks.LambdaCallback (
     on_epoch_end = lambda epoch, logs: \
-    log_confusion_matrix (fw, model, class_names, test_data, epoch, logs, **kwds)))
+    log_confusion_matrix (fw, model, class_names, test_data, epoch, logs, **kwds))
+
+# Image-specific
 
 def log_img_dataset (fw, dataset_name, dataset):
   with fw.as_default ():

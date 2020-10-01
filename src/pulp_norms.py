@@ -14,34 +14,26 @@ class LInfPulp (LInf, PulpLinearMetric):
   """
 
   def pulp_constrain(self, dist_var, var_names, values,
-                     name_prefix = 'input_activations_constraint') -> Sequence[LpConstraint]:
+                     name_prefix = 'input_') -> Sequence[LpConstraint]:
     cstrs = []
     for idx, x in np.ndenumerate (var_names):
-      x0 = values[idx]
-      var = '_'.join(str(i) for i in (name_prefix,) + idx)
+      # NB: `vname` is only used for identifying coinstraints
+      u = values[idx]
+      vname = '_'.join(str(i) for i in (name_prefix,) + idx)
 
       cstrs.extend([
-        # x <= x0 + d
+        # x <= u + d
         LpConstraint(LpAffineExpression([(dist_var, -1), (x, +1)]),
-                     LpConstraintLE, rhs = float(x0),
-                     name = '{}<=x0+{}'.format(var, self.dist_var_name)),
-        
-        # x >= x0 - d
+                     LpConstraintLE, rhs = float(u),
+                     name = '{}<=x0+{}'.format(vname, self.dist_var_name)),
+
+        # x >= u - d
         LpConstraint(LpAffineExpression([(dist_var, +1), (x, +1)]),
-                     LpConstraintGE, rhs = float(x0),
-                     name = '{}>=x0-{}'.format(var, self.dist_var_name)),
-
-        # x<=1
-        LpConstraint(LpAffineExpression([(x, +1)]),
-                     LpConstraintLE, rhs = float(self.UB),
-                     name = '{}<=ub'.format(var)),
-
-        # x>=0
-        LpConstraint(LpAffineExpression([(x, +1)]),
-                     LpConstraintGE, rhs = float(self.LB),
-                     name = '{}>=lb'.format(var))
+                     LpConstraintGE, rhs = float(u),
+                     name = '{}>=x0-{}'.format(vname, self.dist_var_name)),
       ])
 
     return cstrs
+
  
 # ---

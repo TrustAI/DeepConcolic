@@ -90,6 +90,8 @@ def setup (test_object = None,
   Helper to build an engine for neuron-coverage (using
   :class:`NcCriterion` and an analyzer constructed using
   `setup_analyzer`).
+
+  Extra arguments are passed to `setup_analyzer`.
   """
 
   setup_layer = (
