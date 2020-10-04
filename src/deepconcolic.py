@@ -11,6 +11,7 @@ def deepconcolic(criterion, norm, test_object, report_args,
                  norm_args = {},
                  dbnc_spec = {},
                  input_bounds = None,
+                 run_engine = True,
                  **engine_run_args):
   test_object.check_layer_indices (criterion)
   engine = None
@@ -93,8 +94,9 @@ def deepconcolic(criterion, norm, test_object, report_args,
     print('\n not supported coverage criterion... {0}\n'.format(criterion))
     sys.exit(0)
 
-  if engine != None:
-    engine.run (**report_args, **engine_run_args)
+  if engine != None and run_engine:
+    return engine, engine.run (**report_args, **engine_run_args)
+  return engine
 
 
 def main():
@@ -182,7 +184,7 @@ def main():
   inp_ub = 1
   save_input = None
   amplify_diffs = True
-  metric_lower_bound_noise = 1e6
+  lower_bound_metric_noise = .01
   input_bounds = UniformBounds (0.0, 1.0)
 
   # fuzzing_params
@@ -207,15 +209,14 @@ def main():
     print (len(xs), 'loaded.')
   elif args.dataset in datasets.choices:
     print ('Loading {} dataset... '.format (args.dataset), end = '', flush = True)
-    (x_train, y_train), (x_test, y_test), _, kind, _ = datasets.load_by_name (args.dataset)
+    (x_train, y_train), (x_test, y_test), dims, kind, _ = datasets.load_by_name (args.dataset)
     test_data = raw_datat(x_test, y_test, args.dataset)
     train_data = raw_datat(x_train, y_train, args.dataset)
     save_input = save_an_image if kind in datasets.image_kinds else \
-                 save_in_csv ('new_inputs') if kind is datasets.unknown_kind else \
+                 save_in_csv ('new_inputs') if len (dims) == 1 else \
                  None
     amplify_diffs = kind in datasets.image_kinds
-    metric_lower_bound_noise = 255 if kind in datasets.image_kinds else \
-                               1e6
+    lower_bound_metric_noise = .1       # 10%
     input_bounds = UniformBounds () if kind in datasets.image_kinds else \
                    StatBasedInputBounds (hard_bounds = UniformBounds (-1.0, 1.0)) \
                    if kind in datasets.normalized_kinds else StatBasedInputBounds ()
@@ -234,13 +235,12 @@ def main():
     tf.compat.v1.disable_eager_execution ()
     dnn = keras.models.load_model (args.model)
     dnn.summary()
-    save_input = save_an_image
   elif args.vgg16:
     # NB: Eager execution needs to be disabled before any model loading.
     tf.compat.v1.disable_eager_execution ()
     dnn = keras.applications.VGG16 ()
     inp_ub = 255
-    metric_lower_bound_noise = 255
+    lower_bound_metric_noise = 1/255
     dnn.summary()
     save_input = save_an_image
   else:
@@ -314,7 +314,7 @@ def main():
                                 'save_input_func': save_input,
                                 'amplify_diffs': amplify_diffs },
                 norm_args = { 'factor': .25,
-                              'LB_noise': metric_lower_bound_noise },
+                              'LB_noise': lower_bound_metric_noise },
                 engine_args = { 'custom_filters': input_filters },
                 dbnc_spec = dbnc_spec,
                 input_bounds = input_bounds,

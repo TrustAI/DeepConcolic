@@ -161,15 +161,17 @@ class OutputDir:
   Class to help ensure output directory is created before starting any
   lengthy computations.
   '''
-  def __init__(self, outs = '/tmp', log = None, stamp = None,
-               prefix_stamp = False):
+  def __init__(self, outs = '/tmp', log = None,
+               enable_stamp = True, stamp = None, prefix_stamp = False):
     self.dirpath = setup_output_dir (outs, log = log)
+    self.enable_stamp = enable_stamp
     self.prefix_stamp = prefix_stamp
     self.reset_stamp (stamp = stamp)
 
   def reset_stamp (self, stamp = None):
     self.stamp = datetime.datetime.now ().strftime("%Y%m%d-%H%M%S") \
-                 if stamp is None else stamp
+                 if stamp is None and self.enable_stamp else \
+                 stamp if self.enable_stamp else ''
 
   @property
   def path(self) -> str:
@@ -179,8 +181,9 @@ class OutputDir:
     return self.dirpath + base
 
   def stamped_filename(self, base, sep = '-', suff = '') -> str:
-    return (self.stamp + sep + base) if self.prefix_stamp else \
-           (base + sep + self.stamp) + suff
+    return ((self.stamp + sep + base) if self.enable_stamp and self.prefix_stamp else \
+            (base + sep + self.stamp) if self.enable_stamp else \
+            (base)) + suff
 
   def stamped_filepath(self, *args, **kwds) -> str:
     return self.dirpath + self.stamped_filename (*args, **kwds)

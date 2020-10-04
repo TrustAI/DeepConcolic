@@ -77,7 +77,7 @@ class LpSolver4DNN:
     """
     Augment the given `LP` problem with extra constraints
     (`extra_constrs`), and minimize `metric` against `x`.
-    
+
     Must restore `problem` to its state upon call before termination.
     """
     raise NotImplementedError
@@ -91,7 +91,14 @@ class PulpLinearMetric (LpLinearMetric):
   Any linear metric for the :class:`PulpSolver4DNN`.
   """  
 
-  def __init__(self, LB_noise = 255, **kwds):
+  def __init__(self, LB_noise = .01, **kwds):
+    '''
+    - Parameter `LB_noise` is used to induce a noise on the lower
+      bound for variables of this metric, which is drawn between `low`
+      and `up * LB_noise`; higher values increase the deviation of the
+      lower bound towards the upper bound.  The default value is 1%.
+    '''
+    assert 0 < LB_noise < 1
     self.LB_noise = LB_noise
     super().__init__(**kwds)
 
@@ -101,9 +108,15 @@ class PulpLinearMetric (LpLinearMetric):
     return 'd'
 
 
-  def draw_lower_bound(self):
-    return np.random.uniform (self.low / self.LB_noise,
-                              self.up / self.LB_noise)
+  def draw_lower_bound(self, draw = np.random.uniform) -> float:
+    '''
+    Draw a noisy lower bound.
+
+    The returned bound is drawn between `low` and `up * LB_noise`.
+    The `draw` function must return a float value that is within the
+    two given bounds (:func:`np.random.uniform` by default).
+    '''
+    return draw (self.lower_bound, self.upper_bound * self.LB_noise)
 
 
   @abstractmethod
@@ -197,6 +210,9 @@ class PulpSolver4DNN (LpSolver4DNN):
                                          name_prefix = name_prefix))
 
     for c in cstrs: problem += c
+
+    # Draw a new distance lower bound:
+    self.d_var.lowBound = metric.draw_lower_bound ()
 
     ctp1 ('LP solving: {} constraints'.format(len(problem.constraints)))
     assert (problem.objective is not None)

@@ -406,6 +406,11 @@ class Report:
 
 
   @property
+  def num_tests(self):
+    return self.ntests
+
+
+  @property
   def num_adversarials(self):
     return len(self.adversarials)
 
@@ -702,6 +707,7 @@ class Engine:
     self.dynamic_filters = [ f for f in fltrs if isinstance (f, DynamicFilter) ]
     super().__init__(**kwds)
     self._stat_based_inits ()
+    self._initialized = False
 
 
   def __repr__(self):
@@ -738,14 +744,14 @@ class Engine:
 
 
   def run(self,
-          setup_report: Callable[[Criterion], Report] = setup_basic_report,
+          report: Union[Report, Callable[[Criterion], Report]] = setup_basic_report,
           initial_test_cases = None,
           trace_origins: bool = False,
           max_iterations = -1,
-          **kwds):
+          **kwds) -> Report:
     '''
-    Uses `setup_report` to construct a helper for outputing logs and
-    new test cases, and then starts the engine for either: up to
+    Uses `report` to construct a helper for outputing logs and new
+    test cases, and then starts the engine for either: up to
     `max_iterations` iterations (i.e. number of runs of the analyzer)
     if `max_iterations >= 0`, or else until full coverage is reached,
     or the criterion is fulfilled (whichever happens first).
@@ -755,13 +761,22 @@ class Engine:
     '''
 
     criterion = self.criterion
-    criterion.finalize_setup ()
 
-    p1 ('Starting tests for {}{}.'
-        .format (self, '' if max_iterations < 0 else
-                 ' ({} max iterations)'.format (max_iterations)))
-    report = setup_report (criterion, **kwds)
+    if not self._initialized:
+      criterion.finalize_setup ()
+      p1 ('Starting tests for {}{}.'
+          .format (self, '' if max_iterations < 0 else
+                   ' ({} max iterations)'.format (max_iterations)))
+      self._initialized = True
+    else:
+      p1 ('Continuing tests for {}{}.'
+          .format (self, '' if max_iterations < 0 else
+                   ' ({} max iterations)'.format (max_iterations)))
 
+    report = report if isinstance (report, Report) else \
+             report (criterion, **kwds)
+
+    # Initialize search to add new test cases in every call to run:
     self._initialize_search (report, initial_test_cases)
 
     coverage = criterion.coverage ()
@@ -830,6 +845,7 @@ class Engine:
     except EarlyTermination as e:
       p1 ('{}'.format (e))
 
+    return report
 
   def _stat_based_inits(self):
     '''
@@ -913,8 +929,21 @@ class Engine:
     idxs = np.arange (len (data.data))
     for x in cv:
       np1 ('Computing {}... ' .format(x['name']))
-      train_idxs, test_idxs = train_test_split (
-        idxs, test_size = x['test_size'], train_size = x['train_size'])
+
+      train_size = None
+      if 'train_size' in x and 'test_size' in x:
+        train_size = max (1, min (x['train_size'], len (idxs) - x['test_size']))
+      elif 'train_size' in x:
+        train_size = min (x['train_size'], len (idxs) - 1)
+
+      test_size = None
+      if train_size is not None and 'test_size' not in x:
+        test_size = min (len (idxs) - train_size, len (idxs) - 1)
+      elif 'test_size' in x:
+        test_size = min (x['test_size'], len (idxs) - 1)
+
+      train_idxs, test_idxs = train_test_split \
+                              (idxs, test_size = test_size, train_size = train_size)
       acts, input_data, preds = self._activations_on_indexed_data (data, train_idxs)
       acc = x['train']({ j: acts[j] for j in x['layer_indexes'] },
                        input_data = input_data,
