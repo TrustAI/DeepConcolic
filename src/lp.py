@@ -77,7 +77,7 @@ class LpSolver4DNN:
     """
     Augment the given `LP` problem with extra constraints
     (`extra_constrs`), and minimize `metric` against `x`.
-    
+
     Must restore `problem` to its state upon call before termination.
     """
     raise NotImplementedError

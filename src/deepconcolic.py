@@ -10,6 +10,7 @@ def deepconcolic(criterion, norm, test_object, report_args,
                  engine_args = {},
                  norm_args = {},
                  input_bounds = None,
+                 run_engine = True,
                  **engine_run_args):
   test_object.check_layer_indices (criterion)
   engine = None
@@ -61,8 +62,9 @@ def deepconcolic(criterion, norm, test_object, report_args,
     print('\n not supported coverage criterion... {0}\n'.format(criterion))
     sys.exit(0)
 
-  if engine != None:
-    engine.run (**report_args, **engine_run_args)
+  if engine != None and run_engine:
+    return engine, engine.run (**report_args, **engine_run_args)
+  return engine
 
 
 def main():
