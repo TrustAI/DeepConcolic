@@ -27,12 +27,14 @@ def deepconcolic(criterion, norm, test_object, report_args,
                          input_bounds = input_bounds)
     elif norm=='l0':
       from nc_l0 import NcL0Analyzer
+      l0_args = copy.copy (norm_args)
+      del l0_args['LB_noise']
       engine = nc_setup (test_object = test_object,
                          engine_args = engine_args,
                          setup_analyzer = NcL0Analyzer,
                          input_shape = test_object.raw_data.data[0].shape,
                          eval_batch = eval_batch_func (test_object.dnn),
-                         l0_args = norm_args)
+                         l0_args = l0_args)
     else:
       print('\n not supported norm... {0}\n'.format(norm))
       sys.exit(0)
@@ -120,6 +122,9 @@ def main():
   parser.add_argument("--max-iterations", dest="max_iterations", metavar="INT",
                       help="maximum number of engine iterations (use < 0 for unlimited)",
                       default='-1')
+  parser.add_argument("--save-all-tests", dest="save_all_tests", action="store_true",
+                      help="save all generated tests in output directory; "
+                      "only adversarial examples are kept by default")
   parser.add_argument("--rng-seed", dest="rng_seed", metavar="SEED", type=int,
                       help="Integer seed for initializing the internal random number "
                       "generator, and therefore get some(what) reproducible results")
@@ -313,7 +318,7 @@ def main():
 
   deepconcolic (args.criterion, args.norm, test_object,
                 report_args = { 'outdir': OutputDir (outs, log = True),
-                                'save_new_tests': False,
+                                'save_new_tests': args.save_all_tests,
                                 'save_input_func': save_input,
                                 'amplify_diffs': amplify_diffs },
                 norm_args = { 'factor': .25,

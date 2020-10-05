@@ -19,8 +19,8 @@ The paper is available in https://arxiv.org/abs/1805.00089.
 ```
 usage: deepconcolic.py [-h] [--model MODEL] [--inputs DIR] --outputs DIR
                        [--criterion nc, ssc...] [--init INT]
-                       [--max-iterations INT] [--rng-seed SEED]
-                       [--labels FILE]
+                       [--max-iterations INT] [--save-all-tests]
+                       [--rng-seed SEED] [--labels FILE]
                        [--dataset {mnist,fashion_mnist,cifar10,OpenML:har}]
                        [--vgg16-model] [--filters {LOF}] [--norm linf, l0]
                        [--input-rows INT] [--input-cols INT]
@@ -42,6 +42,8 @@ optional arguments:
   --init INT            number of test samples to initialize the engine
   --max-iterations INT  maximum number of engine iterations (use < 0 for
                         unlimited)
+  --save-all-tests      save all generated tests in output directory; only
+                        adversarial examples are kept by default
   --rng-seed SEED       Integer seed for initializing the internal random
                         number generator, and therefore get some(what)
                         reproducible results
