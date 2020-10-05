@@ -15,30 +15,29 @@ from pomegranate.distributions import (DiscreteDistribution,
                                        ConditionalProbabilityTable,
                                        JointProbabilityTable)
 
-
-# ---
-
-
-class BFcLayer (CoverableLayer):
-  """
-  Base class for layers to be covered by BN-based criteria.
-  """
-
-  def __init__(self, transform = None, discretization = None, **kwds):
-    super().__init__(**kwds)
-    self.transform = transform
-    self.discr = discretization
-
-
-  @property
-  def num_features (self):
-    return len (self.transform[-1].components_)
-
-
 # ---
 
 
 Interval = Tuple[Optional[float], Optional[float]]
+
+def interval_dist (interval: Interval, v: float):
+  interval = (interval[0] if interval[0] is not None else -np.inf,
+              interval[1] if interval[1] is not None else np.inf)
+  dist = np.amin (np.abs (interval - np.array(v)))
+  dist = - dist if interval[0] < v < interval[1] else dist
+  return dist
+
+def interval_repr (interval: Interval, prec = 3, float_format = 'g'):
+  interval = (interval[0] if interval[0] is not None else -np.inf,
+              interval[1] if interval[1] is not None else np.inf)
+  return '{lop}{:.{prec}{float_format}}, {:.{prec}{float_format}}{rop}' \
+         .format (*interval,
+                  prec = prec, float_format = float_format,
+                  lop = '(' if interval[0] == -np.inf else '[',
+                  rop = ')' if interval[1] == np.inf else ']')
+
+
+# ---
 
 
 class FeatureDiscretizer:
@@ -56,7 +55,11 @@ class FeatureDiscretizer:
     raise NotImplementedError
 
   @abstractmethod
-  def fit_wrt (self, x, y, feat_extr) -> None:
+  def fit_wrt (self, x, y, feat_extr, **kwds) -> None:
+    raise NotImplementedError
+
+  @abstractmethod
+  def get_params (self, deep = True) -> dict:
     raise NotImplementedError
 
 
@@ -73,8 +76,10 @@ class FeatureBinarizer (FeatureDiscretizer, Binarizer):
     thr = self.threshold[0, feature]
     return (-np.inf, thr) if part == 0 else (thr, np.inf)
 
-  def fit_wrt (self, x, y, feat_extr) -> None:
-    self.threshold = feat_extr.transform (np.zeros (shape = x[:1].shape)).reshape (1, -1)
+  def fit_wrt (self, x, y, feat_extr, **kwds) -> None:
+    self.threshold = \
+          feat_extr.transform (np.zeros (shape = x[:1].shape)) \
+          .reshape (1, -1)
     self.fit (y)
 
 
@@ -95,14 +100,20 @@ class KBinsFeatureDiscretizer (FeatureDiscretizer, KBinsDiscretizer):
     return ((-np.inf if part   == 0           else edges[part  ],
              np.inf  if part+2 == len (edges) else edges[part+1]))
 
-  def fit_wrt (self, _x, y, _transform) -> None:
-    self.fit (y)
+  def fit_wrt (self, x, y, feat_extr, **kwds) -> None:
+      super().fit (y)
+
+  def get_params (self, deep = True) -> dict:
+    p = super().get_params (deep)
+    p['extended'] = False
+    return p
+
 
 
 class KBinsNOutFeatureDiscretizer (KBinsFeatureDiscretizer):
 
   def __init__(self, n_bins = 2, **kwds):
-    super().__init__(n_bins = max(2, n_bins), **kwds)
+    super().__init__(n_bins = None if n_bins is None else max(2, n_bins), **kwds)
     self.one = n_bins == 1
 
   def feature_parts (self, feature):
@@ -125,8 +136,69 @@ class KBinsNOutFeatureDiscretizer (KBinsFeatureDiscretizer):
       return ((-np.inf if part == 0           else edges[part-1],
                np.inf  if part == len (edges) else edges[part  ]))
 
-  def fit_wrt (self, _x, y, _transform) -> None:
-    self.fit (y)
+  def transform (self, x):
+    return super ().transform (x) + 1
+
+  def get_params (self, deep = True) -> dict:
+    p = super().get_params (deep)
+    p['extended'] = True
+    return p
+
+# ---
+
+
+class BFcLayer (CoverableLayer):
+  """
+  Base class for layers to be covered by BN-based criteria.
+  """
+
+  def __init__(self, transform = None, discretization: FeatureDiscretizer = None, **kwds):
+    super().__init__(**kwds)
+    assert isinstance (discretization, FeatureDiscretizer)
+    self.transform = transform
+    self.discr = discretization
+
+  def get_params (self, deep = True):
+    return dict (name = self.layer.name,
+                 transform = self.transform.get_params (deep))
+
+  @property
+  def num_features (self):
+    '''
+    Number of extracted features for the layer.
+    '''
+    return len (self.transform[-1].components_)
+
+
+  def range_features (self):
+    '''
+    Range over all feature indexes.
+    '''
+    return range (self.num_features)
+
+
+  def flatten_map (self, map, acc = None):
+    x = np.vstack([e.flatten () for e in map[self.layer_index]])
+    acc = np.hstack ((acc, x)) if acc is not None else x
+    if acc is not x: del x
+    return acc
+
+
+  def dimred_activations (self, acts, acc = None):
+    x = np.vstack([a.flatten () for a in acts[self.layer_index]])
+    y = self.transform.transform (x)
+    acc = np.hstack ((acc, y)) if acc is not None else y
+    del x
+    if acc is not y: del y
+    return acc
+
+
+  def dimred_n_discretize_activations (self, acts, acc = None):
+    x = np.vstack([a.flatten () for a in acts[self.layer_index]])
+    y = self.discr.transform (self.transform.transform (x))
+    acc = np.hstack ((acc, y.astype (int))) if acc is not None else y.astype (int)
+    del x, y
+    return acc
 
 
 # ---
@@ -146,8 +218,12 @@ class DiscretizedFeatureNode (Node):
     self.feature = feature
 
 
-  def discretized_range(self):
+  def discretized_range(self) -> range:
     return range (self.flayer.discr.feature_parts (self.feature))
+
+
+  def interval(self, feature_interval: int) -> Interval:
+    return self.flayer.discr.part_edges (self.feature, feature_interval)
 
 
 
@@ -189,27 +265,41 @@ class DiscretizedHiddenFeatureNode (DiscretizedFeatureNode):
 
 
 class _BaseBFcCriterion (Criterion):
+  '''
+  ...
+
+  - `feat_extr_train_size`: gives the proportion of training data from
+    `bn_abstr_train_size` to use for feature extraction if <= 1;
+    `min(feat_extr_train_size, bn_abstr_train_size)` will be used
+    otherwise.
+
+  ...
+  '''
 
   def __init__(self,
                clayers: Sequence[CoverableLayer],
                *args,
-               epsilon = 1e-4,
-               bn_abstr_train_size = 0.5,
+               epsilon = None,
+               bn_abstr_train_size = None,
                bn_abstr_test_size = None,
-               bn_abstr_n_jobs = 1,
+               bn_abstr_n_jobs = None,
+               feat_extr_train_size = 1,
                print_classification_reports = True,
                score_layer_likelihoods = False,
                report_on_feature_extractions = None,
                close_reports_on_feature_extractions = None,
                assess_discretized_feature_probas = False,
+               outdir: OutputDir = None,
                **kwds):
     assert (print_classification_reports is None or isinstance (print_classification_reports, bool))
     assert (report_on_feature_extractions is None or callable (report_on_feature_extractions))
     assert (close_reports_on_feature_extractions is None or callable (close_reports_on_feature_extractions))
-    self.epsilon = epsilon
+    assert (feat_extr_train_size > 0)
+    self.epsilon = epsilon or 1e-4
     self.bn_abstr_n_jobs = bn_abstr_n_jobs
-    self.bn_abstr_params = { 'train_size': bn_abstr_train_size,
-                             'test_size': bn_abstr_test_size }
+    self.bn_abstr_params = dict (train_size = bn_abstr_train_size or 0.5,
+                                 test_size = bn_abstr_test_size or 0.5)
+    self.feat_extr_train_size = feat_extr_train_size
     self.print_classification_reports = print_classification_reports
     self.score_layer_likelihoods = score_layer_likelihoods
     self.report_on_feature_extractions = report_on_feature_extractions
@@ -219,43 +309,34 @@ class _BaseBFcCriterion (Criterion):
     clayers = list (filter (lambda l: isinstance (l, BoolMappedCoverableLayer), clayers))
     assert (clayers == [])
     self.base_dimreds = None
+    self.outdir = outdir or OutputDir ()
     super().__init__(*args, **kwds)
+    self._reset_progress ()
 
 
   def finalize_setup(self):
     self.analyzer.finalize_setup (self.flayers)
 
 
-  def flatten_for_layer (self, map, l = None):
-    res = None
-    for fl in self.flayers:
-      if l is None or fl in l:
-        x = np.vstack((e.flatten () for e in map[fl.layer_index]))
-        res = np.hstack ((res, x)) if res is not None else x
-        if res is not x: del x
-    return res
+  def flatten_for_layer (self, map, fls = None):
+    acc = None
+    for fl in self.flayers if fls is None else fls:
+      acc = fl.flatten_map (map, acc = acc)
+    return acc
 
 
-  def dimred_activations (self, acts, l = None):
-    yacts = None
-    for fl in self.flayers:
-      if l is None or fl in l:
-        x = np.vstack((a.flatten () for a in acts[fl.layer_index]))
-        y = fl.transform.transform (x)
-        yacts = np.hstack ((yacts, y)) if yacts is not None else y
-        del x
-        if yacts is not y: del y
-    return yacts
+  def dimred_activations (self, acts, fls = None):
+    acc = None
+    for fl in self.flayers if fls is None else fls:
+      acc = fl.dimred_activations (acts, acc = acc)
+    return acc
 
 
-  def dimred_n_discretize_activations (self, acts):
-    facts = None
-    for fl in self.flayers:
-      x = np.vstack((a.flatten () for a in acts[fl.layer_index]))
-      y = fl.discr.transform (fl.transform.transform (x))
-      facts = np.hstack ((facts, y.astype (int))) if facts is not None else y.astype (int)
-      del x, y
-    return facts
+  def dimred_n_discretize_activations (self, acts, fls = None):
+    acc = None
+    for fl in self.flayers if fls is None else fls:
+      acc = fl.dimred_n_discretize_activations (acts, acc = acc)
+    return acc
 
 
   # ---
@@ -265,6 +346,8 @@ class _BaseBFcCriterion (Criterion):
     super().reset ()
     self.base_dimreds = None
     assert (self.num_test_cases == 0)
+    self.outdir.reset_stamp ()
+    self._reset_progress ()
 
 
   def fit_activations (self, acts):
@@ -278,9 +361,8 @@ class _BaseBFcCriterion (Criterion):
                 n_jobs = int (self.bn_abstr_n_jobs))
 
 
-  def update_coverage (self, tl: Sequence[Input]) -> None:
+  def register_new_activations (self, acts) -> None:
     # Take care `num_test_cases` has already been updated:
-    acts = self.analyzer.eval_batch (np.array(tl), allow_input_layer = False)
     self.fit_activations (acts)
 
     # Append feature values for new tests
@@ -293,71 +375,102 @@ class _BaseBFcCriterion (Criterion):
   # ---
 
 
-  def tests_feature_values_n_intervals (self, fidx: int):
-    fl, feature = self.fidx2fli[fidx]
-    dimreds = self.base_dimreds[..., fidx : fidx + 1].flatten ()
+  def tests_feature_values_n_intervals (self, feature: int):
+    fl, feature = self.fidx2fli[feature]
+    dimreds = self.base_dimreds[..., feature : feature + 1].flatten ()
     intervals = [ (i, fl.discr.edges (feature, v)) for i, v in enumerate(dimreds) ]
     return dimreds, intervals
 
 
-  def all_tests_close_to (self, fidx: int, fint: int):
-    dimreds, intervals = self.tests_feature_values_n_intervals (fidx)
-    fl, flfeature = self.fidx2fli[fidx]
-    target_interval = fl.discr.part_edges (flfeature, fint)
-    intervals = [ i for i, interval in intervals if interval != target_interval ]
-    all = (([ (i, abs(dimreds[i] - target_interval[0])) for i in intervals ]
-            if target_interval[0] != -np.inf else []) +
-           ([ (i, abs(dimreds[i] - target_interval[1])) for i in intervals ]
-            if target_interval[1] != np.inf else []))
+  def all_tests_close_to (self, feature: int, feature_interval: int):
+    dimreds, intervals = self.tests_feature_values_n_intervals (feature)
+    feature_node = self.N.states[feature]
+    fl, flfeature = feature_node.flayer, feature_node.feature
+    target_interval = fl.discr.part_edges (flfeature, feature_interval)
+    all = [ (i, interval_dist (target_interval, dimreds[i])) for i, _ in intervals ]
     all.sort (key = lambda x: x[1])
     # np.random.shuffle (all)
     del dimreds, intervals
     return all
 
 
-  def _check_within (self, expected: int, verbose = True):
-    def check_acts (feature: int, t: Input) -> bool:
-      acts = self.analyzer.eval (t, allow_input_layer = False)
-      facts = self.dimred_n_discretize_activations (acts)
-      res = facts[0][feature] == expected
-      if verbose and not res:
-        dimred = self.dimred_activations (acts)
-        dimreds = dimred[..., feature : feature + 1].flatten ()
-        tp1 ('| Got interval {}, expected {} (fval {})'
-             .format(facts[0][feature], expected, dimreds))
-      return res
-    return check_acts
+  # def _check_within (self, feature: int, expected_interval: int, verbose = True):
+  #   def aux (t: Input) -> bool:
+  #     acts = self.analyzer.eval (t, allow_input_layer = False)
+  #     facts = self.dimred_n_discretize_activations (acts)
+  #     res = facts[0][feature] == expected_interval
+  #     if verbose and not res:
+  #       dimred = self.dimred_activations (acts)
+  #       dimreds = dimred[..., feature : feature + 1].flatten ()
+  #       tp1 ('| Got interval {}, expected {} (fval {})'
+  #            .format(facts[0][feature], expected_interval, dimreds))
+  #     return res
+  #   return aux
 
 
   # ----
 
 
+  def _reset_progress (self):
+    self.progress_file = self.outdir.stamped_filepath ( \
+      str (self) + '_' + str (self.metric) + '_progress', suff = '.csv')
+    write_in_file (self.progress_file,
+                   '# ',
+                   ' '.join (('feature',
+                              'interval_left', 'interval_right',
+                              'old_dist', 'new_dist')),
+                   '\n')
+
+
+  def _measure_progress_towards_interval (self,
+                                          feature: int,
+                                          interval: Interval,
+                                          old: Input):
+    def aux (new : Input) -> bool:
+      acts = self.analyzer.eval_batch (np.array([old, new]),
+                                       allow_input_layer = False)
+      dimreds = self.dimred_activations (acts)
+      old_v = dimreds[0][..., feature : feature + 1].flatten ()[0]
+      new_v = dimreds[1][..., feature : feature + 1].flatten ()[0]
+      old_dist = interval_dist (interval, old_v)
+      new_dist = interval_dist (interval, new_v)
+      append_in_file (self.progress_file,
+                      ' '.join (str (i) for i in (feature,
+                                                  interval[0], interval[1],
+                                                  old_dist, new_dist)),
+                      '\n')
+      return (old_dist - new_dist, new_dist) if old_dist > 0.0 else \
+             (0.0, new_dist)   # return 0 if old_v already in interval
+    return aux
+
+
+  # ---
+
+
   def _probas (self, p):
-    return [ p.parameters[0][i]
-             for i in range (len (p.parameters[0])) ]
+    return p.parameters[0] if not isinstance (p.parameters[0], dict) else \
+           [ p.parameters[0][i] for i in p.parameters[0] ]
 
 
-  def _all_marginals (self):
-    marginals = self.N.marginal ()
-    res = [ self._probas (p) for p in marginals ]
-    del marginals
-    return res
+  def _all_marginals (self) -> range:
+    return (self._probas (p) for p in self.N.marginal ())
 
 
-  def _all_cond_marginals (self):
-    return [ j.distribution # np.array (self._probas (j.distribution.marginal()))
-             for j in self.N.states
-             # if isinstance (j.distribution, JointProbabilityTable)
-             ]
 
   def _all_cpts (self):
-    return [ np.array (self._probas (j.distribution))
-             for j in self.N.states
-             if isinstance (j.distribution, ConditionalProbabilityTable) ]
+    return (self._probas (j.distribution)
+            for j in self.N.states
+            if isinstance (j.distribution, ConditionalProbabilityTable))
 
 
-  def _all_cond_probs (self):
-    return [ cpt[:,-1] for cpt in self._all_cpts () ]
+
+  def _all_cpts_n_marginals (self) -> range:
+    return ((self._probas (j.distribution), self._probas (m))
+            for j, m in zip (self.N.states, self.N.marginal ())
+            if isinstance (j.distribution, ConditionalProbabilityTable))
+
+
+
 
 
   def bfc_coverage (self) -> Coverage:
@@ -366,10 +479,9 @@ class _BaseBFcCriterion (Criterion):
     abstraction.
     """
     assert (self.num_test_cases > 0)
-    margs = self._all_marginals ()
     props = sum (np.count_nonzero (np.array(p) >= self.epsilon) / len (p)
-                 for p in margs)
-    return Coverage (covered = props, total = len (margs))
+                 for p in self._all_marginals ())
+    return Coverage (covered = props, total = self.N.node_count ())
 
 
   def bfdc_coverage (self) -> Coverage:
@@ -378,15 +490,22 @@ class _BaseBFcCriterion (Criterion):
     abstraction.
     """
     assert (self.num_test_cases > 0)
-    # Count 0s (or < epsilon)s in all prob. mass functions in the BN
-    # abstraction:
-    cpts = self._all_cond_probs ()
-    if cpts == []:
-      return Coverage (covered = 1) # * bfc
-    else:
-      props = sum (np.count_nonzero (np.array(p) >= self.epsilon) / len (p)
-                   for p in cpts)
-      return Coverage (covered = props, total = len (cpts))
+    # Count 0s (or < epsilons) in all prob. mass functions in the BN
+    # abstraction, subject to associated marginal probabilities being
+    # > epsilon as well:
+    def count_nonepsilons (acc, x):
+      (noneps_props, num_cpts), (cpt, marginal) = acc, x
+      # p's last column (-1) holds conditional probabilities, whereas
+      # the last but one (-2) holds the feature interval index.
+      noneps_props += \
+        sum (p[-1] >= self.epsilon if marginal[p[-2]] >= self.epsilon else True \
+             for p in cpt) \
+        / len (cpt)
+      return (noneps_props, num_cpts + 1)
+    props, num_cpts = reduce (count_nonepsilons, self._all_cpts_n_marginals (),
+                              (0, 0))
+    return Coverage (covered = props, total = num_cpts) if num_cpts > 0 else \
+           Coverage (covered = 1)
 
 
   # ---
@@ -416,51 +535,73 @@ class _BaseBFcCriterion (Criterion):
     }]
 
 
-  def _discretize_features_and_create_bn_structure (self, acts):
+  def _discretize_features_and_create_bn_structure (self, acts, **kwds):
     """
     Called through :meth:`stat_based_train_cv_initializers` above.
     """
 
-    cnp1 ('| Given training data of size {}'
-          .format(len(acts[self.flayers[0].layer_index])))
+    ts0 = len(acts[self.flayers[0].layer_index])
+    cp1 ('| Given training data of size {}'.format (ts0))
+    fts = None if self.feat_extr_train_size == 1 \
+          else (min(ts0, int (self.feat_extr_train_size))
+                if self.feat_extr_train_size > 1
+                else int (ts0 * self.feat_extr_train_size))
+    if fts is not None:
+      p1 ('| Using training data of size {} for feature extraction'.format (fts))
 
     # First, fit feature extraction and discretizer parameters:
     for fl in self.flayers:
-      cnp1 ('| Discretizing features for layer {}... '.format (fl))
+      p1 ('| Extracting and discretizing features for layer {}... '.format (fl))
       x = np.stack([a.flatten () for a in acts[fl.layer_index]], axis = 0)
-      # print (x.shape, x)
-      y = fl.transform.fit_transform (x)
-      fl.discr.fit_wrt (x, y, fl.transform)
-      np1 ('{} node{}.'.format (y.shape[1], 's' if y.shape[1] > 1 else ''))
+      tp1 ('Extracting features...')
+      if fts is None:
+        y = fl.transform.fit_transform (x)
+      else:
+        # Copying the inputs here as we pass `copy = False` when
+        # constructing the pipeline.
+        fl.transform.fit (copy.copy (x[:fts]))
+        y = fl.transform.transform (x)
+      p1 ('| Extracted {} feature{}'.format (y.shape[1], 's' if y.shape[1] > 1 else ''))
+      tp1 ('Discretizing features...')
+      fl.discr.fit_wrt (x, y, fl.transform, layer = fl, **kwds,
+                        outdir = self.outdir)
       del x, y
 
-    self.total_variance_ratios_ = np.array([
-      sum (fl.transform[-1].explained_variance_ratio_) for fl in self.flayers
-      if hasattr (fl.transform[-1], 'explained_variance_ratio_')
-    ])
+    self.explained_variance_ratios_ = \
+      { str(fl): fl.transform[-1].explained_variance_ratio_.tolist ()
+        for fl in self.flayers
+        if hasattr (fl.transform[-1], 'explained_variance_ratio_') }
 
     # Report on explained variance
-    for fl in self.flayers:
-      if hasattr (fl.transform[-1], 'explained_variance_ratio_'):
-        cnp1 ('| Captured variance ratio for layer {} is {:6.2%}'
-              .format (fl, sum (fl.transform[-1].explained_variance_ratio_)))
+    for fl in self.explained_variance_ratios_:
+      p1 ('| Captured variance ratio for layer {} is {:6.2%}'
+          .format (fl, sum (self.explained_variance_ratios_[fl])))
 
     # Second, fit some distributions with input layer values (NB: well, actually...)
     # Third, contruct the Bayesian Network
     self.N = self._create_bayesian_network ()
 
     self.fidx2fli = {}
-    fidx = 0
+    feature = 0
     for fl in self.flayers:
       for i in range (fl.num_features):
-        self.fidx2fli[fidx + i] = (fl, i)
-      fidx += fl.num_features
+        self.fidx2fli[feature + i] = (fl, i)
+      feature += fl.num_features
 
     # Last, fit the Bayesian Network with given training activations
     # for now, for the purpose of preliminary assessments; the BN will
     # be re-initialized upon the first call to `add_new_test_cases`:
     if self.score_layer_likelihoods or self.assess_discretized_feature_probas:
       self.fit_activations (acts)
+
+
+  def get_params (self, deep = True):
+    p = dict (node_count = self.N.node_count (),
+              edge_count = self.N.edge_count (),
+              explained_variance_ratios = self.explained_variance_ratios_)
+    if deep:
+      p['layers'] = [ fl.get_params (deep) for fl in self.flayers ]
+    return p
 
 
   def _create_bayesian_network (self):
@@ -473,20 +614,20 @@ class _BaseBFcCriterion (Criterion):
     max_ec = sum (f.num_features * g.num_features
                   for f, g in zip (self.flayers[:-1], self.flayers[1:]))
 
-    ctp1 ('| Creating Bayesian Network of {} nodes and a maximum of {} edges...'
-          .format (nc, max_ec))
+    tp1 ('| Creating Bayesian Network of {} nodes and a maximum of {} edges...'
+         .format (nc, max_ec))
     N = BayesianNetwork (name = 'BN Abstraction')
 
     fl0 = self.flayers[0]
-    nodes = [ DiscretizedInputFeatureNode (fl0, fidx)
-              for fidx in range (fl0.num_features) ]
+    nodes = [ DiscretizedInputFeatureNode (fl0, feature)
+              for feature in range (fl0.num_features) ]
     N.add_nodes (*(n for n in nodes))
 
     gc.collect ()
     prev_nodes = nodes
     for fl in self.flayers[1:]:
-      nodes = [ DiscretizedHiddenFeatureNode (fl, fidx, prev_nodes)
-                for fidx in range (fl.num_features) ]
+      nodes = [ DiscretizedHiddenFeatureNode (fl, feature, prev_nodes)
+                for feature in range (fl.num_features) ]
       N.add_nodes (*(n for n in nodes))
 
       for n in nodes:
@@ -513,7 +654,7 @@ class _BaseBFcCriterion (Criterion):
   # ---
 
 
-  def _score (self, acts, labels = None):
+  def _score (self, acts, true_labels = None, **kwds):
     """
     Basic scores for manual investigations.
     """
@@ -523,7 +664,7 @@ class _BaseBFcCriterion (Criterion):
 
     if (self.score_layer_likelihoods or
         self.report_on_feature_extractions is not None):
-      self._score_feature_extractions (acts, labels)
+      self._score_feature_extractions (acts, true_labels)
 
     if self.assess_discretized_feature_probas:
       truth = self.dimred_n_discretize_activations (acts)
@@ -531,12 +672,12 @@ class _BaseBFcCriterion (Criterion):
       del truth
 
 
-  def _score_feature_extractions (self, acts, labels = None):
+  def _score_feature_extractions (self, acts, true_labels = None):
     racc = None
     idx = 1
     self.average_log_likelihoods_ = []
     for fl in self.flayers:
-      flatacts = self.flatten_for_layer (acts, (fl,))
+      flatacts = fl.flatten_map (acts)
 
       if self.score_layer_likelihoods:
         tp1 ('| Computing average log-likelihood of test sample for layer {}...'
@@ -547,7 +688,8 @@ class _BaseBFcCriterion (Criterion):
 
       if self.report_on_feature_extractions is not None:
         fdimred = self.dimred_activations (acts, (fl,))
-        racc = self.report_on_feature_extractions (fl, flatacts, fdimred, labels, racc)
+        racc = self.report_on_feature_extractions (fl, flatacts, fdimred,
+                                                   true_labels, racc)
         del fdimred
 
       idx += 1
@@ -574,22 +716,22 @@ class _BaseBFcCriterion (Criterion):
     first_feature_idx = 0
     for fl in self.flayers:
       floss = []
-      for fidx in range (fl.num_features):
-        flabels = list (range (fl.discr.feature_parts (fidx)))
-        feature_idx = first_feature_idx + fidx
+      for feature in range (fl.num_features):
+        flabels = list (range (fl.discr.feature_parts (feature)))
+        feature_idx = first_feature_idx + feature
         ftruth = truth[..., feature_idx : feature_idx + 1].flatten ()
 
-        tp1 ('| Computing predictions for feature {} of {}...'.format (fidx, fl))
+        tp1 ('| Computing predictions for feature {} of {}...'.format (feature, fl))
         fprobas = features_probas (feature_idx, 1).flatten ()
 
-        tp1 ('| Computing log loss for feature {} of {}...'.format (fidx, fl))
+        tp1 ('| Computing log loss for feature {} of {}...'.format (feature, fl))
         fpredict_probs = self._all_prediction_probas (fprobas)
         loss = log_loss (ftruth, fpredict_probs, labels = flabels)
         floss.append (loss)
-        p1 ('| Log loss for feature {} of {} is {}'.format (fidx, fl, loss))
+        p1 ('| Log loss for feature {} of {} is {}'.format (feature, fl, loss))
 
         if self.print_classification_reports:
-          p1 ('| Classification report for feature {} of {}:'.format (fidx, fl))
+          p1 ('| Classification report for feature {} of {}:'.format (feature, fl))
           fpreds = [ np.argmax (p) for p in fpredict_probs ]
           self.classification_reports.append(
             classification_report (ftruth, fpreds, labels = flabels))
@@ -611,14 +753,14 @@ class _BaseBFcCriterion (Criterion):
   def _setup_estimate_feature_probas (self, truth):
     ytest = truth if truth.dtype == float else np.array (truth, dtype = float)
     ftest = ytest.copy ()
-    def estimate_feature_probas (fidx, nbfeats):
-      ftest[..., fidx : fidx + nbfeats] = np.nan
+    def estimate_feature_probas (feature, nbfeats):
+      ftest[..., feature : feature + nbfeats] = np.nan
       probas = np.array (self.N.predict_proba (ftest, n_jobs = self.bn_abstr_n_jobs))
-      ftest[..., fidx : fidx + nbfeats] = truth[..., fidx : fidx + nbfeats]
-      lprobas = probas[..., fidx : fidx + nbfeats]
+      ftest[..., feature : feature + nbfeats] = truth[..., feature : feature + nbfeats]
+      lprobas = probas[..., feature : feature + nbfeats]
       del probas
       return lprobas
-    return (lambda fidx, nbfeats: estimate_feature_probas (fidx, nbfeats))
+    return (lambda feature, nbfeats: estimate_feature_probas (feature, nbfeats))
 
 
   def _prediction_probas (self, p):
@@ -634,17 +776,30 @@ class _BaseBFcCriterion (Criterion):
 
 # ---
 
+class BNcTarget (TestTarget):
 
-class BFcTarget (NamedTuple, TestTarget):
+  def measure_progress(self, t: Input) -> float:
+    """
+    Measures how a new input `t` improves towards fulfilling the
+    target.  A negative returned value indicates that no progress is
+    being achieved by the given input.
+    """
+    raise NotImplementedError
+
+
+# ---
+
+class BFcTarget (NamedTuple, BNcTarget):
   fnode: DiscretizedFeatureNode
   feature_part: int
-  sanity_check: Callable[[int, int, Input], bool]
+  progress: Callable[[Input], float]
   root_test_idx: int
 
   def __repr__(self) -> str:
+    interval = self.fnode.flayer.discr.part_edges (self.fnode.feature,
+                                                   self.feature_part)
     return ('interval {} of feature {} in layer {} (from root test {})'
-            .format(self.fnode.flayer.discr.part_edges (self.fnode.feature,
-                                                        self.feature_part),
+            .format(interval_repr (interval),
                     self.fnode.feature, self.fnode.flayer, self.root_test_idx))
 
 
@@ -654,16 +809,19 @@ class BFcTarget (NamedTuple, TestTarget):
                     self.fnode.feature, self.feature_part))
 
 
-  def cover(self) -> None:
-    # Do nothing for now; ideally: update some probabilities in fnode...
+  def cover(self, acts) -> None:
+    # Do nothing for now; ideally: update some probabilities
+    # somewhere.
     pass
 
 
-  def check(self, t: Input) -> bool:
-    """
-    Checks whether the target is met.
-    """
-    return self.sanity_check (self.fnode.feature, t)
+
+  def measure_progress(self, t: Input) -> float:
+    progress, new_dist = self.progress (t)
+    p1 ('| Progress towards {}: {}\n'
+        '| Distance to target interval: {}'
+        .format (self, progress, new_dist))
+    return progress
 
 
 # ---
@@ -714,73 +872,79 @@ class BFcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
     return self.bfc_coverage ()
 
 
-  def _all_normalized_marginals (self):
-    marginals = self.N.marginal ()
-    tot = sum (len (p.parameters[0]) for p in marginals)
-    res = [ [ p.parameters[0][i] * len (p.parameters[0]) / tot
-              for i in range (len (p.parameters[0])) ]
-            for p in marginals ]
-    del marginals
-    return res
+  # def _all_normalized_marginals (self):
+  #   marginals = self.N.marginal ()
+  #   tot = sum (len (p.parameters[0]) for p in marginals)
+  #   res = [ [ p.parameters[0][i] * len (p.parameters[0]) / tot
+  #             for i in range (len (p.parameters[0])) ]
+  #           for p in marginals ]
+  #   del marginals
+  #   return res
 
 
   def find_next_rooted_test_target (self) -> Tuple[Input, BFcTarget]:
-    fwms = self._all_normalized_marginals ()
-    # fwms = self._all_marginals ()
-    minfwms = np.array([ np.min (p) for p in fwms ])
-    # print (minfidx[0], minfwms[minfidx[0]], fwms[minfidx[0]])
 
-    # Search by rarest interval so far:
-    res = None
-    for fidx in np.argsort (minfwms):
-      fint = np.argmin (fwms[fidx])
-      fl, flfeature = self.fidx2fli[fidx]
-      # print (fidx, 'in', fl, 'WPf =', fwms[fidx][fint],
-      #        # 'CP = ', self.N.states[fidx].distribution.parameters[0][fint]
-      #        'P =', marginals[fidx].parameters[0][fint])
+    # Gather non-epsilon marginal probabilities:
+    epsilon_entries = ((fli, ints)
+                       for fli, prob in enumerate (self._all_marginals ())
+                       for ints in np.where (np.asarray(prob) < self.epsilon))
 
-      # Search closest test that does not fall within target interval:
-      within_target = self._check_within (fint, verbose = False)
-      for i, v in self.all_tests_close_to (fidx, fint):
-        if ((fidx, fint, i) in self.ban[fl] or
-            within_target (flfeature, self.test_cases[i])):
-          continue
-        tp1 ('Selecting root test {} at feature-{}-distance {} from {}, layer {}'
-             .format (i, flfeature, v, fl.discr.part_edges (flfeature, fint), fl))
-        test = self.test_cases[i]
-        fct = BFcTarget (self.N.states[fidx], fint, self._check_within (fint), i)
-        self.ban[fl].add ((fidx, fint, i))
-        res = test, fct
-        break
+    res, best_dist = None, np.inf
+    for feature, epsilon_intervals in epsilon_entries:
+      feature_node = self.N.states[feature]
+      fl, flfeature = feature_node.flayer, feature_node.feature
+      for feature_interval in epsilon_intervals:
 
-      if res is not None:
-        break
-
-    del fwms
+        # Search closest test -that does not fall within target interval (?)-:
+        # within_target = self._check_within (feature, feature_interval, verbose = False)
+        for ti, v in self.all_tests_close_to (feature, feature_interval):
+          if ((feature, feature_interval, ti) in self.ban[fl]#  or
+              # within_target (flfeature, self.test_cases[i])
+              ):
+            continue
+          dist = interval_dist (feature_node.interval (feature_interval), v)
+          if dist < best_dist:
+            best_dist = dist
+            res = feature, feature_interval, ti, v
 
     if res is None:
       raise EarlyTermination ('Unable to find a new candidate input!')
 
-    return res
+    feature, feature_interval, ti, v = res
+    feature_node = self.N.states[feature]
+    fl, flfeature = feature_node.flayer, feature_node.feature
+    interval = feature_node.interval (feature_interval)
+    tp1 ('Selecting root test {} at feature-{}-distance {} from {}, layer {}'
+         .format (ti, flfeature, v, interval, fl))
+    test = self.test_cases[ti]
+    measure_progress = \
+        self._measure_progress_towards_interval (feature, interval, test)
+    fct = BFcTarget (feature_node, feature_interval,
+                     # self._check_within (feature, feature_interval),
+                     measure_progress, ti)
+    self.ban[fl].add ((feature, feature_interval, ti))
 
+    return test, fct
 
 
 # ---
 
 
-class BFDcTarget (NamedTuple, TestTarget):
+class BFDcTarget (NamedTuple, BNcTarget):
   fnode1: DiscretizedHiddenFeatureNode
   feature_part1: int
   flayer0: BFcLayer
   feature_parts0: Sequence[int]
-  sanity_check: Callable[[int, int, Input], bool]
+  # sanity_check: Callable[[int, int, Input], bool]
+  progress: Callable[[Input], float]
   root_test_idx: int
 
   def __repr__(self) -> str:
+    interval = self.fnode1.flayer.discr.part_edges (self.fnode1.feature,
+                                                    self.feature_part1)
     return (('interval {} of feature {} in layer {}, subject to feature'+
              ' intervals {} in layer {} (from root test {})')
-            .format(self.fnode1.flayer.discr.part_edges (self.fnode1.feature,
-                                                         self.feature_part1),
+            .format(interval_repr (interval),
                     self.fnode1.feature, self.fnode1.flayer,
                     self.feature_parts0, self.flayer0, self.root_test_idx))
 
@@ -792,16 +956,25 @@ class BFDcTarget (NamedTuple, TestTarget):
                     self.feature_parts0))
 
 
-  def cover(self) -> None:
-    # Do nothing for now; ideally: update some probabilities in fnode...
+  def cover(self, acts) -> None:
+    # Do nothing for now; ideally: update some probabilities
+    # somewhere.
     pass
 
 
-  def check(self, t: Input) -> bool:
-    """
-    Checks whether the target is met.
-    """
-    return self.sanity_check (self.fnode1.feature, t)
+  # def check(self, t: Input) -> bool:
+  #   """
+  #   Checks whether the target is met.
+  #   """
+  #   return self.sanity_check (self.fnode1.feature, t)
+
+
+  def measure_progress(self, t: Input) -> float:
+    progress, new_dist = self.progress (t)
+    p1 ('| Progress towards {}: {}\n'
+        '| Distance to target interval: {}'
+        .format (self, progress, new_dist))
+    return progress
 
 
 # ---
@@ -854,45 +1027,57 @@ class BFDcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
 
 
   def find_next_rooted_test_target (self) -> Tuple[Input, BFcTarget]:
-    cpts = self._all_cpts ()
-    tot = sum (cpt.shape[1] for cpt in cpts)
-    weight = lambda j: j[:,-1] * j.shape[1] / tot
-    mincps = [ (i, int(np.argmin (weight (p))), np.min (weight (p)))
-               for i, p in enumerate (cpts) ]
-    mincps.sort (key = lambda x: x[2])
 
-    res = None
-    fidxbase = self.flayers[0].num_features
-    for i, fli, fcp in mincps:
-      fint = int(cpts[i][fli][-2])
-      cond_ints = cpts[i][fli][:-2].astype (int)
-      fidx = fidxbase + i
-      fl, flfeature = self.fidx2fli[fidx]
-      fl_prev, _ = self.fidx2fli[fidx - flfeature - 1]
-      # print (fidx, fl_prev, fl, flfeature, fint, cond_ints)
+    # Gather non-epsilon conditional probabilities:
+    cpts = [ np.array (cpt) for cpt in self._all_cpts () ]
+    epsilon_entries = ((i, fli)
+                       for i, cpt in enumerate (cpts)
+                       for fli in np.where (cpt[:,-1] < self.epsilon))
 
-      # Search closest test that does not fall within target interval
-      within_target = self._check_within (fint, verbose = False)
-      for i, v in self.all_tests_close_to (fidx, fint):
-        if ((fidx, fint, i) in self.ban[fl] or
-            within_target (flfeature, self.test_cases[i])):
-          continue
-        tp1 ('Selecting root test {} at feature-{}-distance {} from {}, layer {}'
-             .format (i, flfeature, v, fl.discr.part_edges (flfeature, fint), fl))
-        test = self.test_cases[i]
-        fct = BFDcTarget (self.N.states[fidx], fint, fl_prev, cond_ints,
-                          self._check_within (fint), i)
-        self.ban[fl].add ((fidx, fint, i))
-        res = test, fct
-        break
+    res, best_dist = None, np.inf
+    for i, epsilon_intervals in epsilon_entries:
+      feature = self.flayers[0].num_features + i
+      feature_node = self.N.states[feature]
+      fl, flfeature = feature_node.flayer, feature_node.feature
 
-      if res is not None:
-        break
+      for fli in epsilon_intervals:
+        assert cpts[i][fli, -1] < self.epsilon
+        feature_interval = int (cpts[i][fli, -2])
+
+        # Search closest test -that does not fall within target interval (?)-:
+        # within_target = self._check_within (feature, feature_interval, verbose = False)
+        for ti, v in self.all_tests_close_to (feature, feature_interval):
+          if ((feature, feature_interval, ti) in self.ban[fl]#  or
+              # within_target (flfeature, self.test_cases[i])
+              ):
+            continue
+          dist = interval_dist (feature_node.interval (feature_interval), v)
+          if dist < best_dist:
+            best_dist = dist
+            res = i, fli, ti, v
 
     if res is None:
       raise EarlyTermination ('Unable to find a new candidate input!')
 
-    return res
+    i, fli, ti, v = res
+    feature = self.flayers[0].num_features + i
+    feature_node = self.N.states[feature]
+    feature_interval = int (cpts[i][fli, -2])
+    fl, flfeature = feature_node.flayer, feature_node.feature
+    fl_prev, _ = self.fidx2fli[feature - flfeature - 1]
+    interval = feature_node.interval (feature_interval)
+    tp1 ('Selecting root test {} at feature-{}-distance {} from {}, layer {}'
+         .format (ti, flfeature, v, interval, fl))
+    test = self.test_cases[ti]
+    measure_progress = \
+        self._measure_progress_towards_interval (feature, interval, test)
+    cond_intervals = cpts[i][fli, :-2].astype (int)
+    fct = BFDcTarget (feature_node, feature_interval, fl_prev, cond_intervals,
+                      # self._check_within (feature, feature_interval),
+                      measure_progress, ti)
+    self.ban[fl].add ((feature, feature_interval, ti))
+
+    return test, fct
 
 
 
@@ -959,8 +1144,8 @@ def abstract_layer_feature_discretization (l, li, discr = None):
          # TODO: per feature discretization strategy?
          None)
     s = (li_discr['strategy'] if (isinstance (li_discr, dict)
-                                  and 'strategy' in li_discr)
-         else 'quantile')
+                                  and 'strategy' in li_discr) else
+         'quantile')
     extended = (isinstance (li_discr, dict) and 'extended' in li_discr
                 and li_discr['extended'])
     extended = extended is not None and extended
@@ -969,12 +1154,14 @@ def abstract_layer_feature_discretization (l, li, discr = None):
                  '{}-bin '.format (k) if k is not None else '',
                  s, l))
     cstr = KBinsNOutFeatureDiscretizer if extended else KBinsFeatureDiscretizer
-    return cstr (**{
-      **(li_discr if isinstance (li_discr, dict) else {}),
+    discr_args = { **(li_discr if isinstance (li_discr, dict) else {}),
       'n_bins': k,
       'encode': 'ordinal',
       'strategy': s,
-    })
+    }
+    if 'extended' in discr_args:
+      del discr_args['extended']
+    return cstr (**discr_args)
 
 
 def abstract_layer_setup (l, i, feats = None, discr = None, **kwds):
@@ -987,12 +1174,11 @@ def abstract_layer_setup (l, i, feats = None, discr = None, **kwds):
     decomp = 'pca'
   if (decomp == 'pca' and
       (isinstance (options, (int, float)) or options == 'mle')):
-    svd_solver = ('randomized' if isinstance (options, int) else
+    svd_solver = ('arpack' if isinstance (options, int) else
                   'full' if isinstance (options, float) else 'auto')
     options = { 'n_components': options, 'svd_solver': svd_solver }
   # from sklearn.decomposition import IncrementalPCA
-  fext = (make_pipeline (StandardScaler (copy = False# , with_mean = False
-                                         ),
+  fext = (make_pipeline (StandardScaler (copy = False),
                          PCA (**options, copy = False)) if decomp == 'pca' else
           make_pipeline (FastICA (**options)))
   feature_discretization = abstract_layer_feature_discretization (l, i, discr, **kwds)
@@ -1005,50 +1191,50 @@ def abstract_layer_setup (l, i, feats = None, discr = None, **kwds):
 
 
 def plot_report_on_feature_extractions (fl, flatacts, fdimred, labels, acc = None):
-  from matplotlib import cm
-  from matplotlib.colors import LinearSegmentedColormap, BoundaryNorm
-  from mpl_toolkits.mplot3d import Axes3D
+  if not plt:
+    warnings.warn ('Unable to import `matplotlib`: skipping feature extraction plots')
+    return
 
   minlabel, maxlabel = np.min (labels), np.max (labels)
   cmap = plt.get_cmap ('nipy_spectral', maxlabel - minlabel + 1)
 
-  flabel = (lambda fidx:
+  flabel = (lambda feature:
             ('f{} (variance ratio = {:6.2%})'
-             .format (fidx, fl.transform[-1].explained_variance_ratio_[fidx]))
+             .format (feature, fl.transform[-1].explained_variance_ratio_[feature]))
             if hasattr (fl.transform[-1], 'explained_variance_ratio_') else
-            ('f'+str(fidx)))
+            ('f'+str(feature)))
 
-  maxfidx = fdimred.shape[1] - 1
-  if maxfidx < 1:
+  maxfeature = fdimred.shape[1] - 1
+  if maxfeature < 1:
     return                              # for now
-  fidx = 0
-  while fidx + 1 <= maxfidx:
+  feature = 0
+  while feature + 1 <= maxfeature:
     fig = plt.figure ()
-    if fidx + 1 == maxfidx:
+    if feature + 1 == maxfeature:
       ax = fig.add_subplot (111)
       # plt.subplot (len (self.flayer_transforms), 1, idx)
       ax.scatter(fdimred[:,0], fdimred[:,1], c = labels,
                  s = 2, marker='o', zorder = 10,
                  cmap = cmap, vmin = minlabel - .5, vmax = maxlabel + .5)
-      ax.set_xlabel (flabel (fidx))
-      ax.set_ylabel (flabel (fidx+1))
-      fidx_done = 2
+      ax.set_xlabel (flabel (feature))
+      ax.set_ylabel (flabel (feature+1))
+      feature_done = 2
       incr = 1
     else:
       ax = fig.add_subplot (111, projection = '3d')
-      scat = ax.scatter (fdimred[:, fidx], fdimred[:, fidx+1],
-                         fdimred[:, fidx+2], c = labels,
+      scat = ax.scatter (fdimred[:, feature], fdimred[:, feature+1],
+                         fdimred[:, feature+2], c = labels,
                          s = 2, marker = 'o', zorder = 10,
                          cmap = cmap, vmin = minlabel - .5, vmax = maxlabel + .5)
-      ax.set_xlabel (flabel (fidx))
-      ax.set_ylabel (flabel (fidx+1))
-      ax.set_zlabel (flabel (fidx+2))
-      fidx_done = 3
-      incr = 1 if fidx + 1 == maxfidx - 2 else 2
+      ax.set_xlabel (flabel (feature))
+      ax.set_ylabel (flabel (feature+1))
+      ax.set_zlabel (flabel (feature+2))
+      feature_done = 3
+      incr = 1 if feature + 1 == maxfeature - 2 else 2
     fig.suptitle ('Features {} of layer {}'
-                  .format (tuple (range (fidx, fidx + fidx_done)), fl))
+                  .format (tuple (range (feature, feature + feature_done)), fl))
     cb = fig.colorbar (scat, ticks = range (minlabel, maxlabel + 1), label = 'Classes')
-    fidx += incr
+    feature += incr
   plt.draw ()
 
 
@@ -1057,21 +1243,18 @@ def plot_report_on_feature_extractions (fl, flatacts, fdimred, labels, acc = Non
 
 from engine import setup as engine_setup
 
-def setup (
-  setup_criterion = None,
-  test_object = None,
-  feats = { 'n_components': 2, 'svd_solver': 'randomized' },
-  # discr = (lambda li: { 'n_bins': 4, 'strategy': 'uniform' } if li in (15,) else
-  #          None),
-  discr = 'bin', # { 'n_bins': 2, 'extended': True, 'strategy': 'uniform' },
-  # discr = (lambda li: { 'n_bins': 3, 'strategy': 'kmeans' }),
-  # discr = { 'n_bins': 2, 'extended': True, 'strategy': 'quantile' },
-  epsilon = 1e-4,
-  report_on_feature_extractions = False,
-  bn_abstr_train_size = 1000,
-  bn_abstr_test_size = 200,
-  bn_abstr_n_jobs = None,
-  **kwds):
+def setup (setup_criterion = None,
+           test_object = None,
+           outdir: OutputDir = None,
+           feats = { 'n_components': 2, 'svd_solver': 'randomized' },
+           feat_extr_train_size = 1,
+           discr = 'bin',
+           epsilon = None,
+           report_on_feature_extractions = False,
+           bn_abstr_train_size = 0.5,
+           bn_abstr_test_size = 0.5,
+           bn_abstr_n_jobs = None,
+           **kwds):
 
   if setup_criterion is None:
     raise ValueError ('Missing argument `setup_criterion`!')
@@ -1081,17 +1264,17 @@ def setup (
                                    layer_indices = test_object.layer_indices,
                                    exclude_direct_input_succ = False,
                                    exclude_output_layer = False)
-  criterion_args = {
-    'bn_abstr_train_size': bn_abstr_train_size,
-    'bn_abstr_test_size': bn_abstr_test_size,
-    'print_classification_reports': True,
-    'epsilon': epsilon,
-    **({ 'bn_abstr_n_jobs': bn_abstr_n_jobs }
-       if bn_abstr_n_jobs is not None else {}),
-    **({ 'report_on_feature_extractions': plot_report_on_feature_extractions,
-         'close_reports_on_feature_extractions': (lambda _: plt.show ()) }
-       if report_on_feature_extractions else {})
-  }
+  criterion_args \
+    = dict (bn_abstr_train_size = bn_abstr_train_size,
+            bn_abstr_test_size = bn_abstr_test_size,
+            feat_extr_train_size = feat_extr_train_size,
+            print_classification_reports = True,
+            epsilon = epsilon,
+            bn_abstr_n_jobs = bn_abstr_n_jobs,
+            outdir = outdir)
+  if report_on_feature_extractions:
+    criterion_args['report_on_feature_extractions'] = plot_report_on_feature_extractions
+    criterion_args['close_reports_on_feature_extractions'] = (lambda _: ploting.show ())
 
   return engine_setup (test_object = test_object,
                        cover_layers = cover_layers,

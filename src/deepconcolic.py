@@ -45,9 +45,12 @@ def deepconcolic(criterion, norm, test_object, report_args,
       from dbnc_pulp import BFcPulpAnalyzer
       engine = dbnc_setup (**dbnc_spec,
                            test_object = test_object,
+                           engine_args = engine_args,
                            setup_criterion = BFcCriterion,
                            setup_analyzer = BFcPulpAnalyzer,
-                           input_metric = LInfPulp ())
+                           input_metric = LInfPulp (**norm_args),
+                           input_bounds = input_bounds,
+                           outdir = report_args['outdir'])
     else:
       sys.exit ('\n not supported norm... {0}\n'.format(norm))
   elif criterion=='bfdc':               ## feature-dependence cover
@@ -59,14 +62,14 @@ def deepconcolic(criterion, norm, test_object, report_args,
       from dbnc_pulp import BFDcPulpAnalyzer
       engine = dbnc_setup (**dbnc_spec,
                            test_object = test_object,
+                           engine_args = engine_args,
                            setup_criterion = BFDcCriterion,
                            setup_analyzer = BFDcPulpAnalyzer,
-                           input_metric = LInfPulp ())
+                           input_metric = LInfPulp (**norm_args),
+                           input_bounds = input_bounds,
+                           outdir = report_args['outdir'])
     else:
       sys.exit ('\n not supported norm... {0}\n'.format(norm))
-  elif criterion=='dbnc_stats':
-    import dbnc_stats
-    dbnc_stats.run (test_object, report_args['outs'])
   elif criterion=='ssc':
     from ssc import SScGANBasedAnalyzer, setup as ssc_setup
     linf_args = copy.copy (norm_args)
