@@ -47,7 +47,7 @@
     # To define the feature extraction technique strategy on a
     # per-layer basis, one can give a lambda function that takes the
     # layer index as argument, and returns any of the specification
-    # dictonaries as above:
+    # dictionaries as above:
     # feats: '(lambda li: 3 if li <= 2 else 4)',
     #
     # As above, returing minimum captured variance instead:
@@ -93,13 +93,15 @@
     #
     # Custom (per-layer) Specifications
     # ---------------------------------
-    # 
+    #
     # To define the discretization strategy on a per-layer basis, one
     # can also use a lambda function that takes the layer index as
-    # argument, and returns any of the specification dictonaries as
+    # argument, and returns any of the specification dictionaries as
     # above (or None for default, binarization):
     # discr: '(lambda li: { "n_bins": 4, "strategy": "uniform" } if li in (1,) else None)',
     #
+    # To use dictionaries:
+    # discr: '(lambda li: "bin" if li == 3 else dict(n_bins=3, strategy="uniform"))',
     #
     # Reporting
     # =========
