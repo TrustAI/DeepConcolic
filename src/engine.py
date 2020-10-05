@@ -374,6 +374,7 @@ class Report:
     self.amplify_diffs = amplify_diffs
     p1 ('Reporting into: {0}'.format (self.report_file))
     self.ntests = 0
+    self.nsteps = 0
 
 
   def _save_input(self, im, name, log = None):
@@ -406,6 +407,11 @@ class Report:
 
 
   @property
+  def num_steps(self):
+    return self.nsteps
+
+
+  @property
   def num_tests(self):
     return self.ntests
 
@@ -433,7 +439,7 @@ class Report:
     Prints a single report line.
     '''
     append_in_file (self.report_file, *args, '\n')
-
+    self.nsteps += 1
 
 
 # ---
@@ -561,7 +567,7 @@ class Criterion (_ActivationStatBasedInitializable):
     As its name says, this method adds a given series of inputs into
     the set of test cases.  It then calls :meth:`register_new_activations`.
     """
-    tp1 ('Adding {} test case{}'.format (len (tl), 's' if len (tl) > 1 else ''))
+    tp1 ('Adding {} test case{}'.format (*s_(len (tl))))
     self.test_cases.extend (tl)
     for acts in self._batched_activations (tl, allow_input_layer = False):
       if covered_target is not None:
@@ -734,7 +740,7 @@ class Engine:
       x = np.random.default_rng().choice (a = x, axis = 0,
                                           size = min (initial_test_cases, len (x)))
       p1 ('Initializing with {} randomly selected test case{} that {} correctly classified.'
-          .format(len (x), 's' if len (x) > 1 else '', 'are' if len (x) > 1 else 'is'))
+          .format(*s_(len (x)), is_are_(len (x))[1]))
       self.criterion.add_new_test_cases (x)
     elif self.criterion.rooted_search:
       p1 ('Randomly selecting an input from test data.')
@@ -786,6 +792,8 @@ class Engine:
                  '#adversarial examples: 0')
 
     iteration = 1
+    init_tests = report.num_tests
+    init_adversarials = report.num_adversarials
     origin = (None if not trace_origins else
               InputsDict ([(x, i) for i, x in enumerate (criterion.test_cases)]))
 
@@ -844,8 +852,17 @@ class Engine:
 
     except EarlyTermination as e:
       p1 ('{}'.format (e))
+    except KeyboardInterrupt:
+      p1 ('Interrupted.')
+
+    p1 ('Terminating after {} iteration{}: '
+        '{} test{} generated, {} of which {} adversarial.'
+        .format (*s_(iteration - 1),
+                 *s_(report.num_tests - init_tests),
+                 *is_are_(report.num_adversarials - init_adversarials)))
 
     return report
+
 
   def _stat_based_inits(self):
     '''
