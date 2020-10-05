@@ -58,6 +58,11 @@ def xtuple(t):
 def xlist(t):
   return [t] if t is not None else []
 
+def s_(i):
+  return i, 's' if i > 1 else ''
+
+def is_are_(i):
+  return i, 'are' if i > 1 else 'is'
 
 #the_dec_pos=0
 MIN=-100000
