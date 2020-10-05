@@ -248,9 +248,9 @@ class Analyzer:
   concrete inputs.
   '''
 
-  def __init__(self, analyzed_dnn = None, input_bounds: Bounds = None, **kwds):
+  def __init__(self, analyzed_dnn = None, input_bounds: Optional[Bounds] = None, **kwds):
     assert analyzed_dnn is not None
-    assert input_bounds is not None and isinstance (input_bounds, Bounds)
+    assert input_bounds is None or isinstance (input_bounds, Bounds)
     self._analyzed_dnn = analyzed_dnn
     self._input_bounds = input_bounds
     super().__init__(**kwds)
@@ -293,11 +293,11 @@ class Analyzer:
 
 
   @property
-  def input_bounds(self) -> Bounds:
+  def input_bounds(self) -> List[Bounds]:
     '''
     Returns the bounds on generated inputs.
     '''
-    return self._input_bounds
+    return [self._input_bounds] if self._input_bounds is not None else []
 
 
 # ---
@@ -872,8 +872,8 @@ class Engine:
 
     objects = [ self.criterion,
                 self.criterion.analyzer,
-                self.criterion.analyzer.input_metric,
-                self.criterion.analyzer.input_bounds ] \
+                self.criterion.analyzer.input_metric ] \
+                + self.criterion.analyzer.input_bounds \
                 + self.static_filters \
                 + self.dynamic_filters
     for o in objects:

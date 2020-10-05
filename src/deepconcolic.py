@@ -26,12 +26,14 @@ def deepconcolic(criterion, norm, test_object, report_args,
                          input_bounds = input_bounds)
     elif norm=='l0':
       from nc_l0 import NcL0Analyzer
+      l0_args = copy.copy (norm_args)
+      del l0_args['LB_noise']
       engine = nc_setup (test_object = test_object,
                          engine_args = engine_args,
                          setup_analyzer = NcL0Analyzer,
                          input_shape = test_object.raw_data.data[0].shape,
                          eval_batch = eval_batch_func (test_object.dnn),
-                         l0_args = norm_args)
+                         l0_args = l0_args)
     else:
       print('\n not supported norm... {0}\n'.format(norm))
       sys.exit(0)
