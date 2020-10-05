@@ -87,6 +87,9 @@ def main():
   parser.add_argument("--max-iterations", dest="max_iterations", metavar="INT",
                       help="maximum number of engine iterations (use < 0 for unlimited)",
                       default='-1')
+  parser.add_argument("--save-all-tests", dest="save_all_tests", action="store_true",
+                      help="save all generated tests in output directory; "
+                      "only adversarial examples are kept by default")
   parser.add_argument("--rng-seed", dest="rng_seed", metavar="SEED", type=int,
                       help="Integer seed for initializing the internal random number "
                       "generator, and therefore get some(what) reproducible results")
@@ -264,7 +267,7 @@ def main():
 
   deepconcolic (args.criterion, args.norm, test_object,
                 report_args = { 'outdir': OutputDir (outs, log = True),
-                                'save_new_tests': False,
+                                'save_new_tests': args.save_all_tests,
                                 'save_input_func': save_input,
                                 'amplify_diffs': amplify_diffs },
                 norm_args = { 'factor': .25,
