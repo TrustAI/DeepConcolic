@@ -72,6 +72,10 @@ def deepconcolic(criterion, norm, test_object, report_args,
                            outdir = report_args['outdir'])
     else:
       sys.exit ('\n not supported norm... {0}\n'.format(norm))
+  elif criterion=='dbnc_stats':
+    import dbnc_stats
+    dbnc_stats.run (test_object, report_args['outdir'],
+                    input_bounds = input_bounds)
   elif criterion=='ssc':
     from ssc import SScGANBasedAnalyzer, setup as ssc_setup
     linf_args = copy.copy (norm_args)

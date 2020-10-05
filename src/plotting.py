@@ -1,4 +1,4 @@
-from utils import OutputDir
+from utils import OutputDir, tp1
 import os
 
 default_params = {
@@ -13,12 +13,12 @@ pgf_output_pdf = True
 pgf_default_figsize = (4.7, 4.7)
 pgf_default_params = {
   'font.size': 8,
-  'font.family': 'cmr10',        # lmodern
+  'font.family': 'cmr10',               # lmodern
   'text.usetex': True,
   'axes.linewidth': .5,
-  'axes.unicode_minus': True,    # fix mpl bug in 3.3.0?
+  'axes.unicode_minus': True,           # fix mpl bug in 3.3.0?
   'lines.linewidth': .5,
-  'lines.markersize': .5,
+  'lines.markersize': .2,
   'pgf.texsystem': 'pdflatex',
   'pgf.rcfonts': False,        # don't setup fonts from rc parameters
   # "pgf.preamble": [r"\input{../macro}"]

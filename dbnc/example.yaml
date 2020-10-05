@@ -5,11 +5,11 @@
     #
     # Size of training sample to use for feature extraction and
     # discretization; this defines the `training data' below:
-    bn_abstr_train_size: 10000,
+    bn_abstr_train_size: 20000,
     #
     # Proportion of the training data (above) to use for feature
     # extraction (defaults to 1, i.e. use all of it).
-    # feat_extr_train_size: 0.5,
+    # feat_extr_train_size: .5,
     # 
     # Feature Extraction (for each layer)
     # ===================================
@@ -71,10 +71,40 @@
     # 
     # Perform a 3-clustering of the projected training data, and use 3
     # adjacent intervals that each span exactly one cluster:
-    discr: { n_bins: 3, strategy: "kmeans" },
+    # discr: { n_bins: 3, strategy: "kmeans" },
     # 
     # Use 4 intervals of identical width that span all training data:
     # discr: { n_bins: 4, strategy: "uniform" },
+    #
+    # Kernel Density Estimate (KDE):
+    # ------------------------------
+    #
+    # Compute a kernel density estimation based on training data and
+    # find split locations based on dips (local minima of the
+    # estimated density function) and plateaux (large-enough intervals
+    # where the density approaches zero): each dip is associated with
+    # an interval boundary, whereas each plateau defines a whole
+    # interval.  Roughtly, dips are selected using a prominence
+    # criterion that is defined as a ratio w.r.t the maximum of the
+    # density function (`kde_dip_prominence_prop', defaulting to
+    # 1/10).  Alternatively, plateaux are intervals where the density
+    # function is lower than a threshold that is also defined as a
+    # ratio w.r.t the maximum of the density function
+    # (`kde_baseline_density_prop`, defaulting to 1/20):
+    discr: { strategy: 'kde' },
+    # is thus equivalent to:
+    # discr: { strategy: 'kde', kde_dip_prominence_prop: 0.1, kde_baseline_density_prop: 0.05 },
+    #
+    # The additional key `kde_plot_spaces` allows to output plots of
+    # density estimates and resulting intervals, along with scattered
+    # points that each represent one element of the training data.
+    # When defined, it may take its values in `dens` or `logl`, to
+    # plot the density estimation or the log-likelihood, respectively.
+    # Additional arguments can also be provided to control whether to
+    # include some markers on dips in the plots, or the amount of
+    # points, to include in the plots:
+    # discr: { strategy: 'kde', kde_plot_spaces: 'dens', kde_plot_dip_markers: True, kde_plot_training_samples: 500 },
+    # discr: { strategy: 'kde', kde_plot_spaces: 'dens', kde_plot_dip_markers: False, kde_plot_training_samples: 0 },
     #
     # Extended Variants
     # -----------------
@@ -90,6 +120,11 @@
     # Use 3 extended bins (so, 5 in total) to discretize with 3
     # intervals of identical width:
     # discr: { n_bins: 3, extended: True, strategy: "uniform" },
+    #
+    # Kernel Density Estimates with additional open intervals (which
+    # may contain a limitted amount of projected training data, partly
+    # depending on `kde_baseline_density_prop`):
+    # discr: { strategy: 'kde', extended: True },
     #
     # Custom (per-layer) Specifications
     # ---------------------------------
@@ -126,4 +161,9 @@
     #
     # Number of jobs used to bake and fit the BN abstraction:
     bn_abstr_n_jobs: 3,
+    #
+    # Number of jobs used to discretize feature components/spaces (see
+    # https://scikit-learn.org/stable/glossary.html#term-n-jobs for
+    # details on its semantics):
+    discr_n_jobs: -1,
 }

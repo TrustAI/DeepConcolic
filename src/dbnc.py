@@ -1,14 +1,18 @@
 import warnings
+import plotting
+from plotting import plt
 from typing import *
 from utils import *
 from engine import *
-import numpy as np
-
+from kde_utils import KDESplit
+from stat_utils import CvPCA
 from functools import reduce
+from operator import iconcat
 from itertools import product
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler, KBinsDiscretizer, Binarizer
-from sklearn.decomposition import PCA, FastICA
+from sklearn.model_selection import ShuffleSplit
+from sklearn.decomposition import PCA, IncrementalPCA, FastICA
 from sklearn.metrics import log_loss, classification_report
 from pomegranate import Node, BayesianNetwork
 from pomegranate.distributions import (DiscreteDistribution,
@@ -21,6 +25,8 @@ from pomegranate.distributions import (DiscreteDistribution,
 Interval = Tuple[Optional[float], Optional[float]]
 
 def interval_dist (interval: Interval, v: float):
+  if np.abs (v) == np.inf:
+    return np.inf
   interval = (interval[0] if interval[0] is not None else -np.inf,
               interval[1] if interval[1] is not None else np.inf)
   dist = np.amin (np.abs (interval - np.array(v)))
@@ -45,6 +51,9 @@ class FeatureDiscretizer:
   @abstractmethod
   def feature_parts (self, feature: int) -> int:
     raise NotImplementedError
+
+  def has_feature_part (self, feature: int, part: int) -> bool:
+    return part >= 0 and part < self.feature_parts (feature)
 
   @abstractmethod
   def edges (self, feature: int, value: float) -> Interval:
@@ -85,7 +94,35 @@ class FeatureBinarizer (FeatureDiscretizer, Binarizer):
 
 class KBinsFeatureDiscretizer (FeatureDiscretizer, KBinsDiscretizer):
 
-  def feature_parts (self, feature):
+  def __init__(self,
+               kde_dip_space = 'dens',
+               kde_dip_prominence_prop = None,
+               kde_baseline_density_prop = None,
+               kde_bandwidth_prop = None,
+               kde_min_width = None,
+               kde_plot_spaces = None,
+               kde_plot_dip_markers = None,
+               kde_plot_training_samples = 500,
+               n_jobs = None,
+               **kwds):
+    super().__init__(**kwds)
+    KDESplit.validate_space ('kde_dip_space', kde_dip_space)
+    kde_plot_spaces = seqx (kde_plot_spaces)
+    for s in kde_plot_spaces: KDESplit.validate_space ('kde_plot_spaces', s)
+    assert (kde_plot_training_samples >= 0)
+    assert (n_jobs is None or n_jobs != 0)
+    self.kde_plot_training_samples = int (kde_plot_training_samples)
+    self.kde_ = []
+    self.kde_split_args = dict (dip_space = kde_dip_space,
+                                dip_prominence_prop = kde_dip_prominence_prop,
+                                baseline_density_prop = kde_baseline_density_prop,
+                                bandwidth_prop = kde_bandwidth_prop,
+                                min_width = kde_min_width,
+                                plot_dip_markers = kde_plot_dip_markers,
+                                plot_spaces = kde_plot_spaces,
+                                n_jobs = n_jobs)
+
+  def feature_parts (self, feature) -> int:
     return self.n_bins_[feature]
 
   def edges (self, feature: int, value: float) -> Interval:
@@ -96,16 +133,113 @@ class KBinsFeatureDiscretizer (FeatureDiscretizer, KBinsDiscretizer):
     return edges[part-1], edges[part]
 
   def part_edges (self, feature: int, part: int) -> Interval:
+    """
+    Raises IndexError in case part is out of discretized space.
+    """
     edges = self.bin_edges_[feature]
     return ((-np.inf if part   == 0           else edges[part  ],
              np.inf  if part+2 == len (edges) else edges[part+1]))
 
+  def _kde_fit (self, x, y, feat_extr, true_labels = None, pred_labels = None, **kwds):
+    # Use a Kernel-Density-based fit with bandwidth optimization, for
+    # each feature.
+
+    n_features = y.shape[1]
+    n_bins = np.zeros (n_features, dtype = int)
+    bin_edges = np.zeros (n_features, dtype = object)
+    n_tries = 3
+    splitters = [ [ KDESplit (**self.kde_split_args)
+                    for _ in range (n_tries) ]
+                  for _ in range (n_features) ]
+
+    for fi in range (n_features):
+      tp1 (f'KDE: Discretizing feature {fi}...')
+      yy = y[:,fi]
+      rs = ShuffleSplit (n_splits = n_tries, train_size = .75)
+      bandwidth = None
+      for splitter, (yy_index, _) in zip (splitters[fi], rs.split (yy)):
+        splitter.fit_split (yy[yy_index], bandwidth = bandwidth)
+        bandwidth = splitter.bandwidth_ if bandwidth is None else bandwidth
+      from sklearn.cluster import MeanShift
+      splits = [ s.splits_ for s in splitters[fi] ]
+      splits = np.asarray (reduce (iconcat, splits, []))
+      clustering = MeanShift (bandwidth = bandwidth * 2,
+                              cluster_all = False)\
+                  .fit (splits.reshape(-1, 1))
+      splits = clustering.cluster_centers_.T[0]
+      splits.sort ()
+      bin_edges[fi] = splits
+      n_bins[fi] = len(bin_edges[fi]) - 1
+
+    self.n_bins_ = n_bins
+    self.bin_edges_ = bin_edges
+    self.splitters_ = splitters
+
+
+  def _kde_plot (self, _x, y, _feat_extr,
+                 true_labels = None, pred_labels = None, layer = None,
+                 outdir: OutputDir = None, **kwds):
+
+    if self.kde_split_args['plot_spaces'] is None:
+      return
+
+    if not plt:
+      warnings.warn ('Unable to import `matplotlib`: skipping KDE plot')
+      return
+
+    tp1 (f'KDE: Plotting discretized features...')
+
+    KDESplit.setup_plot_style ()
+
+    cmap = None
+    if true_labels is not None:
+      minlabel, maxlabel = np.min (true_labels), np.max (true_labels)
+      cmap = plt.get_cmap ('nipy_spectral', maxlabel - minlabel + 1)
+
+    for plot_space in self.kde_split_args['plot_spaces']:
+      fig, ax = plotting.subplots (len (self.splitters_))
+      fig.subplots_adjust (left = 0.04, right = 0.99, hspace = 0.1,
+                           bottom = 0.03, top = 0.99)
+      for fi, splitter in enumerate (self.splitters_):
+        axi = ax[fi] if len (self.splitters_) > 1 else ax
+        for splitter in splitter:
+          extrema = splitter.plot_splits (axi, plot_space)
+        if extrema is not None and \
+               self.kde_plot_training_samples > 0:
+          # customizable sub-sampling to keep graphs lightweight
+          subyy = min (len (y), self.kde_plot_training_samples)
+          yy = y[:subyy, fi]
+          axi.scatter (yy,
+                       - 0.06 * extrema['ymax'] * np.random.random (yy.shape[0]),
+                       marker = 'o', c = true_labels[:subyy], cmap = cmap)
+        axi.annotate ((r'$\mathbb{F}_{' + \
+                       plotting.texttt (str (layer)) + ', ' + str (fi) + '}$'),
+                      xy = (1, 1), xycoords = axi.transAxes,
+                      xytext = (-3, -3), textcoords = 'offset points',
+                      horizontalalignment = 'right',
+                      verticalalignment = 'top',
+                      bbox = dict (boxstyle = 'square,pad=0.1', ec='black',
+                                   fc='white', lw=.8))
+      plotting.show (fig = fig, outdir = outdir,
+                     basefilename = str (layer) + '-' + str (plot_space))
+
+
   def fit_wrt (self, x, y, feat_extr, **kwds) -> None:
+    if self.strategy == 'kde':
+      self._kde_fit (x, y, feat_extr, **kwds)
+      self._kde_plot (x, y, feat_extr, **kwds)
+    else:
       super().fit (y)
+    for fi, nints in enumerate (self.n_bins_):
+      p1 ('| Discretization of feature {} involes {} interval{}'
+          .format (fi, *s_(nints)))
 
   def get_params (self, deep = True) -> dict:
     p = super().get_params (deep)
     p['extended'] = False
+    if self.strategy == 'kde':
+      p['kde'] = self.kde_
+      p['kde_split_args'] = self.kde_split_args
     return p
 
 
@@ -143,6 +277,7 @@ class KBinsNOutFeatureDiscretizer (KBinsFeatureDiscretizer):
     p = super().get_params (deep)
     p['extended'] = True
     return p
+
 
 # ---
 
@@ -309,7 +444,7 @@ class _BaseBFcCriterion (Criterion):
     clayers = list (filter (lambda l: isinstance (l, BoolMappedCoverableLayer), clayers))
     assert (clayers == [])
     self.base_dimreds = None
-    self.total_registered_cases = 0
+    self.total_registered_cases = 0     # as modeled in BN
     self.outdir = outdir or OutputDir ()
     super().__init__(*args, **kwds)
     self._reset_progress ()
@@ -361,7 +496,6 @@ class _BaseBFcCriterion (Criterion):
 
 
   def register_new_activations (self, acts) -> None:
-    # Take care `num_test_cases` has already been updated:
     self.fit_activations (acts)
 
     # Append feature values for new tests
@@ -392,6 +526,8 @@ class _BaseBFcCriterion (Criterion):
     dimreds, intervals = self.tests_feature_values_n_intervals (feature)
     feature_node = self.N.states[feature]
     fl, flfeature = feature_node.flayer, feature_node.feature
+    if not fl.discr.has_feature_part (flfeature, feature_interval):
+      return []
     target_interval = fl.discr.part_edges (flfeature, feature_interval)
     all = [ (i, interval_dist (target_interval, dimreds[i])) for i, _ in intervals ]
     all.sort (key = lambda x: x[1])
@@ -551,7 +687,7 @@ class _BaseBFcCriterion (Criterion):
     ts0 = len(acts[self.flayers[0].layer_index])
     cp1 ('| Given training data of size {}'.format (ts0))
     fts = None if self.feat_extr_train_size == 1 \
-          else (min(ts0, int (self.feat_extr_train_size))
+          else (min (ts0, int (self.feat_extr_train_size))
                 if self.feat_extr_train_size > 1
                 else int (ts0 * self.feat_extr_train_size))
     if fts is not None:
@@ -569,10 +705,11 @@ class _BaseBFcCriterion (Criterion):
         # constructing the pipeline.
         fl.transform.fit (copy.copy (x[:fts]))
         y = fl.transform.transform (x)
-      p1 ('| Extracted {} feature{}'.format (y.shape[1], 's' if y.shape[1] > 1 else ''))
+      p1 ('| Extracted {} feature{}'.format (*s_(y.shape[1])))
       tp1 ('Discretizing features...')
       fl.discr.fit_wrt (x, y, fl.transform, layer = fl, **kwds,
                         outdir = self.outdir)
+      p1 ('| Discretized {} feature{}'.format (*s_(y.shape[1])))
       del x, y
 
     self.explained_variance_ratios_ = \
@@ -1133,7 +1270,7 @@ def abstract_layer_features (li, feats = None, discr = None, default = 1):
   return default
 
 
-def abstract_layer_feature_discretization (l, li, discr = None):
+def abstract_layer_feature_discretization (l, li, discr = None, discr_n_jobs = None):
   li_discr = (discr[li] if isinstance (discr, dict) and li in discr else
               discr     if isinstance (discr, dict) else
               discr     if isinstance (discr, int)  else
@@ -1166,6 +1303,7 @@ def abstract_layer_feature_discretization (l, li, discr = None):
       'n_bins': k,
       'encode': 'ordinal',
       'strategy': s,
+      'n_jobs': discr_n_jobs
     }
     if 'extended' in discr_args:
       del discr_args['extended']
@@ -1187,7 +1325,9 @@ def abstract_layer_setup (l, i, feats = None, discr = None, **kwds):
     options = { 'n_components': options, 'svd_solver': svd_solver }
   # from sklearn.decomposition import IncrementalPCA
   fext = (make_pipeline (StandardScaler (copy = False),
-                         PCA (**options, copy = False)) if decomp == 'pca' else
+                         CvPCA (**options, copy = False)) if decomp == 'pca' else \
+          make_pipeline (StandardScaler (copy = False),
+                         IncrementalPCA (**options, copy = False)) if decomp == 'ipca' else \
           make_pipeline (FastICA (**options)))
   feature_discretization = abstract_layer_feature_discretization (l, i, discr, **kwds)
   return BFcLayer (layer = l, layer_index = i,
@@ -1257,6 +1397,7 @@ def setup (setup_criterion = None,
            feats = { 'n_components': 2, 'svd_solver': 'randomized' },
            feat_extr_train_size = 1,
            discr = 'bin',
+           discr_n_jobs = None,
            epsilon = None,
            report_on_feature_extractions = False,
            bn_abstr_train_size = 0.5,
@@ -1267,7 +1408,8 @@ def setup (setup_criterion = None,
   if setup_criterion is None:
     raise ValueError ('Missing argument `setup_criterion`!')
 
-  setup_layer = (lambda l, i, **kwds: abstract_layer_setup (l, i, feats, discr))
+  setup_layer = (lambda l, i, **kwds: abstract_layer_setup (l, i, feats, discr,
+                                                            discr_n_jobs = discr_n_jobs))
   cover_layers = get_cover_layers (test_object.dnn, setup_layer,
                                    layer_indices = test_object.layer_indices,
                                    exclude_direct_input_succ = False,
@@ -1282,7 +1424,7 @@ def setup (setup_criterion = None,
             outdir = outdir)
   if report_on_feature_extractions:
     criterion_args['report_on_feature_extractions'] = plot_report_on_feature_extractions
-    criterion_args['close_reports_on_feature_extractions'] = (lambda _: ploting.show ())
+    criterion_args['close_reports_on_feature_extractions'] = (lambda _: plotting.show ())
 
   return engine_setup (test_object = test_object,
                        cover_layers = cover_layers,

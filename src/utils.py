@@ -22,6 +22,9 @@ def rng_seed (seed: Optional[int]):
   # In case one also uses pythons' stdlib ?
   random.seed (seed)
 
+def randint ():
+  return int (np.random.uniform (2**32-1))
+
 print ("Using TensorFlow version:", tf.__version__, file = sys.stderr)
 
 COLUMNS = os.getenv ('COLUMNS', default = '80')
@@ -55,6 +58,12 @@ def xtuple(t):
 
 def xlist(t):
   return [t] if t is not None else []
+
+def seqx(t):
+  return [] if t is None else t if isinstance (t, (list, tuple)) else [t]
+
+def some(a, d):
+  return a if a is not None else d
 
 def s_(i):
   return i, 's' if i > 1 else ''
@@ -272,6 +281,15 @@ def get_cover_layers (dnn, constr, layer_indices = None,
            if not (exclude_direct_input_succ and
                    (layer[0] == 0 or layer[0] == 1 and is_input_layer (dnn.layers[0])))
            and (layer_indices == None or layer[0] in layer_indices) ]
+
+# ---
+
+def validate_strarg (valid, spec):
+  def aux (v, s):
+    if s is not None and s not in valid:
+      raise ValueError ('Unknown {} `{}\' for argument `{}\': expected one of '
+                        '{}'.format (spec, s, v, valid))
+  return aux
 
 # ---
 
