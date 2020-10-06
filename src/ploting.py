@@ -1,0 +1,125 @@
+from utils import OutputDir
+import os
+
+default_params = {
+  'font.size': 11,
+  'font.family': 'cmr10',
+  'axes.unicode_minus': False,
+}
+
+pgf = os.getenv ('DC_MPL_BACKEND') in ('pgf', 'PGF')
+pgf_output_pgf = True
+pgf_output_pdf = True
+pgf_default_figsize = (4.7, 4.7)
+pgf_default_params = {
+  'font.size': 8,
+  'font.family': 'cmr10',        # lmodern
+  'text.usetex': True,
+  'axes.linewidth': .5,
+  'axes.unicode_minus': True,    # fix mpl bug in 3.3.0?
+  'lines.linewidth': .5,
+  'lines.markersize': .5,
+  'pgf.texsystem': 'pdflatex',
+  'pgf.rcfonts': False,        # don't setup fonts from rc parameters
+  # "pgf.preamble": [r"\input{../macro}"]
+  'pgf.preamble': "\n".join([
+    r"\usepackage[utf8x]{inputenc}",
+    r"\usepackage[T1]{fontenc}",
+    r"\usepackage{amssymb}",
+    r"\usepackage{relsize}",
+  ])
+}
+
+# ---
+
+try:
+  import matplotlib as mpl
+  mpl = mpl
+except:
+  mpl = None
+enabled = mpl is not None
+
+if mpl and pgf:
+  mpl.use ('pgf')
+
+try:
+  import matplotlib.pyplot as plt
+  plt = plt
+except:
+  plt = None
+
+# ---
+
+def generic_setup (**kwds):
+  if plt:
+    plt.rcParams.update ({ **default_params, **kwds })
+
+def pgf_setup (**kwds):
+  if pgf and plt:
+    plt.rcParams.update ({ **pgf_default_params, **kwds })
+
+generic_setup ()
+pgf_setup ()
+
+# ---
+
+def subplots (*args, figsize = pgf_default_figsize, **kwds):
+  if plt:
+    return plt.subplots (*args, figsize = figsize, **kwds)
+  else:
+    return None
+
+# import tikzplotlib
+
+def show (fig = None, outdir: OutputDir = None, basefilename = None):
+  if plt:
+    if not pgf:
+      plt.show ()
+    elif fig is not None and basefilename is not None:
+      plt.tight_layout (pad = 0, w_pad = 0.1, h_pad = 0.1)
+      outdir = OutputDir () if outdir is None else outdir
+      assert isinstance (outdir, OutputDir)
+      if pgf_output_pgf:
+        f = outdir.filepath (basefilename + '.pgf')
+        tp1 ('Outputting {}...'.format (f))
+        fig.savefig (f, format='pgf')
+      if pgf_output_pdf:
+        f = outdir.filepath (basefilename + '.pdf')
+        tp1 ('Outputting {}...'.format (f))
+        fig.savefig (f, format='pdf')
+
+def texttt (s):
+  s = s.replace('_', r'\_')
+  return (r'\mbox{\smaller\ttfamily ' + s + '}' if pgf else s)
+
+# # Verbatim copy from: https://jwalton.info/Matplotlib-latex-PGF/
+# def set_size(width_pt, fraction=1, subplots=(1, 1)):
+#     """Set figure dimensions to sit nicely in our document.
+
+#     Parameters
+#     ----------
+#     width_pt: float
+#             Document width in points
+#     fraction: float, optional
+#             Fraction of the width which you wish the figure to occupy
+#     subplots: array-like, optional
+#             The number of rows and columns of subplots.
+#     Returns
+#     -------
+#     fig_dim: tuple
+#             Dimensions of figure in inches
+#     """
+#     # Width of figure (in pts)
+#     fig_width_pt = width_pt * fraction
+#     # Convert from pt to inches
+#     inches_per_pt = 1 / 72.27
+
+#     # Golden ratio to set aesthetic figure height
+#     golden_ratio = (5**.5 - 1) / 2
+
+#     # Figure width in inches
+#     fig_width_in = fig_width_pt * inches_per_pt
+#     # Figure height in inches
+#     fig_height_in = fig_width_in * golden_ratio * (subplots[0] / subplots[1])
+
+#     return (fig_width_in, fig_height_in)

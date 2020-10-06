@@ -4,13 +4,8 @@ import numpy as np
 from utils import *
 from nc_setup import *
 from ssc import *
-import matplotlib.pyplot as plt
-try:
-  from art.attacks.fast_gradient import FastGradientMethod
-  from art.classifiers import KerasClassifier
-except:
-  pass
-
+from art.attacks.evasion import FastGradientMethod
+from art.estimators.classification import KerasClassifier
 
 class adv_objectt:
   def __init__(self, max_v, lb_v, ub_v):

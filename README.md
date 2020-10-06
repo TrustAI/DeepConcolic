@@ -17,13 +17,17 @@ The paper is available in https://arxiv.org/abs/1805.00089.
 # Run  
 
 ```
-usage: deepconcolic.py [-h] [--model MODEL] [--inputs DIR] [--outputs DIR]
-                       [--training-data DIR] [--criterion nc, ssc...]
-                       [--labels FILE] [--mnist-dataset] [--cifar10-dataset]
-                       [--vgg16-model] [--norm linf, l0] [--input-rows INT]
-                       [--input-cols INT] [--input-channels INT]
-                       [--cond-ratio FLOAT] [--top-classes INT]
-                       [--layer-index INT]
+usage: deepconcolic.py [-h] [--model MODEL] [--inputs DIR] --outputs DIR
+                       [--criterion nc, ssc...] [--init INT]
+                       [--max-iterations INT] [--save-all-tests]
+                       [--rng-seed SEED] [--labels FILE]
+                       [--dataset {mnist,fashion_mnist,cifar10,OpenML:har}]
+                       [--vgg16-model] [--filters {LOF}] [--norm linf, l0]
+                       [--input-rows INT] [--input-cols INT]
+                       [--input-channels INT] [--cond-ratio FLOAT]
+                       [--top-classes INT] [--layer-index INT [INT ...]]
+                       [--feature-index INT] [--fuzzing] [--num-tests INT]
+                       [--num-processes INT] [--sleep-time INT]
 
 Concolic testing for neural networks
 
@@ -32,61 +36,78 @@ optional arguments:
   --model MODEL         the input neural network model (.h5)
   --inputs DIR          the input test data directory
   --outputs DIR         the outputput test data directory
-  --training-data DIR   the extra training dataset
   --criterion nc, ssc...
                         the test criterion
+  --init INT            number of test samples to initialize the engine
+  --max-iterations INT  maximum number of engine iterations (use < 0 for
+                        unlimited)
+  --save-all-tests      save all generated tests in output directory; only
+                        adversarial examples are kept by default
+  --rng-seed SEED       Integer seed for initializing the internal random
+                        number generator, and therefore get some(what)
+                        reproducible results
   --labels FILE         the default labels
-  --mnist-dataset       MNIST dataset
-  --cifar10-dataset     CIFAR-10 dataset
+  --dataset {mnist,fashion_mnist,cifar10,OpenML:har}
+                        selected dataset
   --vgg16-model         vgg16 model
+  --filters {LOF}       additional filters used to put aside generated test
+                        inputs that are too far from training data (there is
+                        only one filter to choose from for now; the plural is
+                        used for future-proofing)
   --norm linf, l0       the norm metric
   --input-rows INT      input rows
   --input-cols INT      input cols
   --input-channels INT  input channels
   --cond-ratio FLOAT    the condition feature size parameter (0, 1]
   --top-classes INT     check the top-xx classifications
-  --layer-index INT     to test a particular layer
+  --layer-index INT [INT ...]
+                        to test a particular layer
+  --feature-index INT   to test a particular feature map
+  --fuzzing             to start fuzzing
+  --num-tests INT       number of tests to generate
+  --num-processes INT   number of processes to use
+  --sleep-time INT      fuzzing sleep time
 ```
 
 The neural network model under tested is specified by ``--model`` and a set of raw test data should be given
-by using ``--inputs``. Some popular datasets like MNIST and CIFAR10 can be directly specified by using
-``--mnist-dataset`` and ``--cifar10-dataset`` directly. ``--criterion`` is used to choose the coverage 
+by using ``--inputs``. Some popular datasets like MNIST and CIFAR10 can be directly specified by using the
+``--dataset`` option directly. ``--criterion`` is used to choose the coverage
 criterion and ``--norm`` helps select the norm metric to measure the distance between inputs. Some examples
 to run DeepConcolic are in the following.
 
 To run an MNIST model
 
 ```
-python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --mnist-data --outputs outs/
+python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --dataset mnist --outputs outs/
 ```
 
 To run an CIFAR10 model
 
 ```
-python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --cifar10-data --outputs outs/
+python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --dataset cifar10 --outputs outs/
 ```
 
 To test a particular layer
 ```
-python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --cifar10-data --outputs outs/ --layer-index 2
+python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --dataset cifar10 --outputs outs/ --layer-index 2
 ```
 
 To run MC/DC for DNNs on the CIFAR-10 model
 
 ```
-python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --criterion ssc --cond-ratio 0.1 --cifar10-data --outputs outs
+python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --criterion ssc --cond-ratio 0.1 --dataset cifar10 --outputs outs
 ```
 
-To run MC/DC for DNNs on the VGG16 model
+To run MC/DC for DNNs on the VGG16 model (with input images from the ``data`` sub-directory)
 
 ```
-python  deepconcolic.py --vgg16-model --inputs data/ --outputs outs --cond-ratio 0.1 --top-classes 5 --labels labels.txt --criterion ssc
+python deepconcolic.py --vgg16-model --inputs data/ --outputs outs --cond-ratio 0.1 --top-classes 5 --labels labels.txt --criterion ssc
 ```
 
 To run Concolic Sign-sign-coverage (MC/DC) for DNNs on the MNIST model
 
 ```
-python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --criterion ssclp --mnist-data --outputs outs
+python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --dataset mnist --outputs outs --criterion ssclp
 ```
 
 DeepConcolic nows supports an experimental fuzzing engine. Try ``--fuzzing`` to use it. The following command will result in: one ``mutants`` folder, one ``advs`` folder for adversarial examples and an adversarial list ``adv.list``.
@@ -105,9 +126,10 @@ We suggest to create an environment using [miniconda](https://docs.conda.io/en/l
 conda create --name deepconcolic
 conda activate deepconcolic
 conda install opencv 
+pip3 install scikit-learn\>=0.22
 pip3 install tensorflow\>=2.3
 pip3 install pulp\>=2
-pip3 install adversarial-robustness-toolbox
+pip3 install adversarial-robustness-toolbox\>=1.3
 ```
 
 Note as of September 2020 one may need to append `--use-feature=2020-resolver` at the end of each `pip3 install` command-line to work-around errors in dependency resolution.  Further missing dependency errors for a package _p_ can then be solved by uninstalling/installing _p_.

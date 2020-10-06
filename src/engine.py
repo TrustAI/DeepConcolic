@@ -1,7 +1,7 @@
 from typing import *
 from utils import *
+from functools import reduce
 from sklearn.model_selection import train_test_split
-
 
 # ---
 
@@ -9,45 +9,194 @@ from sklearn.model_selection import train_test_split
 # Define an alias type for inputs
 Input = NewType("Input", np.ndarray)
 
-
-# ---
-
-
-class Oracle:
-  '''
-  Oracles can be used to compare any concrete input against a
-  reference set.
-  '''
-
-  @abstractmethod
-  def __repr__(self):
-    raise NotImplementedError
-
-
-  @abstractmethod
-  def close_to(self, refs, x):
-    raise NotImplementedError
+class InputsDict (NPArrayDict):
+  pass
 
 
 # ---
 
+class _InputsStatBasedInitializable:
 
-class Metric (Oracle):
+  @abstractmethod
+  def inputs_stat_initialize (self,
+                            train_data: raw_datat = None,
+                            test_data: raw_datat = None) -> None:
+    print (self)
+    raise NotImplementedError
+
+# ---
+
+class _ActivationStatBasedInitializable:
+
+  def stat_based_basic_initializers(self):
+    """
+    Stat-based initialization steps (non-batched).
+
+    Returns a list of dictionaries (or `None`) with the following
+    entries:
+
+    - name: short description of what's computed;
+
+    - layer_indexes: a list or set of indexes for layers whose
+      activations values are needed;
+
+    - once: a callable taking a mapping (as a dictionary) from each
+      layer index given in `layer_indexes` to activation values for
+      the corresponding layer; this is to be called only once during
+      initialization of the analyzer;
+
+    - print (optional): a function that prints a summary of results.
+    """
+    return []
+
+
+  def stat_based_incremental_initializers(self):
+    """
+    Stat-based incremental initialization steps.
+
+    Returns a list of dictionaries (or `None`) with the following
+    entries:
+
+    - name: short description of what's computed;
+
+    - accum: a callable taking batched activation values for every
+      layer and any accumulator that is (initially `None`), and
+      returns a new or updated accumulator.  This is called at least
+      once.
+
+    - final: optional function that is called with the final
+      accumulator once all batched activations have been passed to
+      `accum`;
+
+    - print (optional): a function that prints a summary of results.
+    """
+    return []
+
+
+  def stat_based_train_cv_initializers(self):
+    """
+    Stat-based initialization steps with optional cross-validation
+    performed on training data.
+
+    Returns a list of dictionaries (or `None`) with the following
+    entries:
+
+    - name: short description of what's computed;
+
+    - layer_indexes: a list or set of indexes for layers whose
+      activations values are needed;
+
+    - test_size & train_size: (as in
+      `sklearn.model_selection.train_test_split`)
+
+    - train: a callable taking some training data as mapping (as a
+      dictionary) from each layer index given in `layer_indexes` to
+      activation values for the corresponding layer, and two keyword
+      arguments `true_labels` and `pred_labels` that hold the
+      corresponding true and predicted labels. Returns some arbitrary
+      object, and is to be called only once during initialization;
+
+    - test: a callable taking some extra training data and associated
+      labels as two separate mappings (as a dictionary) from each
+      layer index given in `layer_indexes` to activation values for
+      the corresponding layer.
+
+    Any function given as entries above is always called before
+    functions returned by `stat_based_test_cv_initializers`, but after
+    those retured by `stat_based_basic_initializers` and
+    `stat_based_incremental_initializers`.
+    """
+    return []
+
+
+  def stat_based_test_cv_initializers(self):
+    """
+    Stat-based initialization steps with optional cross-validation
+    performed on test data.
+
+    Returns a list of dictionaries (or `None`) with the following
+    entries:
+
+    - name: short description of what's computed;
+
+    - layer_indexes: a list or set of indexes for layers whose
+      activations values are needed;
+
+    - test_size & train_size: (as in
+      `sklearn.model_selection.train_test_split`)
+
+    - train: a callable taking some test data as mapping (as a
+      dictionary) from each layer index given in `layer_indexes` to
+      activation values for the corresponding layer, and two keyword
+      arguments `true_labels` and `pred_labels` that hold the
+      corresponding true and predicted labels. Returns some arbitrary
+      object, and is to be called only once during initialization;
+
+    - test: a callable taking some extra test data and associated
+      labels as two separate mappings (as a dictionary) from each
+      layer index given in `layer_indexes` to activation values for
+      the corresponding layer.
+
+    Any function given as entries above is always called last.
+    """
+    # - accum_test: a callable that is called with the object returned
+    #   by `train`, along with batched activation values for every layer
+    #   on the test data, and returns a new or updated accumulator.
+    #   This is called at least once.
+    #
+    # - final_test: optional function that is called with the final test
+    #   accumulator once all batched test activations have been passed
+    #   to  `accum_test`.
+    return []
+
+
+# ---
+
+
+class StaticFilter:
   '''
-  A metric can also be used as an oracle to compare and assess
-  concrete inputs.
+  A static filter can be used to compare any concrete input against a
+  pre-computed dataset.
   '''
-  
+
+  @abstractmethod
+  def close_enough(self, x: Input) -> bool:
+    raise NotImplementedError
+
+
+# ---
+
+
+class DynamicFilter:
+  '''
+  A dynamic filter can be used to compare any concrete input against a
+  given reference set.
+  '''
+
+  @abstractmethod
+  def close_to(self, refs: Sequence[Input], x: Input) -> bool:
+    raise NotImplementedError
+
+
+# ---
+
+
+class Metric (DynamicFilter):
+  '''
+  For now, we can assume that every metric can also be used as a
+  filter to compare and assess concrete inputs.
+  '''
+
   def __init__(self, factor = 0.25, scale = 1, **kwds):
     '''
     The `factor` argument determines closeness when the object is used
-    as an oracle; defaults to 1/4.  In turn, `scale` is applied on
+    as a filter; defaults to 1/4.  In turn, `scale` is applied on
     involved scalar values (e.g. pixels) when computing distances.
     '''
     self.factor = factor
     self.scale = scale
     super().__init__(**kwds)
-    
+
 
   @abstractmethod
   def distance(self, x, y):
@@ -74,13 +223,14 @@ class TestTarget:
   '''
 
   @abstractmethod
-  def cover(self) -> None:
+  def cover(self, acts) -> None:
     '''
-    Record that the target has been covered.
+    Record that the target has been covered by the given set of
+    activations.
     '''
     raise NotImplementedError
 
-  
+
   def log_repr(self) -> str:
     '''
     Returns a single-line string representation of the target suitable
@@ -98,11 +248,12 @@ class Analyzer:
   concrete inputs.
   '''
 
-  def __init__(self, analyzed_dnn = None, **kwds):
+  def __init__(self, analyzed_dnn = None, input_bounds: Optional[Bounds] = None, **kwds):
     assert analyzed_dnn is not None
+    assert input_bounds is None or isinstance (input_bounds, Bounds)
     self._analyzed_dnn = analyzed_dnn
+    self._input_bounds = input_bounds
     super().__init__(**kwds)
-
 
   # ---
 
@@ -141,6 +292,14 @@ class Analyzer:
     raise NotImplementedError
 
 
+  @property
+  def input_bounds(self) -> List[Bounds]:
+    '''
+    Returns the bounds on generated inputs.
+    '''
+    return [self._input_bounds] if self._input_bounds is not None else []
+
+
 # ---
 
 
@@ -176,7 +335,7 @@ class Analyzer4FreeSearch (Analyzer):
   def search_close_inputs(self, target: TestTarget) -> Optional[Tuple[float, Input, input]]:
     '''
     Generates a new concrete input that fulfills test target `target`.
-    
+
     Returns a tuple `(d, base, new)` where `base` is a concrete
     element from a set given on initialization (typically for now, raw
     data from `test_object`) and `new` is a new concrete input at
@@ -195,10 +354,11 @@ class Report:
 
   def __init__(self,
                base_name = '',
-               outs = '/tmp',
+               outdir: OutputDir = None,
                save_new_tests = False,
                adv_dist_period = 100,
                save_input_func = None,
+               amplify_diffs = False,
                inp_up = 1,
                **kwds):
 
@@ -206,30 +366,28 @@ class Report:
     self.base_name = base_name
     self.save_new_tests = save_new_tests
     self.adv_dist_period = adv_dist_period
-    self.dir = setup_output_dir (outs)
-    report_file, base = setup_output_files (self.dir, self.base_name,
-                                            suff = '', log = False)
-    self.report_file = report_file + '_report.txt'
-    self.base = base
+    self.outdir = outdir or OutputDir ()
+    assert isinstance (self.outdir, OutputDir)
+    self.base = self.outdir.stamped_filename (self.base_name)
+    self.report_file = self.outdir.filepath (self.base + '_report.txt')
     self.save_input_func = save_input_func
-    self.inp_ub = inp_up
+    self.amplify_diffs = amplify_diffs
     p1 ('Reporting into: {0}'.format (self.report_file))
     self.ntests = 0
+    self.nsteps = 0
 
-    
-  def _save_input(self, im, name, log = None, fit = False):
+
+  def _save_input(self, im, name, log = None):
     if self.save_input_func != None:
-      self.save_input_func (self.inp_ub * 0.5 + (im / self.inp_ub * 0.5) if fit
-                            else (im / self.inp_ub * 1.0),
-                            name, self.dir, log)
+      self.save_input_func (im, name, self.outdir.path, log)
 
 
   def _save_derived_input(self, new, origin, diff = None, log = None):
     self._save_input (new[0], new[1], log)
     self._save_input (origin[0], origin[1], log)
     if diff is not None:
-      self._save_input (diff[0], diff[1], log, fit = False)
-                              
+      self._save_input (diff[0], diff[1], log)
+
 
   def save_input(self, i, suff):
     self._save_input (i, self.base + '_' + suff)
@@ -237,13 +395,25 @@ class Report:
 
   def new_test(self, new = (), orig = (), dist = None, is_int = None):
     if self.save_new_tests:
-      diff = np.abs(new[0] - orig[0])
-      diff *= 0.5 / np.max (diff)
-      self._save_derived_input (
-        (new[0], '{0.ntests}-ok-{1}'.format (self, new[1])),
-        (orig[0], '{0.ntests}-original-{1}'.format (self, orig[1])),
-        (diff, '{0.ntests}-diff-{1}'.format (self, orig[1])))
+      if self.amplify_diffs:
+        diff = np.abs(new[0] - orig[0])
+        diff *= 0.5 / np.max (diff)
+      else:
+        diff = new[0] - orig[0]
+      self._save_derived_input ((new[0], '{0.ntests}-ok-{1}'.format (self, new[1])),
+                                (orig[0], '{0.ntests}-original-{1}'.format (self, orig[1])),
+                                (diff, '{0.ntests}-diff-{1}'.format (self, orig[1])))
     self.ntests += 1
+
+
+  @property
+  def num_steps(self):
+    return self.nsteps
+
+
+  @property
+  def num_tests(self):
+    return self.ntests
 
 
   @property
@@ -253,14 +423,13 @@ class Report:
 
   def new_adversarial(self, new = (), orig = (), dist = None, is_int = None):
     self.adversarials.append ((orig, new, dist))
-    self._save_derived_input (
-      (new[0], '{0.ntests}-adv-{1}'.format (self, new[1])),
-      (orig[0], '{0.ntests}-original-{1}'.format (self, orig[1])),
-      (np.abs(new[0] - orig[0]), '{0.ntests}-diff-{1}'.format (self, orig[1])))
+    self._save_derived_input ((new[0], '{0.ntests}-adv-{1}'.format (self, new[1])),
+                              (orig[0], '{0.ntests}-original-{1}'.format (self, orig[1])),
+                              (np.abs(new[0] - orig[0]), '{0.ntests}-diff-{1}'.format (self, orig[1])))
     if self.num_adversarials % self.adv_dist_period == 0:
       print_adversarial_distribution (
         [ d for o, n, d in self.adversarials ],
-        self.dir + self.base + '_adversarial-distribution.txt',
+        self.outdir.filepath (self.base + '_adversarial-distribution.txt'),
         int_flag = is_int)
     self.ntests += 1
 
@@ -269,7 +438,8 @@ class Report:
     '''
     Prints a single report line.
     '''
-    append_in_file (self.report_file, *args)
+    append_in_file (self.report_file, *args, '\n')
+    self.nsteps += 1
 
 
 # ---
@@ -280,12 +450,12 @@ class EarlyTermination (Exception):
   Exception raised by criteria when no new test target can be found.
   '''
   pass
-  
+
 
 # ---
 
 
-class Criterion:
+class Criterion (_ActivationStatBasedInitializable):
   '''
   Base class for test critieria.
 
@@ -305,7 +475,6 @@ class Criterion:
     and the analyzer support the two kinds of search; the default
     behavior is to select rooted search.
     '''
-    
     assert isinstance (analyzer, Analyzer)
     super().__init__(**kwds)
     self.analyzer = analyzer
@@ -322,11 +491,11 @@ class Criterion:
     Parameters
     ----------
     prefer_rooted_search: bool, optional
-     
+
     Returns
     -------
     whether rooted search mode is selected.
-    
+
     '''
     rooted_ok = (isinstance (self.analyzer, Analyzer4RootedSearch) and
                  isinstance (self, Criterion4RootedSearch))
@@ -384,15 +553,6 @@ class Criterion:
 
 
   @property
-  def oracle(self) -> Oracle:
-    '''
-    Returns the oracle used to compare concrete inputs.  By default
-    this is in input metric used by the analyzer.
-    '''
-    return self.metric
-
-
-  @property
   def num_test_cases(self) -> int:
     '''
     Returns the number of test cases.
@@ -401,18 +561,27 @@ class Criterion:
 
 
   # final as well
-  def add_new_test_cases(self, tl: Sequence[Input]) -> None:
+  def add_new_test_cases(self, tl: Sequence[Input],
+                         covered_target: TestTarget = None) -> None:
     """
     As its name says, this method adds a given series of inputs into
-    the set of test cases.  It then calls :meth:`update_coverage`.
+    the set of test cases.  It then calls :meth:`register_new_activations`.
     """
-    tp1 ('Adding {} test case{}'.format (len (tl), 's' if len (tl) > 1 else ''))
+    tp1 ('Adding {} test case{}'.format (*s_(len (tl))))
     self.test_cases.extend (tl)
-    self.update_coverage (tl)
+    for acts in self._batched_activations (tl, allow_input_layer = False):
+      if covered_target is not None:
+        covered_target.cover (acts)
+      self.register_new_activations (acts)
+
+  def _batched_activations(self, tl: Sequence[Input], **kwds):
+    batches = np.array_split (tl, len (tl) // 100 + 1)
+    for batch in batches:
+      yield (self.analyzer.eval_batch (batch, **kwds))
 
 
   @abstractmethod
-  def update_coverage(self, tl: Sequence[Input]) -> None:
+  def register_new_activations(self, acts) -> None:
     """
     Method called whenever new test cases are registered.  Overload
     this method to update coverage.
@@ -456,129 +625,6 @@ class Criterion:
 
 
   # ---
-
-
-  def stat_based_basic_initializers(self):
-    """
-    Stat-based initialization steps (non-batched).
-    
-    Returns a list of dictionaries (or `None`) with the following
-    entries:
-
-    - name: short description of what's computed;
-
-    - layer_indexes: a list or set of indexes for layers whose
-      activations values are needed;
-    
-    - once: a callable taking a mapping (as a dictionary) from each
-      layer index given in `layer_indexes` to activation values for
-      the corresponding layer; this is to be called only once during
-      initialization of the analyzer;
-
-    - print (optional): a function that prints a summary of results.
-    """
-    return None
-
-
-  def stat_based_incremental_initializers(self):
-    """
-    Stat-based incremental initialization steps.
-
-    Returns a list of dictionaries (or `None`) with the following
-    entries:
-
-    - name: short description of what's computed;
-    
-    - accum: a callable taking batched activation values for every
-      layer and any accumulator that is (initially `None`), and
-      returns a new or updated accumulator.  This is called at least
-      once.
-
-    - final: optional function that is called with the final
-      accumulator once all batched activations have been passed to
-      `accum`;
-
-    - print (optional): a function that prints a summary of results.
-    """
-    return None
-
-
-  def stat_based_train_cv_initializers(self):
-    """
-    Stat-based initialization steps with optional cross-validation
-    performed on training data.
-
-    Returns a list of dictionaries (or `None`) with the following
-    entries:
-
-    - name: short description of what's computed;
-
-    - layer_indexes: a list or set of indexes for layers whose
-      activations values are needed;
-
-    - test_size & train_size: (as in
-      `sklearn.model_selection.train_test_split`)
-
-    - train: a callable taking some training data as mapping (as a
-      dictionary) from each layer index given in `layer_indexes` to
-      activation values for the corresponding layer, and returns some
-      arbitrary object; this is to be called only once during
-      initialization;
-
-    - test: a callable taking some extra training data and associated
-      labels as two separate mappings (as a dictionary) from each
-      layer index given in `layer_indexes` to activation values for
-      the corresponding layer.
-
-    Any function given as entries above is always called before
-    functions returned by `stat_based_test_cv_initializers`, but after
-    those retured by `stat_based_basic_initializers` and
-    `stat_based_incremental_initializers`.
-    """
-    return None
-
-
-  def stat_based_test_cv_initializers(self):
-    """
-    Stat-based initialization steps with optional cross-validation
-    performed on test data.
-
-    Returns a list of dictionaries (or `None`) with the following
-    entries:
-
-    - name: short description of what's computed;
-
-    - layer_indexes: a list or set of indexes for layers whose
-      activations values are needed;
-
-    - test_size & train_size: (as in
-      `sklearn.model_selection.train_test_split`)
-
-    - train: a callable taking some test data as mapping (as a
-      dictionary) from each layer index given in `layer_indexes` to
-      activation values for the corresponding layer, and returns some
-      arbitrary object; this is to be called only once during
-      initialization;
-
-    - test: a callable taking some extra test data and associated
-      labels as two separate mappings (as a dictionary) from each
-      layer index given in `layer_indexes` to activation values for
-      the corresponding layer.
-
-    Any function given as entries above is always called last.
-    """
-    # - accum_test: a callable that is called with the object returned
-    #   by `train`, along with batched activation values for every layer
-    #   on the test data, and returns a new or updated accumulator.
-    #   This is called at least once.
-    #
-    # - final_test: optional function that is called with the final test
-    #   accumulator once all batched test activations have been passed
-    #   to  `accum_test`.
-    return None
-
-
-
 
 # ---
 
@@ -634,9 +680,10 @@ def setup_basic_report(criterion: Criterion, **kwds) -> Report:
   Extra keyword arguments are passed on to the constructor of
   :class:`Report`.
   '''
-  return Report (base_name = '{0}_{0.metric}'.format (criterion),
-                 **kwds)
+  return Report (base_name = '{0}_{0.metric}'.format (criterion), **kwds)
 
+
+# ---
 
 
 class Engine:
@@ -646,23 +693,27 @@ class Engine:
 
   def __init__(self, ref_data, train_data,
                criterion: Criterion,
-               custom_oracle: Oracle = None,
+               custom_filters: Sequence[Union[StaticFilter, DynamicFilter]] = [],
                **kwds):
     """
     Builds a test engine with the given DNN, reference data, and test
     criterion.  Uses the input metric provided by the
-    criterion-specific analyzer as oracle, unless `custom_oracle` is
-    not `None`.
+    criterion-specific analyzer as filter for assessing legitimacy of
+    new test inputs, unless `custom_filters` is not `None`.
     """
-    
     self.ref_data = ref_data
     self.train_data = train_data
     self.criterion = criterion
-    self.oracle = custom_oracle or criterion.oracle
-    assert isinstance (self.oracle, Oracle)
+    fltrs = [criterion.metric]
+    fltrs += custom_filters \
+             if isinstance (custom_filters, list) \
+             else [custom_filters]
+    # NB: note some filters may belong to both lists:
+    self.static_filters = [ f for f in fltrs if isinstance (f, StaticFilter) ]
+    self.dynamic_filters = [ f for f in fltrs if isinstance (f, DynamicFilter) ]
     super().__init__(**kwds)
     self._stat_based_inits ()
-    self.criterion.finalize_setup ()
+    self._initialized = False
 
 
   def __repr__(self):
@@ -689,7 +740,7 @@ class Engine:
       x = np.random.default_rng().choice (a = x, axis = 0,
                                           size = min (initial_test_cases, len (x)))
       p1 ('Initializing with {} randomly selected test case{} that {} correctly classified.'
-          .format(len (x), 's' if len (x) > 1 else '', 'are' if len (x) > 1 else 'is'))
+          .format(*s_(len (x)), is_are_(len (x))[1]))
       self.criterion.add_new_test_cases (x)
     elif self.criterion.rooted_search:
       p1 ('Randomly selecting an input from test data.')
@@ -699,51 +750,73 @@ class Engine:
 
 
   def run(self,
-          setup_report: Callable[[Criterion], Report] = setup_basic_report,
+          report: Union[Report, Callable[[Criterion], Report]] = setup_basic_report,
           initial_test_cases = None,
-          max_iterations = None,
-          **kwds):
+          trace_origins: bool = False,
+          max_iterations = -1,
+          **kwds) -> Report:
     '''
-    Uses `setup_report` to construct a helper for outputing logs and
-    new test cases, and then starts the engine for either: up to
+    Uses `report` to construct a helper for outputing logs and new
+    test cases, and then starts the engine for either: up to
     `max_iterations` iterations (i.e. number of runs of the analyzer)
-    if `max_iterations = None`, or until full coverage is reached, or
-    the criterion is fulfilled (whichever happens first).
+    if `max_iterations >= 0`, or else until full coverage is reached,
+    or the criterion is fulfilled (whichever happens first).
+
+    Set `trace_origins` to `True` to keep track of the origin of
+    generated test cases and speed up filtering by the oracle.
     '''
 
     criterion = self.criterion
-    oracle = self.oracle
 
-    p1 ('Starting tests for {}{}.'
-        .format (self, '' if max_iterations == None else
-                 ' ({} max iterations)'.format (max_iterations)))
-    report = setup_report (criterion, **kwds)
+    if not self._initialized:
+      criterion.finalize_setup ()
+      p1 ('Starting tests for {}{}.'
+          .format (self, '' if max_iterations < 0 else
+                   ' ({} max iterations)'.format (max_iterations)))
+      self._initialized = True
+    else:
+      p1 ('Continuing tests for {}{}.'
+          .format (self, '' if max_iterations < 0 else
+                   ' ({} max iterations)'.format (max_iterations)))
 
+    report = report if isinstance (report, Report) else \
+             report (criterion, **kwds)
+
+    # Initialize search to add new test cases in every call to run:
     self._initialize_search (report, initial_test_cases)
 
     coverage = criterion.coverage ()
     p1 ('#0 {}: {.as_prop:10.8%}'.format(criterion, coverage))
     report.step ('{0}-cover: {1} #test cases: {0.num_test_cases} '
                  .format(criterion, coverage),
-                 '#adversarial examples: 0\n')
+                 '#adversarial examples: 0')
 
     iteration = 1
+    init_tests = report.num_tests
+    init_adversarials = report.num_adversarials
+    origin = (None if not trace_origins else
+              InputsDict ([(x, i) for i, x in enumerate (criterion.test_cases)]))
 
     try:
 
-      while ((max_iterations == None or iteration <= max_iterations) and
+      while ((iteration <= max_iterations or max_iterations < 0) and
              not coverage.done):
-  
-        filtered, adversarial = False, False
+
+        adversarial = False
 
         search_attempt, target = criterion.search_next ()
         if search_attempt != None:
           x0, x1, d = search_attempt
-  
-          close_enough = oracle.close_to (self.ref_data.data, x1)
+
+          # Test oracle for adversarial testing
+          close_enough = all (f.close_to (self.ref_data.data if origin is None else
+                                          [criterion.test_cases[origin[x0]]], x1)
+                              for f in self.dynamic_filters)
+          close_enough &= all (f.close_enough (x1) for f in self.static_filters)
           if close_enough:
-            target.cover ()
-            criterion.add_new_test_cases ([x1])
+            criterion.add_new_test_cases ([x1], covered_target = target)
+            if origin is not None:
+              origin[x1] = origin[x0]
             coverage = criterion.coverage ()
             y0 = self._run_test (x0)
             y1 = self._run_test (x1)
@@ -755,28 +828,40 @@ class Engine:
             else:
               report.new_test (new = (x1, y1), orig = (x0, y0), dist = d,
                                is_int = criterion.metric.is_int)
-  
+
         p1 ('#{} {}: {.as_prop:10.8%} {}'
             .format (iteration, criterion, coverage,
                      'with {} at {} distance {}: {}'
                      .format('new test case' if close_enough else 'failed attempt',
                              criterion.metric, d,
-                             'too far from raw data' if not close_enough else
+                             'too far from raw input' if (not close_enough and
+                                                          not trace_origins) else
+                             'too far from original input' if not close_enough else
                              'adversarial' if adversarial else 'passed')
                      if search_attempt != None else 'after failed attempt'))
-  
+
         report.step ('{0}-cover: {1} #test cases: {0.num_test_cases} '
                      .format(criterion, coverage),
                      '#adversarial examples: {0.num_adversarials} '
                      .format(report),
-                     '#diff: {} {}\n'
+                     '#diff: {} {}'
                      .format(d if search_attempt != None else '_',
                              target.log_repr ()))
-  
+
         iteration += 1
 
     except EarlyTermination as e:
       p1 ('{}'.format (e))
+    except KeyboardInterrupt:
+      p1 ('Interrupted.')
+
+    p1 ('Terminating after {} iteration{}: '
+        '{} test{} generated, {} of which {} adversarial.'
+        .format (*s_(iteration - 1),
+                 *s_(report.num_tests - init_tests),
+                 *is_are_(report.num_adversarials - init_adversarials)))
+
+    return report
 
 
   def _stat_based_inits(self):
@@ -784,11 +869,27 @@ class Engine:
     Performs basic and incremental static initializations of the
     criterion (and its associated analyzer).
     '''
-    
-    ggi = self.criterion.stat_based_basic_initializers () or []
-    gi = self.criterion.stat_based_incremental_initializers () or []
-    trcv = self.criterion.stat_based_train_cv_initializers () or []
-    tscv = self.criterion.stat_based_test_cv_initializers () or []
+
+    objects = [ self.criterion,
+                self.criterion.analyzer,
+                self.criterion.analyzer.input_metric ] \
+                + self.criterion.analyzer.input_bounds \
+                + self.static_filters \
+                + self.dynamic_filters
+    for o in objects:
+      if isinstance (o, _InputsStatBasedInitializable):
+        o.inputs_stat_initialize (train_data = self.train_data,
+                                  test_data = self.ref_data)
+
+    def _acc_initializers (acc, o):
+      if isinstance (o, _ActivationStatBasedInitializable):
+        acc[0].extend (o.stat_based_basic_initializers ())
+        acc[1].extend (o.stat_based_incremental_initializers ())
+        acc[2].extend (o.stat_based_train_cv_initializers ())
+        acc[3].extend (o.stat_based_test_cv_initializers ())
+      return acc
+    ggi, gi, trcv, tscv = \
+         reduce (_acc_initializers, objects, ([], [], [], []))
 
     # Run stats on batched activations, and/or accumulate for layers
     # that require full activations for their stats.
@@ -818,7 +919,7 @@ class Engine:
       for g in gi:
         if 'print' in g: print (g['print']())
       print ('', end = '', flush = True)
-  
+
       # Now we can pass the aggregated activations to basic stat
       # initializers.
 
@@ -838,22 +939,40 @@ class Engine:
       self._cv_init (trcv, self.train_data)
 
     if tscv != []:
-      self._cv_init (tscv, self.test_data)
+      self._cv_init (tscv, self.ref_data)
 
 
   def _cv_init (self, cv, data):
     idxs = np.arange (len (data.data))
     for x in cv:
       np1 ('Computing {}... ' .format(x['name']))
-      train_idxs, test_idxs = train_test_split (
-        idxs, test_size = x['test_size'], train_size = x['train_size'])
-      acts = self._activations_on_indexed_data (data, train_idxs)
-      acc = x['train']({ j: acts[j] for j in x['layer_indexes'] })
+
+      train_size = None
+      if 'train_size' in x and 'test_size' in x:
+        train_size = max (1, min (x['train_size'], len (idxs) - x['test_size']))
+      elif 'train_size' in x:
+        train_size = min (x['train_size'], len (idxs) - 1)
+
+      test_size = None
+      if train_size is not None and 'test_size' not in x:
+        test_size = min (len (idxs) - train_size, len (idxs) - 1)
+      elif 'test_size' in x:
+        test_size = min (x['test_size'], len (idxs) - 1)
+
+      train_idxs, test_idxs = train_test_split \
+                              (idxs, test_size = test_size, train_size = train_size)
+      acts, input_data, preds = self._activations_on_indexed_data (data, train_idxs)
+      acc = x['train']({ j: acts[j] for j in x['layer_indexes'] },
+                       input_data = input_data,
+                       true_labels = data.labels[train_idxs],
+                       pred_labels = preds)
 
       if 'test' in x:
-        acts = self._activations_on_indexed_data (data, test_idxs)
-        lbls = data.labels[test_idxs]
-        x['test']({ j: acts[j] for j in x['layer_indexes'] }, lbls)
+        acts, input_data, preds = self._activations_on_indexed_data (data, test_idxs)
+        x['test']({ j: acts[j] for j in x['layer_indexes'] },
+                  input_data = input_data,
+                  true_labels = data.labels[test_idxs],
+                  pred_labels = preds)
 
 
   def _batched_activations_on_raw_data(self):
@@ -865,7 +984,9 @@ class Engine:
 
   def _activations_on_indexed_data(self, data, indexes):
     batch = data.data[indexes]
-    return self.criterion.analyzer.eval_batch (batch, allow_input_layer = True)
+    return (self.criterion.analyzer.eval_batch (batch, allow_input_layer = True),
+            batch,
+            self._run_tests (batch))
 
 
   # ---
@@ -880,6 +1001,7 @@ def setup (test_object: test_objectt = None,
            setup_analyzer: Callable[[dict], Analyzer] = None,
            setup_criterion: Callable[[Sequence[CL], Analyzer, dict], Criterion] = None,
            criterion_args: dict = {},
+           engine_args: dict = {},
            **kwds) -> Engine:
   """
   Helper to build engine instances.  Extra arguments are passed to the
@@ -887,6 +1009,8 @@ def setup (test_object: test_objectt = None,
 
   Note: only fields ``dnn``, ``raw_data``, and ``train_data`` are
   required from `test_object`.
+
+  Extra arguments are passed to `setup_analyzer`.
   """
 
   print ('DNN under test has {0} layer functions, {1} of which {2} to be covered:'
@@ -896,14 +1020,15 @@ def setup (test_object: test_objectt = None,
          sep='\n', end = '\n\n')
   analyzer = setup_analyzer (analyzed_dnn = test_object.dnn, **kwds)
   criterion = setup_criterion (cover_layers, analyzer, **criterion_args)
-  return Engine (test_object.raw_data, test_object.train_data, criterion)
+  return Engine (test_object.raw_data, test_object.train_data, criterion,
+                 **engine_args)
 
 
 # ------------------------------------------------------------------------------
 # Provide slightly more specialized classes:
 
 
-class CoverableLayer (cover_layert):
+class CoverableLayer:
   '''
   Base class for any layer based on which coverability criteria are
   defined.
@@ -912,12 +1037,22 @@ class CoverableLayer (cover_layert):
   yet one should not rely on that as this is only temporary.
   '''
 
-  def __init__(self, layer = None, layer_index = None, **kwds):
-    super().__init__(layer, layer_index, **kwds)
+  def __init__(self, layer = None, layer_index = None,
+               prev: int = None, succ: int = None):
+    self.layer = layer
+    self.layer_index = layer_index
+    self.is_conv = is_conv_layer (layer)
+    self.prev_layer_index = prev
+    self.succ_layer_index = succ
 
 
   def __repr__(self):
     return self.layer.name
+
+
+  @abstractmethod
+  def coverage(self):
+    pass
 
 
 # ---
@@ -935,6 +1070,7 @@ class BoolMappedCoverableLayer (CoverableLayer):
                **kwds):
     super().__init__(**kwds)
     self._initialize_map (feature_indices)
+    self.activations = []          ## to store some neuron activations
     self.bottom_act_value = bottom_act_value
     self.filtered_out = 0
 
@@ -977,21 +1113,21 @@ class BoolMappedCoverableLayer (CoverableLayer):
   ## to get the index of the next property to be satisfied
   # [ eq. (15,17,18)? ]
   def find(self, f):
-    acts = np.array(self.activations)
+    acts = np.array (self.activations)
     spos = f (acts)
-    pos = np.unravel_index(spos, acts.shape)
+    pos = np.unravel_index (spos, acts.shape)
     return pos, acts.item (spos)
 
 
-  def cover(self, pos) -> None:
+  def cover_neuron(self, pos) -> None:
     self.map[pos] = False
 
 
   def inhibit_activation(self, pos) -> None:
     '''
     Inhibit any activation at the given position so that it is not
-    returned by any direct subsequent call to `find` (i.e not
-    precededed by a call to `update_with_new_activations`).
+    returned by any direct subsequent call to `find` (i.e not preceded
+    by a call to `update_with_new_activations`).
     '''
     act = self.activations
     while len(pos) != 1:
@@ -1000,15 +1136,15 @@ class BoolMappedCoverableLayer (CoverableLayer):
     act[pos] = self.bottom_act_value
 
 
-  def update_with_new_activations(self, act) -> None:
-    act = copy.copy (act[self.layer_index])
-    assert len (act) == 1
-    # Keep only negative new activation values:
-    # TODO: parameterize this (ditto bottom_act_value)
-    act[act >= 0] = 0
-    self.map = np.logical_and (self.map, act[0])
-    # Append activations after map change
-    self._append_activations (act)
+  def update_with_new_activations(self, acts) -> None:
+    for act in acts[self.layer_index]:
+      act = np.array([copy.copy(act)])
+      # Keep only negative new activation values:
+      # TODO: parameterize this (ditto bottom_act_value)
+      act[act >= 0] = 0
+      self.map = np.logical_and (self.map, act[0])
+      # Append activations after map change
+      self._append_activations (act)
 
 
   def _append_activations(self, act):
@@ -1048,6 +1184,9 @@ class LayerLocalAnalyzer (Analyzer):
 class LayerLocalCriterion (Criterion):
   '''
   Criteria whose definition involves layer-local coverage properties.
+
+  - `shallow_first = True` indicates that shallower layers are given
+    priority when selecting new test targets.
   '''
 
   def __init__(self,
@@ -1123,14 +1262,12 @@ class LayerLocalCriterion (Criterion):
   # ---
 
 
-  def update_coverage (self, tl: Sequence[Input]):
+  def register_new_activations(self, acts):
     """
     Register new test cases
     """
-    for t in tl:
-      acts = self.analyzer.eval (t, allow_input_layer = True)
-      for cl in self._updatable_layers:
-        cl.update_with_new_activations (acts)
+    for cl in self._updatable_layers:
+      cl.update_with_new_activations (acts)
 
 
   def get_max(self) -> Tuple[BoolMappedCoverableLayer, Tuple[int, ...], float, Input]:
@@ -1166,7 +1303,7 @@ class LayerLocalCriterion (Criterion):
           pos += 1
         if pos < tot_s and cl.map.item(pos):
           break
-    return cl, np.unravel_index(pos, cl.map.shape)
+    return cl, (0,) + np.unravel_index(pos, cl.map.shape)
 
 
 # ---

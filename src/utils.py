@@ -1,20 +1,30 @@
-#import matplotlib.pyplot as plt
+from typing import *
 from abc import abstractmethod
-from datetime import datetime
+import os
+import sys
+import random
+import copy
+import datetime
+import numpy as np
 
-import warnings
-warnings.filterwarnings("ignore", category=FutureWarning)
-
+# NB: importing cv2 and sklearn before tensorflow seems to solve an
+# issue with static TLS I've been having on an "oldish" version of
+# Linux (cf
+# https://github.com/scikit-learn/scikit-learn/issues/14485#issuecomment-633452991):
+import cv2
+import sklearn
 import tensorflow as tf
 from tensorflow import keras
-# NB: Eager execution needs to be disabled before any model loading.
-tf.compat.v1.disable_eager_execution ()
 
-import numpy as np
-import copy
-import sys
-import os
-import cv2
+def rng_seed (seed: Optional[int]):
+  if seed is None: return
+  np.random.seed (seed)
+  # In case one also uses pythons' stdlib ?
+  random.seed (seed)
+
+rng_seed (0)
+
+print ("Using TensorFlow version:", tf.__version__, file = sys.stderr)
 
 COLUMNS = os.getenv ('COLUMNS', default = '80')
 P1F = '{:<' + COLUMNS + '}'
@@ -32,16 +42,27 @@ def np1(x):
 def cnp1(x):
   print ('\n', x, sep = '', end = '', flush = True)
 
-def p1(x):
-  print (P1F.format(x))
+def p1(x, **k):
+  print (P1F.format(x), **k)
 
-def cp1(x):
-  print (N1F.format(x))
+def c1(x):
+  print (x)
+
+def cp1(x, **k):
+  print (N1F.format(x), **k)
 
 
 def xtuple(t):
   return t if len(t) > 1 else t[0]
 
+def xlist(t):
+  return [t] if t is not None else []
+
+def s_(i):
+  return i, 's' if i > 1 else ''
+
+def is_are_(i):
+  return i, 'are' if i > 1 else 'is'
 
 #the_dec_pos=0
 MIN=-100000
@@ -55,6 +76,9 @@ Layer = keras.layers.Layer
 ## some DNN model has an explicit input layer
 def is_input_layer(layer):
   return isinstance (layer, keras.layers.InputLayer)
+
+def is_reshape_layer(layer):
+  return isinstance (layer, keras.layers.Reshape)
 
 def is_conv_layer(layer):
   return isinstance (layer, (keras.layers.Conv1D,
@@ -122,24 +146,53 @@ def activation_is_relu(layer):
 # ---
 
 def setup_output_dir (outs, log = True):
-  if not os.path.exists(outs):
-    os.makedirs(outs)
-  if not outs.endswith('/'):
-    outs+='/'
-  if log: print ('Outputs will go into: {0}'.format(outs))
+  if not os.path.exists (outs):
+    os.makedirs (outs)
+  if not outs.endswith ('/'):
+    outs += '/'
+  if log: print ('Setting up output directory: {0}'.format (outs))
   return outs
 
-def setup_output_files (outs, ident, suff0 = '', suff = '.txt', log = True):
-  if not os.path.exists(outs):
-    sys.exit ('Output directory {0} was not initialized (internal bug)!'
-              .format (outs))
-  ident = ('{0}-{1}{2}'
-           .format (ident, str(datetime.now()).replace(' ', '-'), suff0)
-           .replace(':', '-'))
-  f = outs+ident+suff
-  if log: print ('Reporting into: {0}'.format (f))
-  return f, ident
-  
+# def setup_report_files (outs, ident, suff0 = '', suff = '.txt', log = True):
+#   if not os.path.exists(outs):
+#     sys.exit ('Output directory {0} was not initialized (internal bug)!'
+#               .format (outs))
+#   f = outs+ident+suff
+#   if log: print ('Reporting into: {0}'.format (f))
+#   return f, ident
+
+class OutputDir:
+  '''
+  Class to help ensure output directory is created before starting any
+  lengthy computations.
+  '''
+  def __init__(self, outs = '/tmp', log = None,
+               enable_stamp = True, stamp = None, prefix_stamp = False):
+    self.dirpath = setup_output_dir (outs, log = log)
+    self.enable_stamp = enable_stamp
+    self.prefix_stamp = prefix_stamp
+    self.reset_stamp (stamp = stamp)
+
+  def reset_stamp (self, stamp = None):
+    self.stamp = datetime.datetime.now ().strftime("%Y%m%d-%H%M%S") \
+                 if stamp is None and self.enable_stamp else \
+                 stamp if self.enable_stamp else ''
+
+  @property
+  def path(self) -> str:
+    return self.dirpath
+
+  def filepath(self, base) -> str:
+    return self.dirpath + base
+
+  def stamped_filename(self, base, sep = '-', suff = '') -> str:
+    return ((self.stamp + sep + base) if self.enable_stamp and self.prefix_stamp else \
+            (base + sep + self.stamp) if self.enable_stamp else \
+            (base)) + suff
+
+  def stamped_filepath(self, *args, **kwds) -> str:
+    return self.dirpath + self.stamped_filename (*args, **kwds)
+
 # ---
 
 def _write_in_file (f, mode, *fmts):
@@ -152,6 +205,19 @@ def write_in_file (f, *fmts):
 
 def append_in_file (f, *fmts):
   _write_in_file (f, "a", *fmts)
+
+def save_in_csv (filename):
+  def save_an_array(arr, name, directory = './', log = True):
+    if not directory.endswith('/'): directory += '/'
+    f = directory + filename + '.csv'
+    if log: print ('Appending array into {0}'.format (f))
+    with open (f, 'a') as file:
+      file.write (name + ' ')
+      np.savetxt (file, arr, newline = ' ')
+      file.write ('\n')
+      
+    # append_in_file (f, name, ' ', np.array_str (arr, max_line_width = np.inf), '\n')
+  return save_an_array
 
 def save_an_image(im, name, directory = './', log = True):
   if not directory.endswith('/'): directory += '/'
@@ -168,48 +234,8 @@ def save_adversarial_examples(adv, origin, diff, di):
 
 # ---
 
-
 class cover_layert:
-  def __init__(self, layer, layer_index, prev: int = None, succ: int = None):
-    self.layer = layer
-    self.layer_index = layer_index
-    self.is_conv = is_conv_layer(layer)
-    self.prev_layer_index = prev
-    self.succ_layer_index = succ
-    self.activations = []  ## so, we need to store neuron activations?
-    self.ssc_map = None ## 
-    self.ubs = None ## 
-
-  def __repr__(self):
-    return self.layer.name
-
-  # ssc/svc:
-
-  def initialize_ssc_map(self, layer_feature = None):
-    sp = self.layer.output.shape
-    if self.is_conv:
-      self.ssc_map = np.ones((1, sp[1], sp[2], sp[3]), dtype=bool)
-      if layer_feature==None: return
-      if layer_feature[0]==None: return
-      if layer_feature[1]==None: return
-      if self.layer_index in layer_feature[0]:
-        sp=self.ssc_map.shape
-        for i in range(0, sp[3]):
-          if not i in layer_feature[1]:
-            self.ssc_map[:,:,:,i]=False
-    else:
-      self.ssc_map = np.ones((1, sp[1]), dtype=bool)
-
-  def initialize_ubs(self):
-    self.ubs = np.zeros((1,) + tuple(self.layer.output.shape[1:]), dtype = float)
-
-  # ---
-
-  @abstractmethod
-  def coverage(self):
-    pass
-
-# ---
+  pass
 
 # Basic helper to build more polymorphic functions
 def actual_layer(l):
@@ -476,6 +502,49 @@ class Coverage:
 
   def __repr__(self):
     return str(self.as_prop)
+
+
+# ---
+
+
+class Bounds:
+  """
+  Basic abstract class to represent any bounds.  (Mostly for typing
+  arguments and sub-classing.)
+  """
+
+  @property
+  def low (self) -> np.array(float):
+    raise NotImplementedError
+
+  @property
+  def up (self) -> np.array(float):
+    raise NotImplementedError
+
+  @abstractmethod
+  def __getitem__ (self, _idx: Tuple[int, ...]) -> Tuple[float, float]:
+    raise NotImplementedError
+
+
+# ---
+
+
+from collections import UserDict
+
+class NPArrayDict (UserDict):
+  '''
+  Custom dictionary that accepts numpy arrays as keys.
+  '''
+
+  def __getitem__(self, x: np.ndarray):
+    return self.data[hash (x.tobytes ())]
+
+  def __delitem__(self, x: np.ndarray):
+    del self.data[hash (x.tobytes ())]
+
+  def __setitem__(self, x: np.ndarray, val):
+    x.flags.writeable = False
+    self.data[hash (x.tobytes ())] = val
 
 
 # ---
