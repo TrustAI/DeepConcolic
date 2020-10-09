@@ -560,6 +560,13 @@ class Criterion (_ActivationStatBasedInitializable):
     return len(self.test_cases)
 
 
+  def pop_test(self) -> None:
+    '''
+    Removes the last registered test (while keeping its coverage).
+    '''
+    self.test_cases.pop ()
+
+
   # final as well
   def add_new_test_cases(self, tl: Sequence[Input],
                          covered_target: TestTarget = None) -> None:
@@ -823,6 +830,7 @@ class Engine:
   
             if y1 != y0:
               adversarial = True
+              criterion.pop_test ()
               report.new_adversarial (new = (x1, y1), orig = (x0, y0), dist = d,
                                       is_int = criterion.metric.is_int)
             else:
@@ -1164,6 +1172,10 @@ class BoolMappedCoverableLayer (CoverableLayer):
       self.activations[j][self.activations[j] >= 0] = self.bottom_act_value
 
 
+  def pop_activations (self):
+     self.activations.pop ()
+
+
 # ---
 
 
@@ -1260,6 +1272,16 @@ class LayerLocalCriterion (Criterion):
 
 
   # ---
+
+
+  def pop_test (self):
+    '''
+    Pop last inserted test case, and update the associated recorded
+    activations used to find new test targets.
+    '''
+    super ().pop_test ()
+    for cl in self._updatable_layers:
+      cl.pop_activations ()
 
 
   def register_new_activations(self, acts):
