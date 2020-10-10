@@ -64,7 +64,7 @@ def run (test_object = None,
     # # ]
     # # all_n_feats_specs_extra = [
     #  #('6-randomized', { 'n_components': 6, 'svd_solver': 'randomized' }, 'pca', 6),
-            #  # ('7-randomized', { 'n_components': 7, 'svd_solver': 'randomized' }, 'pca', 7),
+    #  # ('7-randomized', { 'n_components': 7, 'svd_solver': 'randomized' }, 'pca', 7),
     #  # ('8-randomized', { 'n_components': 8, 'svd_solver': 'randomized' }, 'pca', 8),
     #  # ('full-0.5', 0.5),
     #  # ('full-0.6', 0.6),
@@ -102,6 +102,8 @@ def run (test_object = None,
     # ('2-bin-uniform',          { 'n_bins': 2, 'strategy': 'uniform', 'extended': False }, 2),
     ('2-bin-uniform-extended', { 'n_bins': 2, 'strategy': 'uniform', 'extended': True  }, 4),
     ('3-bin-uniform-extended', { 'n_bins': 3, 'strategy': 'uniform', 'extended': True  }, 5),
+    ('2-bin-quantile-extended', { 'n_bins': 2, 'strategy': 'quantile', 'extended': True  }, 4),
+    ('3-bin-quantile-extended', { 'n_bins': 3, 'strategy': 'quantile', 'extended': True  }, 5),
     # ('3-bin-uniform', { 'n_bins': 3, 'strategy': 'uniform' }, 3),
     # ('4-bin-uniform', { 'n_bins': 4, 'strategy': 'uniform' }, 4),
     # ('2-bin-kmeans', { 'n_bins': 2, 'strategy': 'kmeans' }, 2),
@@ -128,8 +130,14 @@ def run (test_object = None,
   dbnc_analyzer = FakeBFcAnalyzer (analyzed_dnn = test_object.dnn,
                                    input_bounds = input_bounds)
   dbnc_train_size = 20000
-  test_sizes = ((1,) * 5 + (2,) * 5 + (5,) * 5 + (10,) * 5 +
-                (100,) * 3 + (200,) * 1)
+  test_sizes = ((1,) * 5 +
+                (2,) * 5 +
+                (3,) * 5 +
+                (5,) * 5 +
+                (10,) * 5 +
+                (50,) * 5 +
+                (100,) * 5 +
+                (200,) * 5)
   # test_sizes = ((1,) *  5 + (10,) * 5 + (100,))
 
   tname = test_object.raw_data.name
