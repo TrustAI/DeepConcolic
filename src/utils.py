@@ -487,6 +487,11 @@ class Coverage:
                      total = self.total + x.total)
 
 
+  def __mul__(self, f: float):
+    return Coverage (covered = float(self.c) * f,
+                     total = self.total)
+
+
   @property
   def done(self) -> bool:
     return self.total == self.c

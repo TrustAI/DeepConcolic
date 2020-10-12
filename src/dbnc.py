@@ -490,10 +490,11 @@ class _BaseBFcCriterion (Criterion):
     return Coverage (covered = props, total = self.N.node_count ())
 
 
-  def bfdc_coverage (self) -> Coverage:
+  def bfdc_coverage (self, multiply_with_bfc = False) -> Coverage:
     """
     Computes the BFdCov metric as per the underlying Bayesian Network
-    abstraction.
+    abstraction.  The returned coverage is multiplied with BFCov if
+    `multiply_with_bfc` holds.
     """
     assert (self.num_test_cases > 0)
     # Count 0s (or < epsilons) in all prob. mass functions in the BN
@@ -510,8 +511,9 @@ class _BaseBFcCriterion (Criterion):
       return (noneps_props, num_cpts + 1)
     props, num_cpts = reduce (count_nonepsilons, self._all_cpts_n_marginals (),
                               (0, 0))
-    return Coverage (covered = props, total = num_cpts) if num_cpts > 0 else \
+    bfdc = Coverage (covered = props, total = num_cpts) if num_cpts > 0 else \
            Coverage (covered = 1)
+    return bfdc * self.bfc_coverage ().as_prop if multiply_with_bfc else bfdc
 
 
   # ---
@@ -1029,7 +1031,7 @@ class BFDcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
 
 
   def coverage (self) -> Coverage:
-    return self.bfdc_coverage ()
+    return self.bfdc_coverage (multiply_with_bfc = True)
 
 
   def find_next_rooted_test_target (self) -> Tuple[Input, BFcTarget]:
