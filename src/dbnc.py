@@ -309,6 +309,7 @@ class _BaseBFcCriterion (Criterion):
     clayers = list (filter (lambda l: isinstance (l, BoolMappedCoverableLayer), clayers))
     assert (clayers == [])
     self.base_dimreds = None
+    self.total_registered_cases = 0
     self.outdir = outdir or OutputDir ()
     super().__init__(*args, **kwds)
     self._reset_progress ()
@@ -345,19 +346,17 @@ class _BaseBFcCriterion (Criterion):
   def reset (self):
     super().reset ()
     self.base_dimreds = None
-    assert (self.num_test_cases == 0)
+    self.total_registered_cases = 0
     self.outdir.reset_stamp ()
     self._reset_progress ()
 
 
   def fit_activations (self, acts):
-    # Assumes `num_test_cases' has already been updated with the
-    # inputs that triggered the given activations; otherwise, set
-    # inertia to 0.0, which basically erases history.
     facts = self.dimred_n_discretize_activations (acts)
-    nbase = self.num_test_cases - len (facts)
+    nbase = self.total_registered_cases
+    self.total_registered_cases += len (facts)
     self.N.fit (facts,
-                inertia = (nbase / self.num_test_cases if nbase >= 0 else 0.0),
+                inertia = nbase / self.total_registered_cases,
                 n_jobs = int (self.bn_abstr_n_jobs))
 
 
@@ -370,6 +369,13 @@ class _BaseBFcCriterion (Criterion):
     self.base_dimreds = (np.vstack ((self.base_dimreds, new_dimreds))
                          if self.base_dimreds is not None else new_dimreds)
     if self.base_dimreds is not new_dimreds: del new_dimreds
+
+
+  def pop_test (self):
+    super ().pop_test ()
+    # Just remove any reference to the previously registered test
+    # case: this only impacts the search for new test targets.
+    self.base_dimreds = np.delete (self.base_dimreds, -1, axis = 0)
 
 
   # ---
