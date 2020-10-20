@@ -22,8 +22,6 @@ def rng_seed (seed: Optional[int]):
   # In case one also uses pythons' stdlib ?
   random.seed (seed)
 
-rng_seed (0)
-
 print ("Using TensorFlow version:", tf.__version__, file = sys.stderr)
 
 COLUMNS = os.getenv ('COLUMNS', default = '80')

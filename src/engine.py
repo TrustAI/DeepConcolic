@@ -560,6 +560,13 @@ class Criterion (_ActivationStatBasedInitializable):
     return len(self.test_cases)
 
 
+  def pop_test(self) -> None:
+    '''
+    Removes the last registered test (while keeping its coverage).
+    '''
+    self.test_cases.pop ()
+
+
   # final as well
   def add_new_test_cases(self, tl: Sequence[Input],
                          covered_target: TestTarget = None) -> None:
@@ -691,7 +698,7 @@ class Engine:
   Core Deepconcolic engine.
   '''
 
-  def __init__(self, ref_data, train_data,
+  def __init__(self, test_data, train_data,
                criterion: Criterion,
                custom_filters: Sequence[Union[StaticFilter, DynamicFilter]] = [],
                **kwds):
@@ -701,7 +708,7 @@ class Engine:
     criterion-specific analyzer as filter for assessing legitimacy of
     new test inputs, unless `custom_filters` is not `None`.
     """
-    self.ref_data = ref_data
+    self.ref_data = test_data
     self.train_data = train_data
     self.criterion = criterion
     fltrs = [criterion.metric]
@@ -823,6 +830,7 @@ class Engine:
   
             if y1 != y0:
               adversarial = True
+              criterion.pop_test ()
               report.new_adversarial (new = (x1, y1), orig = (x0, y0), dist = d,
                                       is_int = criterion.metric.is_int)
             else:
@@ -947,17 +955,19 @@ class Engine:
     for x in cv:
       np1 ('Computing {}... ' .format(x['name']))
 
-      train_size = None
-      if 'train_size' in x and 'test_size' in x:
-        train_size = max (1, min (x['train_size'], len (idxs) - x['test_size']))
-      elif 'train_size' in x:
-        train_size = min (x['train_size'], len (idxs) - 1)
+      train_size = x['train_size'] if 'train_size' in x else None
+      test_size = x['test_size'] if 'test_size' in x else None
+      if isinstance (train_size, int) and isinstance (test_size, int):
+        train_size = max (1, min (train_size, len (idxs) - test_size))
+      elif isinstance (train_size, int):
+        train_size = min (train_size, len (idxs) - 1)
 
-      test_size = None
-      if train_size is not None and 'test_size' not in x:
+      if isinstance (train_size, int) and test_size is None:
         test_size = min (len (idxs) - train_size, len (idxs) - 1)
-      elif 'test_size' in x:
-        test_size = min (x['test_size'], len (idxs) - 1)
+      elif isinstance (train_size, int) and isinstance (test_size, int):
+        test_size = min (test_size, len (idxs) - train_size)
+      elif isinstance (test_size, int):
+        test_size = min (test_size, len (idxs) - 1)
 
       train_idxs, test_idxs = train_test_split \
                               (idxs, test_size = test_size, train_size = train_size)
@@ -1164,6 +1174,10 @@ class BoolMappedCoverableLayer (CoverableLayer):
       self.activations[j][self.activations[j] >= 0] = self.bottom_act_value
 
 
+  def pop_activations (self):
+     self.activations.pop ()
+
+
 # ---
 
 
@@ -1260,6 +1274,16 @@ class LayerLocalCriterion (Criterion):
 
 
   # ---
+
+
+  def pop_test (self):
+    '''
+    Pop last inserted test case, and update the associated recorded
+    activations used to find new test targets.
+    '''
+    super ().pop_test ()
+    for cl in self._updatable_layers:
+      cl.pop_activations ()
 
 
   def register_new_activations(self, acts):
