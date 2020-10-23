@@ -1,5 +1,9 @@
 from utils import OutputDir, tp1
 import os
+mpl_backend = os.getenv ('DC_MPL_BACKEND')
+mpl_fig_width = float (os.getenv ('DC_MPL_FIG_WIDTH', default = 7.))
+mpl_fig_ratio = float (os.getenv ('DC_MPL_FIG_RATIO', default = 1))
+mpl_fig_pgf_width = float (os.getenv ('DC_MPL_FIG_PGF_WIDTH', default = 4.7))
 
 default_params = {
   'font.size': 11,
@@ -7,10 +11,13 @@ default_params = {
   'axes.unicode_minus': False,
 }
 
-pgf = os.getenv ('DC_MPL_BACKEND') in ('pgf', 'PGF')
+png = mpl_backend in ('png', 'PNG')
+png_default_figsize = (mpl_fig_width, mpl_fig_width * mpl_fig_ratio)
+
+pgf = mpl_backend in ('pgf', 'PGF')
 pgf_output_pgf = True
 pgf_output_pdf = True
-pgf_default_figsize = (4.7, 4.7)
+pgf_default_figsize = (mpl_fig_pgf_width, mpl_fig_pgf_width * mpl_fig_ratio)
 pgf_default_params = {
   'font.size': 8,
   'font.family': 'cmr10',               # lmodern
@@ -63,7 +70,8 @@ pgf_setup ()
 
 # ---
 
-def subplots (*args, figsize = pgf_default_figsize, **kwds):
+def subplots (*args, figsize = None, **kwds):
+  figsize = figsize or (pgf_default_figsize if pgf else png_default_figsize)
   if plt:
     return plt.subplots (*args, figsize = figsize, **kwds)
   else:
@@ -73,17 +81,21 @@ def subplots (*args, figsize = pgf_default_figsize, **kwds):
 
 def show (fig = None, outdir: OutputDir = None, basefilename = None):
   if plt:
-    if not pgf:
+    if not pgf and not png:
       plt.show ()
     elif fig is not None and basefilename is not None:
       plt.tight_layout (pad = 0, w_pad = 0.1, h_pad = 0.1)
       outdir = OutputDir () if outdir is None else outdir
       assert isinstance (outdir, OutputDir)
-      if pgf_output_pgf:
+      if png:
+        f = outdir.filepath (basefilename + '.png')
+        tp1 ('Outputting {}...'.format (f))
+        fig.savefig (f, format='png')
+      if pgf and pgf_output_pgf:
         f = outdir.filepath (basefilename + '.pgf')
         tp1 ('Outputting {}...'.format (f))
         fig.savefig (f, format='pgf')
-      if pgf_output_pdf:
+      if pgf and pgf_output_pdf:
         f = outdir.filepath (basefilename + '.pdf')
         tp1 ('Outputting {}...'.format (f))
         fig.savefig (f, format='pdf')
