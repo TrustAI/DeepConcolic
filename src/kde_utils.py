@@ -17,6 +17,7 @@ class KDESplit:
                bandwidth_prop = 2/100,
                min_width = 1e-8,
                plot_spaces = None,
+               plot_splits = True,
                plot_dip_markers = True,
                plot_rel_dip_height = 1.0, # only influences plotting
                n_jobs = None,
@@ -28,8 +29,9 @@ class KDESplit:
     self.bandwidth_prop = some (bandwidth_prop, 2/100)
     self.min_width = some (min_width, 1e-8)
     self.plot_spaces = seqx (plot_spaces)
-    self.plot_rel_dip_height = some (plot_rel_dip_height, 1.0)
+    self.plot_splits_ = some (plot_splits, True)
     self.plot_dip_markers = some (plot_dip_markers, True)
+    self.plot_rel_dip_height = some (plot_rel_dip_height, 1.0)
     self.padding_prop = 0.01
     self.n_jobs = n_jobs
     self._check ()
@@ -168,14 +170,16 @@ class KDESplit:
 
     pp = pltspace (p)
     ymin, ymax = np.amin (pp), np.amax (pp)
-    ax.vlines (x = bin_edges,
-               ymin = min (0., ymin),
-               ymax = max (0., ymax),
-               linestyles = 'dashed')
+    if self.plot_splits_:
+      ax.vlines (x = bin_edges,
+                 ymin = min (0., ymin),
+                 ymax = max (0., ymax),
+                 linestyles = 'dotted')
+      ax.vlines (x = s[dips],
+                 ymin = 0,
+                 ymax = pltspace (p[dips]))
     ax.plot (s, pp)
-    ax.vlines (x = s[dips],
-               ymin = 0,
-               ymax = pltspace (p[dips]))
+    ax.set_ylabel (ylabel)
     if self.plot_dip_markers:
       ax.vlines (x = s[dips], color = "r",
                  ymin = pltspace (p[dips] + prominences),

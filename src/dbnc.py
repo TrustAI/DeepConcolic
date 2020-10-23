@@ -101,8 +101,11 @@ class KBinsFeatureDiscretizer (FeatureDiscretizer, KBinsDiscretizer):
                kde_bandwidth_prop = None,
                kde_min_width = None,
                kde_plot_spaces = None,
+               kde_plot_all_splits = None,
+               kde_plot_actual_splits = None,
                kde_plot_dip_markers = None,
                kde_plot_training_samples = 500,
+               kde_plot_one_splitter_only = False,
                n_jobs = None,
                **kwds):
     super().__init__(**kwds)
@@ -118,9 +121,12 @@ class KBinsFeatureDiscretizer (FeatureDiscretizer, KBinsDiscretizer):
                                 baseline_density_prop = kde_baseline_density_prop,
                                 bandwidth_prop = kde_bandwidth_prop,
                                 min_width = kde_min_width,
+                                plot_splits = kde_plot_all_splits,
                                 plot_dip_markers = kde_plot_dip_markers,
                                 plot_spaces = kde_plot_spaces,
                                 n_jobs = n_jobs)
+    self.kde_plot_actual_splits = some (kde_plot_actual_splits, True)
+    self.kde_plot_one_splitter_only = some (kde_plot_one_splitter_only, False)
 
   def feature_parts (self, feature) -> int:
     return self.n_bins_[feature]
@@ -200,18 +206,24 @@ class KBinsFeatureDiscretizer (FeatureDiscretizer, KBinsDiscretizer):
       fig, ax = plotting.subplots (len (self.splitters_))
       fig.subplots_adjust (left = 0.04, right = 0.99, hspace = 0.1,
                            bottom = 0.03, top = 0.99)
-      for fi, splitter in enumerate (self.splitters_):
+      for fi, splitters in enumerate (self.splitters_):
         axi = ax[fi] if len (self.splitters_) > 1 else ax
-        for splitter in splitter:
+        for splitter in splitters:
           extrema = splitter.plot_splits (axi, plot_space)
-        if extrema is not None and \
-               self.kde_plot_training_samples > 0:
+          if self.kde_plot_one_splitter_only: break
+        if extrema is not None and self.kde_plot_training_samples > 0:
           # customizable sub-sampling to keep graphs lightweight
           subyy = min (len (y), self.kde_plot_training_samples)
           yy = y[:subyy, fi]
           axi.scatter (yy,
                        - 0.06 * extrema['ymax'] * np.random.random (yy.shape[0]),
                        marker = 'o', c = true_labels[:subyy], cmap = cmap)
+        if extrema is not None and self.kde_plot_actual_splits:
+          axi.vlines (x = self.bin_edges_[fi],
+                      ymin = min (0., extrema['ymin']),
+                      ymax = max (0., extrema['ymax']),
+                      linestyles = 'dashed',
+                      color = 'r')
         axi.annotate ((r'$\mathbb{F}_{' + \
                        plotting.texttt (str (layer)) + ', ' + str (fi) + '}$'),
                       xy = (1, 1), xycoords = axi.transAxes,
