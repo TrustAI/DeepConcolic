@@ -82,6 +82,9 @@ def main():
   #                     help="the extra training dataset", metavar="DIR")
   parser.add_argument("--criterion", dest="criterion", default="nc",
                       help="the test criterion", metavar="nc, ssc...")
+  parser.add_argument("--setup-only", dest="setup_only", action='store_true',
+                      help="only setup the coverage critierion and analyzer, "
+                      "and terminate before engine initialization and startup")
   parser.add_argument("--init", dest="init_tests", metavar="INT",
                       help="number of test samples to initialize the engine")
   parser.add_argument("--max-iterations", dest="max_iterations", metavar="INT",
@@ -274,6 +277,7 @@ def main():
                               'LB_noise': lower_bound_metric_noise },
                 engine_args = { 'custom_filters': input_filters },
                 input_bounds = input_bounds,
+                run_engine = not args.setup_only,
                 initial_test_cases = init_tests,
                 max_iterations = max_iterations)
 

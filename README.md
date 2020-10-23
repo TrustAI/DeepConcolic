@@ -18,7 +18,7 @@ The paper is available in https://arxiv.org/abs/1805.00089.
 
 ```
 usage: deepconcolic.py [-h] [--model MODEL] [--inputs DIR] --outputs DIR
-                       [--criterion nc, ssc...] [--init INT]
+                       [--criterion nc, ssc...] [--setup-only] [--init INT]
                        [--max-iterations INT] [--save-all-tests]
                        [--rng-seed SEED] [--labels FILE]
                        [--dataset {mnist,fashion_mnist,cifar10,OpenML:har}]
@@ -38,6 +38,8 @@ optional arguments:
   --outputs DIR         the outputput test data directory
   --criterion nc, ssc...
                         the test criterion
+  --setup-only          only setup the coverage critierion and analyzer, and
+                        terminate before engine initialization and startup
   --init INT            number of test samples to initialize the engine
   --max-iterations INT  maximum number of engine iterations (use < 0 for
                         unlimited)
