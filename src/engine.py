@@ -749,7 +749,7 @@ class Engine:
       p1 ('Initializing with {} randomly selected test case{} that {} correctly classified.'
           .format(*s_(len (x)), is_are_(len (x))[1]))
       self.criterion.add_new_test_cases (x)
-    elif self.criterion.rooted_search:
+    elif initial_test_cases is None and self.criterion.rooted_search:
       p1 ('Randomly selecting an input from test data.')
       x = np.random.default_rng().choice (a = self.ref_data.data, axis = 0)
       report.save_input (x, 'seed-input')
@@ -785,6 +785,7 @@ class Engine:
       p1 ('Continuing tests for {}{}.'
           .format (self, '' if max_iterations < 0 else
                    ' ({} max iterations)'.format (max_iterations)))
+      initial_test_cases = initial_test_cases or 0
 
     report = report if isinstance (report, Report) else \
              report (criterion, **kwds)
