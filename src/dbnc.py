@@ -21,6 +21,12 @@ from pomegranate.distributions import (DiscreteDistribution,
 
 # ---
 
+# Whether to enable logs to the console of progress towards target
+# intervals:
+show_progress = False
+
+# ---
+
 
 Interval = Tuple[Optional[float], Optional[float]]
 
@@ -260,30 +266,15 @@ class KBinsNOutFeatureDiscretizer (KBinsFeatureDiscretizer):
 
   def __init__(self, n_bins = 2, **kwds):
     super().__init__(n_bins = None if n_bins is None else max(2, n_bins), **kwds)
-    self.one = n_bins == 1
+    self.one_ = n_bins == 1
 
-  def feature_parts (self, feature):
-    return self.n_bins_[feature] + 2 if not self.one else 3
-
-  def edges (self, feature: int, value: float) -> Interval:
-    edges = self.bin_edges_[feature]
-    part = np.searchsorted (edges, value, side = 'right')
-    return self.part_edges (feature, part)
-
-  def part_edges (self, feature: int, part: int) -> Interval:
-    edges = self.bin_edges_[feature]
-    if self.one and part == 0:
-      return (-np.inf, edges[0])
-    elif self.one and part == 1:
-      return (edges[0], edges[2])
-    elif self.one and part == 2:
-      return (edges[2], np.inf)
-    else:
-      return ((-np.inf if part == 0           else edges[part-1],
-               np.inf  if part == len (edges) else edges[part  ]))
-
-  def transform (self, x):
-    return super ().transform (x) + 1
+  def fit_wrt (self, *args, **kwds):
+    super ().fit_wrt (*args, **kwds)
+    self.bin_edges_ = [ np.concatenate (([-np.inf],
+                                         np.delete (x, 1, 0) if self.one_ else x,
+                                         [np.inf]))
+                        for x in self.bin_edges_ ]
+    self.n_bins_ = self.n_bins_ + (1 if self.one_ else 2)
 
   def get_params (self, deep = True) -> dict:
     p = super().get_params (deep)
@@ -527,24 +518,16 @@ class _BaseBFcCriterion (Criterion):
   # ---
 
 
-  def tests_feature_values_n_intervals (self, feature: int):
-    fl, feature = self.fidx2fli[feature]
-    dimreds = self.base_dimreds[..., feature : feature + 1].flatten ()
-    intervals = [ (i, fl.discr.edges (feature, v)) for i, v in enumerate(dimreds) ]
-    return dimreds, intervals
-
-
-  def all_tests_close_to (self, feature: int, feature_interval: int):
-    dimreds, intervals = self.tests_feature_values_n_intervals (feature)
+  def _all_tests_n_dists_to (self, feature: int, feature_interval: int):
     feature_node = self.N.states[feature]
     fl, flfeature = feature_node.flayer, feature_node.feature
     if not fl.discr.has_feature_part (flfeature, feature_interval):
       return []
     target_interval = fl.discr.part_edges (flfeature, feature_interval)
-    all = [ (i, interval_dist (target_interval, dimreds[i])) for i, _ in intervals ]
-    all.sort (key = lambda x: x[1])
-    # np.random.shuffle (all)
-    del dimreds, intervals
+    dimreds = self.base_dimreds[..., feature : feature + 1].flatten ()
+    all = [ (i, interval_dist (target_interval, v))
+            for i, v in enumerate (dimreds) ]
+    del dimreds
     return all
 
 
@@ -570,8 +553,9 @@ class _BaseBFcCriterion (Criterion):
       str (self) + '_' + str (self.metric) + '_progress', suff = '.csv')
     write_in_file (self.progress_file,
                    '# ',
-                   ' '.join (('feature',
+                   ' '.join (('old_test', 'feature',
                               'interval_left', 'interval_right',
+                              'old_v', 'new_v',
                               'old_dist', 'new_dist')),
                    '\n')
 
@@ -579,9 +563,10 @@ class _BaseBFcCriterion (Criterion):
   def _measure_progress_towards_interval (self,
                                           feature: int,
                                           interval: Interval,
-                                          old: Input):
+                                          ref_test_index: int):
     def aux (new : Input) -> bool:
-      acts = self.analyzer.eval_batch (np.array([old, new]),
+      old = self.test_cases[ref_test_index]
+      acts = self.analyzer.eval_batch (np.array ([old, new]),
                                        allow_input_layer = False)
       dimreds = self.dimred_activations (acts)
       old_v = dimreds[0][..., feature : feature + 1].flatten ()[0]
@@ -589,8 +574,10 @@ class _BaseBFcCriterion (Criterion):
       old_dist = interval_dist (interval, old_v)
       new_dist = interval_dist (interval, new_v)
       append_in_file (self.progress_file,
-                      ' '.join (str (i) for i in (feature,
-                                                  interval[0], interval[1],
+                      ' '.join (str (i) for i in (ref_test_index,
+                                                  feature,
+                                                  *interval,
+                                                  old_v, new_v,
                                                   old_dist, new_dist)),
                       '\n')
       return (old_dist - new_dist, new_dist) if old_dist > 0.0 else \
@@ -975,9 +962,11 @@ class BFcTarget (NamedTuple, BNcTarget):
 
   def measure_progress(self, t: Input) -> float:
     progress, new_dist = self.progress (t)
-    p1 ('| Progress towards {}: {}\n'
-        '| Distance to target interval: {}'
-        .format (self, progress, new_dist))
+    if show_progress:
+      p1 ('| Progress towards {}: {}'
+          .format (self, progress))
+    p1 ('| Distance to target interval: {} ({})'
+        .format (new_dist, 'hit' if new_dist <= 0.0 else 'miss'))
     return progress
 
 
@@ -1054,34 +1043,32 @@ class BFcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
 
         # Search closest test -that does not fall within target interval (?)-:
         # within_target = self._check_within (feature, feature_interval, verbose = False)
-        for ti, v in self.all_tests_close_to (feature, feature_interval):
+        for ti, dist in self._all_tests_n_dists_to (feature, feature_interval):
           if ((feature, feature_interval, ti) in self.ban[fl]#  or
               # within_target (flfeature, self.test_cases[i])
               ):
             continue
-          dist = interval_dist (feature_node.interval (feature_interval), v)
           if dist < best_dist:
             best_dist = dist
-            res = feature, feature_interval, ti, v
+            res = feature, feature_interval, ti
 
     if res is None:
       raise EarlyTermination ('Unable to find a new candidate input!')
 
-    feature, feature_interval, ti, v = res
+    feature, feature_interval, ti = res
     feature_node = self.N.states[feature]
     fl, flfeature = feature_node.flayer, feature_node.feature
     interval = feature_node.interval (feature_interval)
-    tp1 ('Selecting root test {} at feature-{}-distance {} from {}, layer {}'
-         .format (ti, flfeature, v, interval, fl))
-    test = self.test_cases[ti]
+    p1 ('| Selecting root test {} at feature-{}-distance {} from {}, layer {}'
+        .format (ti, flfeature, best_dist, interval_repr (interval), fl))
     measure_progress = \
-        self._measure_progress_towards_interval (feature, interval, test)
+        self._measure_progress_towards_interval (feature, interval, ti)
     fct = BFcTarget (feature_node, feature_interval,
                      # self._check_within (feature, feature_interval),
                      measure_progress, ti)
     self.ban[fl].add ((feature, feature_interval, ti))
 
-    return test, fct
+    return self.test_cases[ti], fct
 
 
 # ---
@@ -1128,9 +1115,11 @@ class BFDcTarget (NamedTuple, BNcTarget):
 
   def measure_progress(self, t: Input) -> float:
     progress, new_dist = self.progress (t)
-    p1 ('| Progress towards {}: {}\n'
-        '| Distance to target interval: {}'
-        .format (self, progress, new_dist))
+    if show_progress:
+      p1 ('| Progress towards {}: {}'
+          .format (self, progress))
+    p1 ('| Distance to target interval: {} ({})'
+        .format (new_dist, 'hit' if new_dist <= 0.0 else 'miss'))
     return progress
 
 
@@ -1192,49 +1181,47 @@ class BFDcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
                        for fli in np.where (cpt[:,-1] < self.epsilon))
 
     res, best_dist = None, np.inf
-    for i, epsilon_intervals in epsilon_entries:
-      feature = self.flayers[0].num_features + i
+    for epsilon_cond_prob_index, epsilon_intervals in epsilon_entries:
+      feature = self.flayers[0].num_features + epsilon_cond_prob_index
       feature_node = self.N.states[feature]
       fl, flfeature = feature_node.flayer, feature_node.feature
 
       for fli in epsilon_intervals:
-        assert cpts[i][fli, -1] < self.epsilon
-        feature_interval = int (cpts[i][fli, -2])
+        assert cpts[epsilon_cond_prob_index][fli, -1] < self.epsilon
+        feature_interval = int (cpts[epsilon_cond_prob_index][fli, -2])
 
         # Search closest test -that does not fall within target interval (?)-:
         # within_target = self._check_within (feature, feature_interval, verbose = False)
-        for ti, v in self.all_tests_close_to (feature, feature_interval):
+        for ti, dist in self._all_tests_n_dists_to (feature, feature_interval):
           if ((feature, feature_interval, ti) in self.ban[fl]#  or
               # within_target (flfeature, self.test_cases[i])
               ):
             continue
-          dist = interval_dist (feature_node.interval (feature_interval), v)
           if dist < best_dist:
             best_dist = dist
-            res = i, fli, ti, v
+            res = epsilon_cond_prob_index, fli, ti
 
     if res is None:
       raise EarlyTermination ('Unable to find a new candidate input!')
 
-    i, fli, ti, v = res
-    feature = self.flayers[0].num_features + i
+    epsilon_cond_prob_index, fli, ti = res
+    feature = self.flayers[0].num_features + epsilon_cond_prob_index
     feature_node = self.N.states[feature]
-    feature_interval = int (cpts[i][fli, -2])
+    feature_interval = int (cpts[epsilon_cond_prob_index][fli, -2])
     fl, flfeature = feature_node.flayer, feature_node.feature
     fl_prev, _ = self.fidx2fli[feature - flfeature - 1]
     interval = feature_node.interval (feature_interval)
-    tp1 ('Selecting root test {} at feature-{}-distance {} from {}, layer {}'
-         .format (ti, flfeature, v, interval, fl))
-    test = self.test_cases[ti]
+    p1 ('| Selecting root test {} at feature-{}-distance {} from {}, layer {}'
+        .format (ti, flfeature, best_dist, interval_repr (interval), fl))
     measure_progress = \
-        self._measure_progress_towards_interval (feature, interval, test)
-    cond_intervals = cpts[i][fli, :-2].astype (int)
+        self._measure_progress_towards_interval (feature, interval, ti)
+    cond_intervals = cpts[epsilon_cond_prob_index][fli, :-2].astype (int)
     fct = BFDcTarget (feature_node, feature_interval, fl_prev, cond_intervals,
                       # self._check_within (feature, feature_interval),
                       measure_progress, ti)
     self.ban[fl].add ((feature, feature_interval, ti))
 
-    return test, fct
+    return self.test_cases[ti], fct
 
 
 

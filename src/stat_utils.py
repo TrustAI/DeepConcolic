@@ -11,7 +11,6 @@ class CvPCA (PCA):
 
   def __init__(self, copy = False, **kwds):
     super ().__init__(copy = copy, **kwds)
-    self.n_ = 5
     self.pca_ = PCA (copy = True, **kwds)
 
   def fit (self, X, y = None, **_kwds):
@@ -19,7 +18,7 @@ class CvPCA (PCA):
     #                    random_state = randint ())
     # cv = KFold (n_splits = 5, shuffle = True,
     #             random_state = randint ())
-    cv = RepeatedKFold (n_splits = 5, n_repeats = 5,
+    cv = RepeatedKFold (n_splits = 3, n_repeats = 3,
                         random_state = randint ())
     cv_model = cross_validate (self.pca_, X, y, cv = cv,
                                return_estimator = True,
