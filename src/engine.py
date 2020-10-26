@@ -434,12 +434,15 @@ class Report:
     self.ntests += 1
 
 
-  def step(self, *args) -> None:
+  def step(self, *args, dry = False) -> None:
     '''
     Prints a single report line.
+
+    Do not count as new step if `dry` holds.
     '''
     append_in_file (self.report_file, *args, '\n')
-    self.nsteps += 1
+    if not dry:
+      self.nsteps += 1
 
 
 # ---
@@ -797,7 +800,8 @@ class Engine:
     p1 ('#0 {}: {.as_prop:10.8%}'.format(criterion, coverage))
     report.step ('{0}-cover: {1} #test cases: {0.num_test_cases} '
                  .format(criterion, coverage),
-                 '#adversarial examples: 0')
+                 '#adversarial examples: 0',
+                 dry = True)
 
     iteration = 1
     init_tests = report.num_tests
