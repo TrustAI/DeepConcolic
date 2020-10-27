@@ -159,9 +159,8 @@ def main():
                       help="the condition feature size parameter (0, 1]", metavar="FLOAT")
   parser.add_argument("--top-classes", dest="top_classes", default="1",
                       help="check the top-xx classifications", metavar="INT")
-  parser.add_argument("--layer-index", dest="layer_indexes",
-                      nargs="+", type=int,
-                      help="to test a particular layer", metavar="INT")
+  parser.add_argument("--layers", dest="layers", nargs="+", metavar="LAYER",
+                      help="test layers given by name or index")
   parser.add_argument("--feature-index", dest="feature_index", default="-1",
                       help="to test a particular feature map", metavar="INT")
 
@@ -266,12 +265,10 @@ def main():
   test_object.cond_ratio = cond_ratio
   test_object.top_classes = top_classes
   test_object.inp_ub = inp_ub
-  if args.layer_indexes is not None:
+  if args.layers is not None:
     try:
-      test_object.layer_indices=[]
-      for layer_index in tuple(args.layer_indexes):
-        layer = dnn.get_layer (index = int (layer_index))
-        test_object.layer_indices.append (dnn.layers.index (layer))
+      test_object.set_layer_indices (int (l) if l.isdigit () else l
+                                     for l in args.layers)
     except ValueError as e:
       sys.exit (e)
     if args.feature_index!='-1':

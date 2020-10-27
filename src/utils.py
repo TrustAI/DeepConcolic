@@ -222,7 +222,7 @@ def save_in_csv (filename):
       file.write (name + ' ')
       np.savetxt (file, arr, newline = ' ')
       file.write ('\n')
-      
+
     # append_in_file (f, name, ' ', np.array_str (arr, max_line_width = np.inf), '\n')
   return save_an_array
 
@@ -339,7 +339,7 @@ class raw_datat:
     self.data=data
     self.labels=labels
     self.name = name
-    
+
 
 
 class test_objectt:
@@ -357,7 +357,17 @@ class test_objectt:
     self.trace_flag=None
     self.layer_indices=None
     self.feature_indices=None
-  
+
+
+  def layer_index (self, l):
+    layer = self.dnn.get_layer (name = l) if isinstance (l, str) else \
+            self.dnn.get_layer (index = int (l))
+    return self.dnn.layers.index (layer)
+
+
+  def set_layer_indices (self, ll):
+    self.layer_indices = [ self.layer_index (l) for l in ll ]
+
 
   def tests_layer(self, cl):
     return self.layer_indices == None or cl.layer_index in self.layer_indices
@@ -426,7 +436,7 @@ def get_ssc_next(clayers, layer_indices=None, feature_indices=None):
       #sys.exit(0)
 
     tot_s = np.prod (clayers2[dec_layer_index].ssc_map.shape)
-    
+
     the_dec_pos = np.random.randint(0, tot_s)
     if not feature_indices==None:
       the_dec_pos=np.argmax(clayers2[dec_layer_index].ssc_map.shape)
@@ -437,7 +447,7 @@ def get_ssc_next(clayers, layer_indices=None, feature_indices=None):
         the_dec_pos+=1
         continue
       else:
-        found=True 
+        found=True
         break
     #if the_dec_pos>=tot_s:
     #  print ('all decision features at layer {0} have been covered'.format(dec_layer_index))
