@@ -23,7 +23,10 @@ from pomegranate.distributions import (DiscreteDistribution,
 
 # Whether to enable logs to the console of progress towards target
 # intervals:
-show_progress = False
+_log_test_selection_level = 2
+_log_progress_level = 3
+_log_interval_distance_level = 2
+_log_feature_discr_level = 3
 
 # ---
 
@@ -248,9 +251,6 @@ class KBinsFeatureDiscretizer (FeatureDiscretizer, KBinsDiscretizer):
       self._kde_plot (x, y, feat_extr, **kwds)
     else:
       super().fit (y)
-    for fi, nints in enumerate (self.n_bins_):
-      p1 ('| Discretization of feature {} involes {} interval{}'
-          .format (fi, *s_(nints)))
 
   def get_params (self, deep = True) -> dict:
     p = super().get_params (deep)
@@ -306,6 +306,12 @@ class BFcLayer (CoverableLayer):
     Number of extracted features for the layer.
     '''
     return len (self.transform[-1].components_)
+
+
+  @property
+  def num_feature_parts (self) -> Sequence[int]:
+    return [ self.discr.feature_parts (feature)
+             for feature in self.range_features () ]
 
 
   def range_features (self):
@@ -449,6 +455,7 @@ class _BaseBFcCriterion (Criterion):
     self.base_dimreds = None
     self.total_registered_cases = 0     # as modeled in BN
     self.outdir = outdir or OutputDir ()
+    self._log_feature_distr = None
     super().__init__(*args, **kwds)
     self._reset_progress ()
 
@@ -478,6 +485,11 @@ class _BaseBFcCriterion (Criterion):
     return acc
 
 
+  @property
+  def num_feature_parts (self) -> Sequence[Sequence[int]]:
+    return [ fl.num_feature_parts for fl in self.flayers ]
+
+
   # ---
 
 
@@ -493,9 +505,18 @@ class _BaseBFcCriterion (Criterion):
     facts = self.dimred_n_discretize_activations (acts)
     nbase = self.total_registered_cases
     self.total_registered_cases += len (facts)
+    if self.verbose >= _log_feature_discr_level and self._log_feature_distr is not None:
+      p1 ('| Old feature-{} distribution: {}'
+          .format (self._log_feature_distr,
+                   self._probas (self.N.states[self._log_feature_distr].distribution)))
     self.N.fit (facts,
                 inertia = nbase / self.total_registered_cases,
                 n_jobs = int (self.bn_abstr_n_jobs))
+    if self.verbose >= _log_feature_discr_level and self._log_feature_distr is not None:
+      p1 ('| New feature-{} distribution: {}'
+          .format (self._log_feature_distr,
+                   self._probas (self.N.states[self._log_feature_distr].distribution)))
+      self._log_feature_distr = None
 
 
   def register_new_activations (self, acts) -> None:
@@ -580,6 +601,7 @@ class _BaseBFcCriterion (Criterion):
                                                   old_v, new_v,
                                                   old_dist, new_dist)),
                       '\n')
+      self._log_feature_distr = feature
       return (old_dist - new_dist, new_dist) if old_dist > 0.0 else \
              (0.0, new_dist)   # return 0 if old_v already in interval
     return aux
@@ -708,6 +730,9 @@ class _BaseBFcCriterion (Criterion):
       tp1 ('Discretizing features...')
       fl.discr.fit_wrt (x, y, fl.transform, layer = fl, **kwds,
                         outdir = self.outdir)
+      for fi, nints in enumerate (fl.discr.n_bins_):
+        p1 ('| Discretization of feature {} involes {} interval{}'
+            .format (fi, *s_(nints)))
       p1 ('| Discretized {} feature{}'.format (*s_(y.shape[1])))
       del x, y
 
@@ -938,6 +963,7 @@ class BFcTarget (NamedTuple, BNcTarget):
   feature_part: int
   progress: Callable[[Input], float]
   root_test_idx: int
+  verbose: int
 
   def __repr__(self) -> str:
     interval = self.fnode.flayer.discr.part_edges (self.fnode.feature,
@@ -962,11 +988,11 @@ class BFcTarget (NamedTuple, BNcTarget):
 
   def measure_progress(self, t: Input) -> float:
     progress, new_dist = self.progress (t)
-    if show_progress:
-      p1 ('| Progress towards {}: {}'
-          .format (self, progress))
-    p1 ('| Distance to target interval: {} ({})'
-        .format (new_dist, 'hit' if new_dist <= 0.0 else 'miss'))
+    if self.verbose >= _log_progress_level:
+      p1 ('| Progress towards {}: {}'.format (self, progress))
+    if self.verbose >= _log_interval_distance_level:
+      p1 ('| Distance to target interval: {} ({})'
+          .format (new_dist, 'hit' if new_dist <= 0.0 else 'miss'))
     return progress
 
 
@@ -1059,13 +1085,14 @@ class BFcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
     feature_node = self.N.states[feature]
     fl, flfeature = feature_node.flayer, feature_node.feature
     interval = feature_node.interval (feature_interval)
-    p1 ('| Selecting root test {} at feature-{}-distance {} from {}, layer {}'
-        .format (ti, flfeature, best_dist, interval_repr (interval), fl))
+    if self.verbose >= _log_test_selection_level:
+      p1 ('| Selecting root test {} at feature-{}-distance {} from {}, layer {}'
+          .format (ti, flfeature, best_dist, interval_repr (interval), fl))
     measure_progress = \
         self._measure_progress_towards_interval (feature, interval, ti)
     fct = BFcTarget (feature_node, feature_interval,
                      # self._check_within (feature, feature_interval),
-                     measure_progress, ti)
+                     measure_progress, ti, self.verbose)
     self.ban[fl].add ((feature, feature_interval, ti))
 
     return self.test_cases[ti], fct
@@ -1082,6 +1109,7 @@ class BFDcTarget (NamedTuple, BNcTarget):
   # sanity_check: Callable[[int, int, Input], bool]
   progress: Callable[[Input], float]
   root_test_idx: int
+  verbose: int
 
   def __repr__(self) -> str:
     interval = self.fnode1.flayer.discr.part_edges (self.fnode1.feature,
@@ -1115,11 +1143,11 @@ class BFDcTarget (NamedTuple, BNcTarget):
 
   def measure_progress(self, t: Input) -> float:
     progress, new_dist = self.progress (t)
-    if show_progress:
-      p1 ('| Progress towards {}: {}'
-          .format (self, progress))
-    p1 ('| Distance to target interval: {} ({})'
-        .format (new_dist, 'hit' if new_dist <= 0.0 else 'miss'))
+    if self.verbose >= _log_progress_level:
+      p1 ('| Progress towards {}: {}'.format (self, progress))
+    if self.verbose >= _log_interval_distance_level:
+      p1 ('| Distance to target interval: {} ({})'
+          .format (new_dist, 'hit' if new_dist <= 0.0 else 'miss'))
     return progress
 
 
@@ -1211,14 +1239,15 @@ class BFDcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
     fl, flfeature = feature_node.flayer, feature_node.feature
     fl_prev, _ = self.fidx2fli[feature - flfeature - 1]
     interval = feature_node.interval (feature_interval)
-    p1 ('| Selecting root test {} at feature-{}-distance {} from {}, layer {}'
-        .format (ti, flfeature, best_dist, interval_repr (interval), fl))
+    if self.verbose >= _log_test_selection_level:
+      p1 ('| Selecting root test {} at feature-{}-distance {} from {}, layer {}'
+          .format (ti, flfeature, best_dist, interval_repr (interval), fl))
     measure_progress = \
         self._measure_progress_towards_interval (feature, interval, ti)
     cond_intervals = cpts[epsilon_cond_prob_index][fli, :-2].astype (int)
     fct = BFDcTarget (feature_node, feature_interval, fl_prev, cond_intervals,
                       # self._check_within (feature, feature_interval),
-                      measure_progress, ti)
+                      measure_progress, ti, self.verbose)
     self.ban[fl].add ((feature, feature_interval, ti))
 
     return self.test_cases[ti], fct
@@ -1402,6 +1431,7 @@ def setup (setup_criterion = None,
            bn_abstr_train_size = 0.5,
            bn_abstr_test_size = 0.5,
            bn_abstr_n_jobs = None,
+           verbose: int = None,
            **kwds):
 
   if setup_criterion is None:
@@ -1420,7 +1450,8 @@ def setup (setup_criterion = None,
             print_classification_reports = True,
             epsilon = epsilon,
             bn_abstr_n_jobs = bn_abstr_n_jobs,
-            outdir = outdir)
+            outdir = outdir,
+            verbose = verbose)
   if report_on_feature_extractions:
     criterion_args['report_on_feature_extractions'] = plot_report_on_feature_extractions
     criterion_args['close_reports_on_feature_extractions'] = (lambda _: plotting.show ())

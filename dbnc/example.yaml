@@ -166,4 +166,7 @@
     # https://scikit-learn.org/stable/glossary.html#term-n-jobs for
     # details on its semantics):
     discr_n_jobs: -1,
+    #
+    # Verbosity level (only affects console output):
+    verbose: 2,
 }
