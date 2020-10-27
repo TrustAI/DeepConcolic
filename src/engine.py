@@ -458,6 +458,9 @@ class EarlyTermination (Exception):
 # ---
 
 
+_log_target_selection_level = 1
+
+
 class Criterion (_ActivationStatBasedInitializable):
   '''
   Base class for test critieria.
@@ -469,6 +472,7 @@ class Criterion (_ActivationStatBasedInitializable):
   def __init__(self,
                analyzer: Analyzer = None,
                prefer_rooted_search = None,
+               verbose: int = 1,
                **kwds):
     '''
     A criterion operates based on an `analyzer` to find new concrete
@@ -482,6 +486,7 @@ class Criterion (_ActivationStatBasedInitializable):
     super().__init__(**kwds)
     self.analyzer = analyzer
     self.test_cases = []
+    self.verbose = some (verbose, 1)
     self.rooted_search = self._rooted_search (prefer_rooted_search)
 
 
@@ -616,7 +621,8 @@ class Criterion (_ActivationStatBasedInitializable):
     '''
     if self.rooted_search:
       x0, target = self.find_next_rooted_test_target ()
-      tp1 ('| Targeting {}'.format(target))
+      if self.verbose >= _log_target_selection_level:
+        p1 (f'| Targeting {target}')
       x1_attempt = self.analyzer.search_input_close_to (x0, target)
       if x1_attempt == None:
         return None, target
@@ -625,7 +631,8 @@ class Criterion (_ActivationStatBasedInitializable):
         return (x0, x1, d), target
     else:
       target = self.find_next_test_target ()
-      tp1 ('| Targeting {}'.format(target))
+      if self.verbose >= _log_target_selection_level:
+        p1 (f'| Targeting {target}')
       attempt = self.analyzer.search_close_inputs (target)
       if attempt == None:
         return None, target

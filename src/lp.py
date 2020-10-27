@@ -214,7 +214,7 @@ class PulpSolver4DNN (LpSolver4DNN):
     # Draw a new distance lower bound:
     self.d_var.lowBound = metric.draw_lower_bound ()
 
-    ctp1 ('LP solving: {} constraints'.format(len(problem.constraints)))
+    tp1 ('LP solving: {} constraints'.format(len(problem.constraints)))
     assert (problem.objective is not None)
     problem.solve (self.solver)
     tp1 ('Solved!')
