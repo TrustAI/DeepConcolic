@@ -162,7 +162,7 @@ class KBinsFeatureDiscretizer (FeatureDiscretizer, KBinsDiscretizer):
     n_features = y.shape[1]
     n_bins = np.zeros (n_features, dtype = int)
     bin_edges = np.zeros (n_features, dtype = object)
-    n_tries = 3
+    n_tries = 5
     splitters = [ [ KDESplit (**self.kde_split_args)
                     for _ in range (n_tries) ]
                   for _ in range (n_features) ]
@@ -170,7 +170,8 @@ class KBinsFeatureDiscretizer (FeatureDiscretizer, KBinsDiscretizer):
     for fi in range (n_features):
       tp1 (f'KDE: Discretizing feature {fi}...')
       yy = y[:,fi]
-      rs = ShuffleSplit (n_splits = n_tries, train_size = .75)
+      rs = ShuffleSplit (n_splits = n_tries,
+                         train_size = 1 / max (2, n_tries - 1))
       bandwidth = None
       for splitter, (yy_index, _) in zip (splitters[fi], rs.split (yy)):
         splitter.fit_split (yy[yy_index], bandwidth = bandwidth)
