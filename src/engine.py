@@ -2,6 +2,7 @@ from typing import *
 from utils import *
 from functools import reduce
 from sklearn.model_selection import train_test_split
+import yaml                             # for dumping test_origins
 
 # ---
 
@@ -780,7 +781,9 @@ class Engine:
     or the criterion is fulfilled (whichever happens first).
 
     Set `trace_origins` to `True` to keep track of the origin of
-    generated test cases and speed up filtering by the oracle.
+    generated test cases and speed up filtering by the oracle.  This
+    also enables detection of generated inputs that already belong to
+    the test set.
     '''
 
     criterion = self.criterion
@@ -813,6 +816,8 @@ class Engine:
     iteration = 1
     init_tests = report.num_tests
     init_adversarials = report.num_adversarials
+    # Note some test cases might be inserted multiple times: in such a
+    # case only the max index will be remembered as origin:
     origin = (None if not trace_origins else
               InputsDict ([(x, i) for i, x in enumerate (criterion.test_cases)]))
 
@@ -827,10 +832,14 @@ class Engine:
         if search_attempt != None:
           x0, x1, d = search_attempt
 
+          # Check if x1 is already in origins:
+          new = origin is None or x1 not in origin
+
           # Test oracle for adversarial testing
-          close_enough = all (f.close_to (self.ref_data.data if origin is None else
-                                          [criterion.test_cases[origin[x0]]], x1)
-                              for f in self.dynamic_filters)
+          close_enough = new
+          close_enough &= all (f.close_to (self.ref_data.data if origin is None else
+                                           [criterion.test_cases[origin[x0]]], x1)
+                               for f in self.dynamic_filters)
           close_enough &= all (f.close_enough (x1) for f in self.static_filters)
           if close_enough:
             criterion.add_new_test_cases ([x1], covered_target = target)
@@ -852,7 +861,8 @@ class Engine:
         p1 ('#{} {}: {.as_prop:10.8%} {}'
             .format (iteration, criterion, coverage,
                      'with {} at {} distance {}: {}'
-                     .format('new test case' if close_enough else 'failed attempt',
+                     .format('new test case' if close_enough else
+                             'failed attempt' if new else 'not new',
                              criterion.metric, d,
                              'too far from raw input' if (not close_enough and
                                                           not trace_origins) else
@@ -880,6 +890,13 @@ class Engine:
         .format (*s_(iteration - 1),
                  *s_(report.num_tests - init_tests),
                  *is_are_(report.num_adversarials - init_adversarials)))
+
+    if origin is not None:
+      data = dict (init_tests = criterion.num_test_cases - report.num_tests - init_tests,
+                   origin_indexes = [ origin[x] for x in criterion.test_cases ])
+      path = report.outdir.stamped_filepath ('test_origins', suff = '.yml')
+      with open(path, 'w') as f:
+        yaml.dump (data, f)
 
     return report
 
