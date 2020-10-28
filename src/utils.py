@@ -56,6 +56,9 @@ def xtuple(t):
 def xlist(t):
   return [t] if t is not None else []
 
+def some(a, d):
+  return a if a is not None else d
+
 def s_(i):
   return i, 's' if i > 1 else ''
 
