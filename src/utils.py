@@ -562,20 +562,39 @@ class Bounds:
 
 from collections import UserDict
 
+try:
+  # Use xxhash if available as it's probably more efficient
+  import xxhash
+  __h = xxhash.xxh64 ()
+  def np_hash (x):
+    __h.reset ()
+    __h.update (x)
+    return __h.digest ()
+except:
+  def np_hash (x):
+    return hash (x.tobytes ())
+  # NB: In case we experience too many collisions:
+  # import hashlib
+  # def np_hash (x):
+  #   return hashlib.md5 (x).digest ()
+
 class NPArrayDict (UserDict):
   '''
   Custom dictionary that accepts numpy arrays as keys.
   '''
 
   def __getitem__(self, x: np.ndarray):
-    return self.data[hash (x.tobytes ())]
+    return self.data[np_hash (x)]
 
   def __delitem__(self, x: np.ndarray):
-    del self.data[hash (x.tobytes ())]
+    del self.data[np_hash (x)]
 
   def __setitem__(self, x: np.ndarray, val):
     x.flags.writeable = False
-    self.data[hash (x.tobytes ())] = val
+    self.data[np_hash (x)] = val
+
+  def __contains__(self, x: np.ndarray):
+    return np_hash (x) in self.data
 
 
 # ---
