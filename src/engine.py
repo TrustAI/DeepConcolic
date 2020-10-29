@@ -2,7 +2,8 @@ from typing import *
 from utils import *
 from functools import reduce
 from sklearn.model_selection import train_test_split
-import yaml                             # for dumping test_origins
+import yaml                             # for dumping record
+import hashlib                          # for hashing test inputs
 
 # ---
 
@@ -446,6 +447,28 @@ class Report:
       self.nsteps += 1
 
 
+  def record(self, test_cases, record, **kwds) -> None:
+    """
+    Outputs a record about all initial and generated test cases.
+
+    The record essentually encodes the tree that enables one to trace
+    the origins of all generated tests.
+    """
+    tests = [ dict (**record[x],
+                    md5 = hashlib.md5 (x).hexdigest ())
+              for x in test_cases ]
+    advrs = [ dict (**record[n[0]],
+                    md5 = hashlib.md5 (n[0]).hexdigest ())
+              for _o, n, _d in self.adversarials ]
+    data = dict (passed_tests = tests,
+                 adversarials = advrs,
+                 **kwds)
+    path = self.outdir.stamped_filepath ('record', suff = '.yml')
+    with open(path, 'w') as f:
+      yaml.dump (data, f)
+
+
+
 # ---
 
 
@@ -770,7 +793,7 @@ class Engine:
   def run(self,
           report: Union[Report, Callable[[Criterion], Report]] = setup_basic_report,
           initial_test_cases = None,
-          trace_origins: bool = False,
+          check_root_only: bool = True,
           max_iterations = -1,
           **kwds) -> Report:
     '''
@@ -780,10 +803,10 @@ class Engine:
     if `max_iterations >= 0`, or else until full coverage is reached,
     or the criterion is fulfilled (whichever happens first).
 
-    Set `trace_origins` to `True` to keep track of the origin of
-    generated test cases and speed up filtering by the oracle.  This
-    also enables detection of generated inputs that already belong to
-    the test set.
+    Set `check_root_only` to `False` to ensure every new generated
+    test case that is close enough to any reference test data is
+    kept. Leaving it to `True` speeds the oracle check by only
+    comparing new tests agains the original reference version.
     '''
 
     criterion = self.criterion
@@ -818,8 +841,10 @@ class Engine:
     init_adversarials = report.num_adversarials
     # Note some test cases might be inserted multiple times: in such a
     # case only the max index will be remembered as origin:
-    origin = (None if not trace_origins else
-              InputsDict ([(x, i) for i, x in enumerate (criterion.test_cases)]))
+    record = InputsDict ([(x, dict (root_index = i,
+                                    index = i,
+                                    label = int (self._run_test (x))))
+                          for i, x in enumerate (criterion.test_cases)])
 
     try:
 
@@ -832,23 +857,30 @@ class Engine:
         if search_attempt != None:
           x0, x1, d = search_attempt
 
-          # Check if x1 is already in origins:
-          new = origin is None or x1 not in origin
+          # Check if x1 is already met:
+          new = x1 not in record
 
           # Test oracle for adversarial testing
           close_enough = new
-          close_enough &= all (f.close_to (self.ref_data.data if origin is None else
-                                           [criterion.test_cases[origin[x0]]], x1)
+          close_enough &= all (f.close_to (self.ref_data.data if not check_root_only else
+                                           [criterion.test_cases[record[x0]['root_index']]], x1)
                                for f in self.dynamic_filters)
           close_enough &= all (f.close_enough (x1) for f in self.static_filters)
           if close_enough:
             criterion.add_new_test_cases ([x1], covered_target = target)
-            if origin is not None:
-              origin[x1] = origin[x0]
             coverage = criterion.coverage ()
             y0 = self._run_test (x0)
             y1 = self._run_test (x1)
-  
+            root_index = record[x0]['root_index']
+            root_dist = criterion.metric.distance (x1, criterion.test_cases[root_index])
+            record[x1] = dict (root_index = root_index,
+                               root_dist = float (root_dist),
+                               origin_index = record[x0]['index'],
+                               origin_dist = float (d),
+                               gen_test_id = report.num_tests,
+                               index = len (record),
+                               label = int (y1))
+
             if y1 != y0:
               adversarial = True
               criterion.pop_test ()
@@ -865,7 +897,7 @@ class Engine:
                              'failed attempt' if new else 'not new',
                              criterion.metric, d,
                              'too far from raw input' if (not close_enough and
-                                                          not trace_origins) else
+                                                          not check_root_only) else
                              'too far from original input' if not close_enough else
                              'adversarial' if adversarial else 'passed')
                      if search_attempt != None else 'after failed attempt'))
@@ -891,12 +923,8 @@ class Engine:
                  *s_(report.num_tests - init_tests),
                  *is_are_(report.num_adversarials - init_adversarials)))
 
-    if origin is not None:
-      data = dict (init_tests = criterion.num_test_cases - report.num_tests - init_tests,
-                   origin_indexes = [ origin[x] for x in criterion.test_cases ])
-      path = report.outdir.stamped_filepath ('test_origins', suff = '.yml')
-      with open(path, 'w') as f:
-        yaml.dump (data, f)
+    report.record (criterion.test_cases, record,
+                    norm = repr (criterion.metric))
 
     return report
 
