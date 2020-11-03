@@ -609,8 +609,7 @@ class _BaseBFcCriterion (Criterion):
                                                   old_dist, new_dist)),
                       '\n')
       self._log_feature_distr = feature
-      return (old_dist - new_dist, new_dist) if old_dist > 0.0 else \
-             (0.0, new_dist)   # return 0 if old_v already in interval
+      return old_dist - new_dist, new_dist
     return aux
 
 
