@@ -707,12 +707,21 @@ class _BaseBFcCriterion (Criterion):
     }]
 
 
-  def _discretize_features_and_create_bn_structure (self, acts, **kwds):
+  def _discretize_features_and_create_bn_structure (self, acts,
+                                                    true_labels = None,
+                                                    pred_labels = None,
+                                                    **kwds):
     """
     Called through :meth:`stat_based_train_cv_initializers` above.
     """
 
-    ts0 = len(acts[self.flayers[0].layer_index])
+    if true_labels is not None and pred_labels is not None:
+      ok_labels = (np.asarray(true_labels) == np.asarray(pred_labels))
+      ok_acts = { layer: acts[layer][ok_labels] for layer in acts }
+    else:
+      ok_acts = acts
+
+    ts0 = len(ok_acts[self.flayers[0].layer_index])
     cp1 ('| Given training data of size {}'.format (ts0))
     fts = None if self.feat_extr_train_size == 1 \
           else (min (ts0, int (self.feat_extr_train_size))
@@ -724,7 +733,7 @@ class _BaseBFcCriterion (Criterion):
     # First, fit feature extraction and discretizer parameters:
     for fl in self.flayers:
       p1 ('| Extracting and discretizing features for layer {}... '.format (fl))
-      x = np.stack([a.flatten () for a in acts[fl.layer_index]], axis = 0)
+      x = np.stack([a.flatten () for a in ok_acts[fl.layer_index]], axis = 0)
       tp1 ('Extracting features...')
       if fts is None:
         y = fl.transform.fit_transform (x)
@@ -768,7 +777,7 @@ class _BaseBFcCriterion (Criterion):
     # for now, for the purpose of preliminary assessments; the BN will
     # be re-initialized upon the first call to `add_new_test_cases`:
     if self.score_layer_likelihoods or self.assess_discretized_feature_probas:
-      self.fit_activations (acts)
+      self.fit_activations (ok_acts)
 
 
   def get_params (self, deep = True):
