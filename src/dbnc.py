@@ -26,7 +26,7 @@ from pomegranate.distributions import (DiscreteDistribution,
 _log_test_selection_level = 2
 _log_progress_level = 3
 _log_interval_distance_level = 2
-_log_feature_discr_level = 3
+_log_feature_discr_level = 10
 
 # ---
 
