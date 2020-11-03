@@ -198,7 +198,8 @@ def main():
   inp_ub = 1
   save_input = None
   amplify_diffs = True
-  lower_bound_metric_noise = .01
+  lower_bound_metric_hard = .01
+  lower_bound_metric_noise = 0
   input_bounds = UniformBounds (0.0, 1.0)
 
   # fuzzing_params
@@ -230,7 +231,8 @@ def main():
                  save_in_csv ('new_inputs') if len (dims) == 1 else \
                  None
     amplify_diffs = kind in datasets.image_kinds
-    lower_bound_metric_noise = .1       # 10%
+    lower_bound_metric_hard = 1 / 255
+    lower_bound_metric_noise = 0.2
     input_bounds = UniformBounds () if kind in datasets.image_kinds else \
                    StatBasedInputBounds (hard_bounds = UniformBounds (-1.0, 1.0)) \
                    if kind in datasets.normalized_kinds else StatBasedInputBounds ()
@@ -254,7 +256,7 @@ def main():
     tf.compat.v1.disable_eager_execution ()
     dnn = keras.applications.VGG16 ()
     inp_ub = 255
-    lower_bound_metric_noise = 1/255
+    lower_bound_metric_hard = 1/255
     dnn.summary()
     save_input = save_an_image
   else:
@@ -326,6 +328,7 @@ def main():
                                 'save_input_func': save_input,
                                 'amplify_diffs': amplify_diffs },
                 norm_args = { 'factor': .25,
+                              'LB_hard': lower_bound_metric_hard,
                               'LB_noise': lower_bound_metric_noise },
                 engine_args = { 'custom_filters': input_filters },
                 dbnc_spec = dbnc_spec,

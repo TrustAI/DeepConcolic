@@ -409,6 +409,11 @@ def is_padding(dec_pos, dec_layer, cond_layer, post = True, unravel_pos = True):
              weights.shape[0]   > cond_layer.output.shape[1]))
   return False
 
+# TODO: stride & padding
+def maxpool_idxs (oidx, pool_size) -> range:
+  for pool_idx in np.ndindex (pool_size):
+    yield (tuple (oidx[i] * pool_size[i] + pool_idx[i]
+                  for i in range (len (pool_size))))
 
 def get_ssc_next(clayers, layer_indices=None, feature_indices=None):
   #global the_dec_pos
