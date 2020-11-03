@@ -189,8 +189,8 @@ class OutputDir:
   def path(self) -> str:
     return self.dirpath
 
-  def filepath(self, base) -> str:
-    return self.dirpath + base
+  def filepath(self, base, suff = '') -> str:
+    return self.dirpath + base + suff
 
   def stamped_filename(self, base, sep = '-', suff = '') -> str:
     return ((self.stamp + sep + base) if self.enable_stamp and self.prefix_stamp else \

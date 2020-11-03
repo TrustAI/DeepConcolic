@@ -37,6 +37,10 @@ def run (test_object = None,
          input_bounds = UniformBounds ()):
 
   all_n_feats_specs = [
+    ('1-randomized', { 'n_components': 1, 'svd_solver': 'randomized' }, 'pca', 1),
+    ('2-randomized', { 'n_components': 2, 'svd_solver': 'randomized' }, 'pca', 2),
+    ('3-randomized', { 'n_components': 3, 'svd_solver': 'randomized' }, 'pca', 3),
+    ('4-randomized', { 'n_components': 4, 'svd_solver': 'randomized' }, 'pca', 4),
     ('ica-1', { 'decomp': 'ica', 'n_components': 1, 'max_iter': 10000, 'tol': 0.01 }, 'ica', 1),
     ('ica-2', { 'decomp': 'ica', 'n_components': 2, 'max_iter': 10000, 'tol': 0.01 }, 'ica', 2),
     ('ica-3', { 'decomp': 'ica', 'n_components': 3, 'max_iter': 10000, 'tol': 0.01 }, 'ica', 3),
@@ -53,11 +57,6 @@ def run (test_object = None,
     # ('ipca-3', 3, 'ipca', 3),
     # ('ipca-4', 4, 'ipca', 4),
     # ('pca-5', 5, 'pca', 5),
-    ('1-randomized', { 'n_components': 1, 'svd_solver': 'randomized' }, 'pca', 1),
-    ('2-randomized', { 'n_components': 2, 'svd_solver': 'randomized' }, 'pca', 2),
-    ('3-randomized', { 'n_components': 3, 'svd_solver': 'randomized' }, 'pca', 3),
-    ('4-randomized', { 'n_components': 4, 'svd_solver': 'randomized' }, 'pca', 4),
-    # ('5-randomized', { 'n_components': 5, 'svd_solver': 'randomized' }, 'pca', 5),
     # ('full-0.1', 0.1, 'pca', 0),
     # ('full-0.2', 0.2, 'pca', 0),
     # ('full-0.3', 0.3, 'pca', 0),
@@ -232,6 +231,18 @@ def run (test_object = None,
           .format(*(crit,) + tuple (covstats) + (test_size,)))
       stats += [[test_size] + covstats]
 
+
+  def local_save (f, stats):
+    np.savetxt (f, np.asarray (stats),
+                header = "\t".join(("test size",
+                                    "nc coverage",
+                                    "nc coverage (half)",
+                                    "nc coverage (nobar)")),
+                fmt = '%s',
+                # fmt = ['%s', '%s', '%i', '%i', '%f'],
+                delimiter="\t")
+
+
   def dbnc_run (dbnc_stats, n_feats, discr, bnzf):
     (n_feats_name, n_feats, tech, ncomps), (discr_name, discr, nbins) = n_feats, discr
 
@@ -249,6 +260,14 @@ def run (test_object = None,
     tic, get_times = scripting.init_tics ()
 
     crit._discretize_features_and_create_bn_structure (train_acts)
+    features = crit.num_features
+    feats_stats = [np.amin (features),
+                   np.mean (features),
+                   np.amax (features)]
+    feature_parts = crit.num_feature_parts
+    discr_stats = [np.amin (feature_parts),
+                   np.mean (feature_parts),
+                   np.amax (feature_parts)]
 
     tic ()
 
@@ -308,9 +327,11 @@ def run (test_object = None,
       covstats = [c.as_prop for c in covstats]
       p1 ('{} {} | {:6.2%} {:6.2%} {:6.2%} | {:6.2%} {:6.2%} {:6.2%} | {}'
           .format(*(n_feats_name, discr_name, ) + tuple (covstats) + (test_size,)))
-      # p1 ('%s %s %i %i %5.1fs %5.1fs %5.1fs %5.1fs' % (tuple (thistats)))
       p1 ('%s %s %i %i %5.1fs %5.1fs %5.1fs' % (tuple (thistats)))
-      dbnc_stats += [thistats + [tech, ncomps, nbins, test_size] + covstats
+      dbnc_stats += [thistats +
+                     [tech, ncomps, nbins] +
+                     feats_stats + discr_stats + [test_size] +
+                     covstats
                    # + list (var_rats) # + list (loglikel)
                    # + list (np.array(loglosss).flatten ())
                    # + list (np.array(loglossA))
@@ -331,28 +352,35 @@ def run (test_object = None,
 
   def dbnc_save (f, dbnc_stats):
     np.savetxt (f, np.asarray (dbnc_stats),
-                header = ("extraction\tdiscretization\tnodes\tedges"+
-                          "\tconstruction time (s)"+
-                          "\tfitting time (s)"+
-                          # "\tscoring time (s)"+
-                          "\tcoverage computation time (s)"+
-                          "\ttech\tcomponents\tintervals/component"+
-                          "\ttest size"+
-                          "\tbfc coverage"+
-                          "\tbfc coverage (half)"+
-                          "\tbfc coverage (nobar)"+
-                          "\tbfdc coverage"+
-                          # "\tbfc coverage (no 0s)"+
-                          # "\tbfdc coverage (no 0s)"+
-                          # "\tbfc coverage (no 0s nor 1s)"+
-                          # "\tbfdc coverage (no 0s nor 1s)"+
-                          "\tbfdc coverage (half)"+
-                          "\tbfdc coverage (nobar)"
-                          # "\t" + "\t".join(lvarih) +
-                          # # "\tlogl(" + ")\tlogl(".join(lnames) + ")"
-                          # "\t" + "\t".join(llossh) +
-                          # "\t" + llossA
-                          ),
+                header = "\t".join(("extraction",
+                                    "discretization",
+                                    "nodes",
+                                    "edges",
+                                    "construction time (s)",
+                                    "fitting time (s)",
+                                    # "scoring time (s)",
+                                    "coverage computation time (s)",
+                                    'tech',
+                                    'components',
+                                    'intervals/component',
+                                    'min_n_components',
+                                    'mean_n_components',
+                                    'max_n_components',
+                                    'min_n_bins',
+                                    'mean_n_bins',
+                                    'max_n_bins',
+                                    "test size",
+                                    "bfc coverage",
+                                    "bfc coverage (half)",
+                                    "bfc coverage (nobar)",
+                                    "bfdc coverage",
+                                    # "bfc coverage (no 0s)",
+                                    # "bfdc coverage (no 0s)",
+                                    # "bfc coverage (no 0s nor 1s)",
+                                    # "bfdc coverage (no 0s nor 1s)",
+                                    "bfdc coverage (half)",
+                                    "bfdc coverage (nobar)",
+                                    )),
                 fmt = '%s',
                 # fmt = ['%s', '%s', '%i', '%i', '%f'],
                 delimiter="\t")
@@ -372,6 +400,7 @@ def run (test_object = None,
                                       exclude_direct_input_succ = False)
   crit = NcCriterion (nc_cover_layers, local_analyzer)
   local_run (nc_stats, crit)
+  local_save (outs.filepath (base + '-nc', suff = '.csv'), nc_stats)
   del crit
 
   # ---
@@ -383,7 +412,7 @@ def run (test_object = None,
     log (base, i, total, a, b)
     dbnc_run (dbnc_stats, a, b, outs.filepath ('/{}-{}-{}.json.gz'.format(base, a[0], b[0])))
     log (base, i, total, a, b, end = ' done')
-    dbnc_save (outs.filepath (base + '.csv'), dbnc_stats)
+    dbnc_save (outs.filepath (base + '-dbnc', suff = '.csv'), dbnc_stats)
     i += 1
 
   # dbnc_stats = []
