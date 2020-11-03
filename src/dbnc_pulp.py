@@ -160,8 +160,14 @@ class BFcPulpAnalyzer (_BFcPulpAnalyzer, BFcAnalyzer):
   def search_input_close_to(self, x, target: BFcTarget):
     lc = self.layer_encoders[target.fnode.flayer.layer_index]
     problem = self.for_layer (target.fnode.flayer)
-    dimred_activations = lc.flayer.dimred_activations (self.eval (x))[0]
+    activations = self.eval (x)
+    dimred_activations = lc.flayer.dimred_activations (activations)[0]
     cstrs = []
+
+    prev = self.input_layer_encoder
+    for le in self.layer_encoders[:target.fnode.flayer.layer_index]:
+      cstrs.extend (le.pulp_replicate_behavior (activations, prev))
+      prev = le
 
     for feature in lc.flayer.range_features ():
       if feature == target.fnode.feature:
