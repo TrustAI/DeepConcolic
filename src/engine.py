@@ -613,7 +613,7 @@ class Criterion (_ActivationStatBasedInitializable):
         covered_target.cover (acts)
       self.register_new_activations (acts)
 
-  def _batched_activations(self, tl: Sequence[Input], **kwds):
+  def _batched_activations(self, tl: Sequence[Input], **kwds) -> range:
     batches = np.array_split (tl, len (tl) // 100 + 1)
     for batch in batches:
       yield (self.analyzer.eval_batch (batch, **kwds))
@@ -1028,11 +1028,12 @@ class Engine:
 
       train_idxs, test_idxs = train_test_split \
                               (idxs, test_size = test_size, train_size = train_size)
-      acts, input_data, preds = self._activations_on_indexed_data (data, train_idxs)
-      acc = x['train']({ j: acts[j] for j in x['layer_indexes'] },
-                       input_data = input_data,
-                       true_labels = data.labels[train_idxs],
-                       pred_labels = preds)
+      if 'train' in x:
+        acts, input_data, preds = self._activations_on_indexed_data (data, train_idxs)
+        acc = x['train']({ j: acts[j] for j in x['layer_indexes'] },
+                         input_data = input_data,
+                         true_labels = data.labels[train_idxs],
+                         pred_labels = preds)
 
       if 'test' in x:
         acts, input_data, preds = self._activations_on_indexed_data (data, test_idxs)
@@ -1290,7 +1291,7 @@ class LayerLocalCriterion (Criterion):
   def stat_based_incremental_initializers(self):
     if len (self.cover_layers) <= 1:
       for cl in self.cover_layers: cl.pfactor = 1.0
-      return None
+      return []
     else:
       return [{
         'name': 'magnitude coefficients',
@@ -1363,8 +1364,7 @@ class LayerLocalCriterion (Criterion):
         if self.shallow_first: break
         if np.random.uniform (0., 1.) < i * 1.0 / len(self.cover_layers): break
     if layer == None:
-      sys.exit('incorrect layer indices specified' +
-               '(the layer tested shall be either conv or dense layer)')
+      raise EarlyTermination ('Unable to find a new candidate input!')
     return self.cover_layers[layer], pos, value, self.test_cases[-1-pos[0]]
 
 
