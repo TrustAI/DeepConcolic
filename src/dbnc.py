@@ -301,8 +301,9 @@ class BFcLayer (CoverableLayer):
     return dict (name = self.layer.name,
                  transform = self.transform.get_params (deep))
 
+
   @property
-  def num_features (self):
+  def num_features (self) -> int:
     '''
     Number of extracted features for the layer.
     '''
@@ -440,7 +441,7 @@ class _BaseBFcCriterion (Criterion):
     assert (report_on_feature_extractions is None or callable (report_on_feature_extractions))
     assert (close_reports_on_feature_extractions is None or callable (close_reports_on_feature_extractions))
     assert (feat_extr_train_size > 0)
-    self.epsilon = epsilon or 1e-4
+    self.epsilon = epsilon or 1e-8
     self.bn_abstr_n_jobs = bn_abstr_n_jobs
     self.bn_abstr_params = dict (train_size = bn_abstr_train_size or 0.5,
                                  test_size = bn_abstr_test_size or 0.5)
@@ -484,6 +485,11 @@ class _BaseBFcCriterion (Criterion):
     for fl in self.flayers if fls is None else fls:
       acc = fl.dimred_n_discretize_activations (acts, acc = acc)
     return acc
+
+
+  @property
+  def num_features (self) -> Sequence[int]:
+    return [ fl.num_features for fl in self.flayers ]
 
 
   @property
@@ -829,7 +835,7 @@ class _BaseBFcCriterion (Criterion):
     Basic scores for manual investigations.
     """
 
-    p1 ('| Given test sample of size {}'
+    p1 ('| Given scoring sample of size {}'
          .format(len(acts[self.flayers[0].layer_index])))
 
     if (self.score_layer_likelihoods or
@@ -1198,6 +1204,9 @@ class BFDcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
 
 
   def coverage (self) -> Coverage:
+    '''
+    Returns BFdCov * BFCov
+    '''
     return self.bfdc_coverage (multiply_with_bfc = True)
 
 
