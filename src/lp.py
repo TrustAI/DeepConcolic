@@ -91,16 +91,24 @@ class PulpLinearMetric (LpLinearMetric):
   Any linear metric for the :class:`PulpSolver4DNN`.
   """  
 
-  def __init__(self, LB_noise = .01, **kwds):
+  def __init__(self, LB_hard = .01, LB_noise = .01, **kwds):
     '''
-    - Parameter `LB_noise` is used to induce a noise on the lower
-      bound for variables of this metric, which is drawn between `low`
-      and `up * LB_noise`; higher values increase the deviation of the
-      lower bound towards the upper bound.  The default value is 1%.
+    Parameters `LB_hard` and `LB_noise` are used to induce a noise on
+    the lower bound for variables of this metric, which is drawn
+    between `LB_hard` and `LB_hard + up * LB_noise`; higher values for
+    `LB_noice` increase the deviation of the lower bound towards the
+    upper bound.
+
+    One must have `low <= LB_hard < up`.
+
+    Setting `LB_noise = 0` removes part of the non-determinism of the
+    generation process (which then remains in LP solvers, though).
     '''
-    assert 0 < LB_noise < 1
+    assert 0 <= LB_noise <= 1.
     self.LB_noise = LB_noise
+    self.LB_hard = LB_hard
     super().__init__(**kwds)
+    assert self.low <= self.LB_hard < self.up
 
 
   @property
@@ -112,11 +120,13 @@ class PulpLinearMetric (LpLinearMetric):
     '''
     Draw a noisy lower bound.
 
-    The returned bound is drawn between `low` and `up * LB_noise`.
-    The `draw` function must return a float value that is within the
-    two given bounds (:func:`np.random.uniform` by default).
+    The returned bound is drawn between `LB_hard` and `LB_hard + up *
+    LB_noise`.  The `draw` function must return a float value that is
+    within the two given bounds (:func:`np.random.uniform` by
+    default).
     '''
-    return draw (self.lower_bound, self.upper_bound * self.LB_noise)
+    return draw (self.LB_hard,
+                 self.LB_hard + self.upper_bound * self.LB_noise)
 
 
   @abstractmethod
