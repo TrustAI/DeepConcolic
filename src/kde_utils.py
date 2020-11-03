@@ -6,12 +6,12 @@ import scipy.signal as sig
 from sklearn.neighbors import KernelDensity
 from sklearn.model_selection import GridSearchCV
 
-sN = 300
+sN = 1000
 
 class KDESplit:
   def __init__(self,
                dip_space = 'dens',
-               dip_prominence_prop = 1/40,
+               dip_prominence_prop = 1/20,
                topline_density_prop = 4/5,
                baseline_density_prop = 1/40,
                bandwidth_prop = 2/100,
