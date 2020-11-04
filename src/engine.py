@@ -434,12 +434,15 @@ class Report:
     self.ntests += 1
 
 
-  def step(self, *args) -> None:
+  def step(self, *args, dry = False) -> None:
     '''
     Prints a single report line.
+
+    Do not count as new step if `dry` holds.
     '''
     append_in_file (self.report_file, *args, '\n')
-    self.nsteps += 1
+    if not dry:
+      self.nsteps += 1
 
 
 # ---
@@ -455,6 +458,9 @@ class EarlyTermination (Exception):
 # ---
 
 
+_log_target_selection_level = 1
+
+
 class Criterion (_ActivationStatBasedInitializable):
   '''
   Base class for test critieria.
@@ -466,6 +472,7 @@ class Criterion (_ActivationStatBasedInitializable):
   def __init__(self,
                analyzer: Analyzer = None,
                prefer_rooted_search = None,
+               verbose: int = 1,
                **kwds):
     '''
     A criterion operates based on an `analyzer` to find new concrete
@@ -479,6 +486,7 @@ class Criterion (_ActivationStatBasedInitializable):
     super().__init__(**kwds)
     self.analyzer = analyzer
     self.test_cases = []
+    self.verbose = some (verbose, 1)
     self.rooted_search = self._rooted_search (prefer_rooted_search)
 
 
@@ -613,7 +621,8 @@ class Criterion (_ActivationStatBasedInitializable):
     '''
     if self.rooted_search:
       x0, target = self.find_next_rooted_test_target ()
-      tp1 ('| Targeting {}'.format(target))
+      if self.verbose >= _log_target_selection_level:
+        p1 (f'| Targeting {target}')
       x1_attempt = self.analyzer.search_input_close_to (x0, target)
       if x1_attempt == None:
         return None, target
@@ -622,7 +631,8 @@ class Criterion (_ActivationStatBasedInitializable):
         return (x0, x1, d), target
     else:
       target = self.find_next_test_target ()
-      tp1 ('| Targeting {}'.format(target))
+      if self.verbose >= _log_target_selection_level:
+        p1 (f'| Targeting {target}')
       attempt = self.analyzer.search_close_inputs (target)
       if attempt == None:
         return None, target
@@ -749,7 +759,7 @@ class Engine:
       p1 ('Initializing with {} randomly selected test case{} that {} correctly classified.'
           .format(*s_(len (x)), is_are_(len (x))[1]))
       self.criterion.add_new_test_cases (x)
-    elif self.criterion.rooted_search:
+    elif initial_test_cases is None and self.criterion.rooted_search:
       p1 ('Randomly selecting an input from test data.')
       x = np.random.default_rng().choice (a = self.ref_data.data, axis = 0)
       report.save_input (x, 'seed-input')
@@ -785,6 +795,7 @@ class Engine:
       p1 ('Continuing tests for {}{}.'
           .format (self, '' if max_iterations < 0 else
                    ' ({} max iterations)'.format (max_iterations)))
+      initial_test_cases = initial_test_cases or 0
 
     report = report if isinstance (report, Report) else \
              report (criterion, **kwds)
@@ -796,7 +807,8 @@ class Engine:
     p1 ('#0 {}: {.as_prop:10.8%}'.format(criterion, coverage))
     report.step ('{0}-cover: {1} #test cases: {0.num_test_cases} '
                  .format(criterion, coverage),
-                 '#adversarial examples: 0')
+                 '#adversarial examples: 0',
+                 dry = True)
 
     iteration = 1
     init_tests = report.num_tests

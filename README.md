@@ -18,14 +18,14 @@ The paper is available in https://arxiv.org/abs/1805.00089.
 
 ```
 usage: deepconcolic.py [-h] [--model MODEL] [--inputs DIR] --outputs DIR
-                       [--criterion nc, ssc...] [--init INT]
+                       [--criterion nc, ssc...] [--setup-only] [--init INT]
                        [--max-iterations INT] [--save-all-tests]
                        [--rng-seed SEED] [--labels FILE]
                        [--dataset {mnist,fashion_mnist,cifar10,OpenML:har}]
                        [--vgg16-model] [--filters {LOF}] [--norm linf, l0]
                        [--input-rows INT] [--input-cols INT]
                        [--input-channels INT] [--cond-ratio FLOAT]
-                       [--top-classes INT] [--layer-index INT [INT ...]]
+                       [--top-classes INT] [--layers LAYER [LAYER ...]]
                        [--feature-index INT] [--fuzzing] [--num-tests INT]
                        [--num-processes INT] [--sleep-time INT]
 
@@ -38,6 +38,8 @@ optional arguments:
   --outputs DIR         the outputput test data directory
   --criterion nc, ssc...
                         the test criterion
+  --setup-only          only setup the coverage critierion and analyzer, and
+                        terminate before engine initialization and startup
   --init INT            number of test samples to initialize the engine
   --max-iterations INT  maximum number of engine iterations (use < 0 for
                         unlimited)
@@ -60,8 +62,8 @@ optional arguments:
   --input-channels INT  input channels
   --cond-ratio FLOAT    the condition feature size parameter (0, 1]
   --top-classes INT     check the top-xx classifications
-  --layer-index INT [INT ...]
-                        to test a particular layer
+  --layers LAYER [LAYER ...]
+                        test layers given by name or index
   --feature-index INT   to test a particular feature map
   --fuzzing             to start fuzzing
   --num-tests INT       number of tests to generate
@@ -89,7 +91,7 @@ python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --dataset 
 
 To test a particular layer
 ```
-python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --dataset cifar10 --outputs outs/ --layer-index 2
+python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --dataset cifar10 --outputs outs/ --layers 2
 ```
 
 To run MC/DC for DNNs on the CIFAR-10 model
