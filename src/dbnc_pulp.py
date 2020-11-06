@@ -37,12 +37,12 @@ class PulpBFcAbstrLayerEncoder (PulpStrictLayerEncoder):
                         .format (transform[-1]))
 
     o = self.pulp_out_exprs ()
-    m = transform[-1].mean_
-    c = transform[-1].components_
+    m = transform[-1].mean_[self.flayer.skip:]
+    c = transform[-1].components_[self.flayer.skip:]
 
     if isinstance (transform[0], StandardScaler):
-      u = transform[0].mean_
-      s = transform[0].scale_
+      u = transform[0].mean_[self.flayer.skip:]
+      s = transform[0].scale_[self.flayer.skip:]
       lin_expr = lpSum ([LpAffineExpression ([(o, c / s)], - (u / s) * c - m * c)
                          for (o, u, s, m, c) in
                          zip (o.flatten (), u, s, m, c[feature].T)])
@@ -117,10 +117,14 @@ def abstracted_layer_encoder (flayers):
 
 class _BFcPulpAnalyzer (Analyzer, PulpSolver4DNN):
 
-  def __init__(self, input_metric: PulpLinearMetric = None, **kwds):
+  def __init__(self,
+               input_metric: PulpLinearMetric = None,
+               fix_other_features = False,
+               **kwds):
     assert isinstance (input_metric, PulpLinearMetric)
     super().__init__(**kwds)
     self.metric = input_metric
+    self.fix_other_features = fix_other_features
 
 
   def finalize_setup(self, clayers):
@@ -140,7 +144,7 @@ class _BFcPulpAnalyzer (Analyzer, PulpSolver4DNN):
     if not res:
       return None
     else:
-      if target.measure_progress (res[1]) <= 0.0:
+      if target.measure_progress (res[1]) < 0.0:
         return None
       return self.metric.distance (x, res[1]), res[1]
 
@@ -152,16 +156,10 @@ from dbnc import BFcTarget, BFcAnalyzer
 
 class BFcPulpAnalyzer (_BFcPulpAnalyzer, BFcAnalyzer):
 
-  def __init__(self, fix_other_features = False, **kwds):
-    super ().__init__(**kwds)
-    self.fix_other_features = fix_other_features
-
-
   def search_input_close_to(self, x, target: BFcTarget):
     lc = self.layer_encoders[target.fnode.flayer.layer_index]
     problem = self.for_layer (target.fnode.flayer)
     activations = self.eval (x)
-    dimred_activations = lc.flayer.dimred_activations (activations)[0]
     cstrs = []
 
     prev = self.input_layer_encoder
@@ -169,6 +167,8 @@ class BFcPulpAnalyzer (_BFcPulpAnalyzer, BFcAnalyzer):
       cstrs.extend (le.pulp_replicate_behavior (activations, prev))
       prev = le
 
+    dimred_activations = lc.flayer.dimred_activations (activations)[0] \
+                         if self.fix_other_features else None
     for feature in lc.flayer.range_features ():
       if feature == target.fnode.feature:
         cstrs.extend (lc.pulp_constrain_outputs_in_feature_part \
@@ -195,14 +195,27 @@ class BFDcPulpAnalyzer (_BFcPulpAnalyzer, BFDcAnalyzer):
     lc0 = self.layer_encoders[target.flayer0.layer_index]
     lc1 = self.layer_encoders[target.fnode1.flayer.layer_index]
     problem = self.for_layer (target.fnode1.flayer)
+    activations = self.eval (x)
     cstrs = []
 
-    cstrs.extend (lc1.pulp_constrain_outputs_in_feature_part \
-                  (target.fnode1.feature, target.feature_part1))
+    prev = self.input_layer_encoder
+    for le in self.layer_encoders[:target.fnode1.flayer.layer_index]:
+      cstrs.extend (le.pulp_replicate_behavior (activations, prev))
+      prev = le
 
     for f0, f0p in enumerate (target.feature_parts0):
-      cstrs.extend (lc0.pulp_constrain_outputs_in_feature_part \
-                    (f0, f0p))
+      cstrs.extend (lc0.pulp_constrain_outputs_in_feature_part (f0, f0p))
+
+    dimred_activations = lc1.flayer.dimred_activations (activations)[0] \
+                         if self.fix_other_features else None
+    for feature in lc1.flayer.range_features ():
+      if feature == target.fnode1.feature:
+        cstrs.extend (lc1.pulp_constrain_outputs_in_feature_part \
+                      (target.fnode1.feature, target.feature_part1))
+      elif self.fix_other_features:
+        cstrs.extend (lc1.pulp_replicate_feature_value \
+                      (feature, dimred_activations[feature],
+                       approx = False))
 
     # cstrs.extend(lc.pulp_replicate_activations_outside_of_feature (
     #   target.fnode.feature, self.eval (x),

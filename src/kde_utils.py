@@ -43,10 +43,10 @@ class KDESplit:
     assert (self.dip_prominence_prop >= 0.0 and
             self.dip_prominence_prop < 1.0)
     assert (self.topline_density_prop > 0.0 and
-            self.topline_density_prop < 1.0)
+            self.topline_density_prop <= 1.0)
     assert (self.baseline_density_prop > 0.0 and
             self.baseline_density_prop < 1.0)
-    assert (self.baseline_density_prop < self.topline_density_prop)
+    assert (self.baseline_density_prop <= self.topline_density_prop)
     assert (self.bandwidth_prop > 0.0 and
             self.bandwidth_prop <= 1.0)
     assert (self.min_width > 0.0)
@@ -60,7 +60,10 @@ class KDESplit:
     return validate_strarg (('dens', 'logl'),
                             'KDE space specification') (v, s)
 
-  def fit_split (self, yy, bandwidth = None):
+  def fit_kde (self, yy, bandwidth = None,
+               logspace_min = -1.5,
+               logspace_max = .5,
+               logspace_steps = 8):
     # Add some padding around yy's range
     yymin, yymax = np.amin (yy), np.amax (yy)
     sD = yymax - yymin
@@ -80,25 +83,33 @@ class KDESplit:
     # probably even better: make multiple splits with k ShuffleSplit
     # samples, cluster the proposed splits, and take averages.
     if bandwidth is None:
+      logspace = np.logspace (logspace_min, logspace_max, logspace_steps)
       grid = GridSearchCV (KernelDensity (kernel = 'gaussian'),
-                           {'bandwidth': np.logspace (-1.5, .5, 8) * sD},
+                           {'bandwidth': logspace * sD},
                            n_jobs = self.n_jobs)
       grid.fit (yy.reshape (-1, 1))
       kde = grid.best_estimator_
+      del grid
       # p1 ('Best bandwidth for feature {}: {}'.format(fi, kde.bandwidth))
     else:
       kde = KernelDensity (kernel = 'gaussian', bandwidth = bandwidth)
       kde.fit (yy.reshape (-1, 1))
     # tp1 ('Bandwidth for feature {}: {}'.format(fi, sD * self.bandwidth_prop))
     # kde = KernelDensity (kernel = 'gaussian', bandwidth = sD * self.bandwidth_prop)
-    self.kde_ = kde
+
+    return s, sL, kde
+
+
+  def fit_split (self, yy, bandwidth = None):
+    s, sL, kde = self.fit_kde (yy, bandwidth = bandwidth)
+    l = kde.score_samples (s.reshape(-1, 1))
     self.bandwidth_ = kde.bandwidth
+    self.kde_split_ = kde
 
     id = lambda x: x
     logl2cspace, cspace2dens, cspace2logl, dens2cspace = ( \
         (id,     np.exp, id,      np.log) if self.dip_space == 'logl' else
         (np.exp, id, np.log, np.negative))
-    l = kde.score_samples (s.reshape(-1, 1))
     p = logl2cspace (l)
 
     # Find dips.
@@ -155,22 +166,52 @@ class KDESplit:
           (cspace2logl, 'log-likelihood') if plot_space == 'logl' else \
           (cspace2dens, 'density')
 
-      self.pltdata_[plot_space] = \
-          (self.splits_, s, p, dips, pltspace, ylabel,
-           properties["prominences"], properties["width_heights"],
-           sL (properties["left_ips"]), sL (properties["right_ips"]))
+      split_infos = (self.splits_, dips,
+                     properties["prominences"], properties["width_heights"],
+                     sL (properties["left_ips"]), sL (properties["right_ips"]))
+      self.pltdata_[plot_space] = (s, p, pltspace, ylabel, split_infos)
 
 
-  def plot_splits (self, ax, plot_space):
+  def plot_kde (self, ax, plot_space, yy,
+                extrema = None,
+                lineprops = {},
+                **kde_kwds):
     if plot_space not in self.pltdata_:
       return None
 
-    bin_edges, s, p, dips, pltspace, ylabel, prominences, width_heights, \
-      left_ips, right_ips = self.pltdata_[plot_space]
+    s, sL, kde = self.fit_kde (yy, **kde_kwds)
+    l = kde.score_samples (s.reshape(-1, 1))
+    id = lambda x: x
+    logl2cspace, cspace2dens, cspace2logl, dens2cspace = ( \
+        (id,     np.exp, id,      np.log) if self.dip_space == 'logl' else
+        (np.exp, id, np.log, np.negative))
+    p = logl2cspace (l)
+    pltspace = cspace2logl if plot_space == 'logl' else cspace2dens
 
     pp = pltspace (p)
-    ymin, ymax = np.amin (pp), np.amax (pp)
-    if self.plot_splits_:
+    ax.plot (s, pp, **lineprops)
+    return self._extrema (pp, extrema)
+
+
+  def _extrema (self, pp, extrema):
+    yymin, yymax = np.amin (pp), np.amax (pp)
+    return {'ymin': yymin, 'ymax': yymax} if extrema is None else \
+           {'ymin': min (yymin, extrema['ymin']),
+            'ymax': max (yymax, extrema['ymax'])}
+
+
+
+  def plot_splits (self, ax, plot_space, extrema = None):
+    if plot_space not in self.pltdata_:
+      return None
+
+    s, p, pltspace, ylabel, splits_infos = self.pltdata_[plot_space]
+
+    pp = pltspace (p)
+    extrema = self._extrema (pp, extrema)
+    ymin, ymax = extrema['ymin'], extrema['ymax']
+    if self.plot_splits_ and splits_infos is not None:
+      bin_edges, dips, _, _, _, _ = splits_infos
       ax.vlines (x = bin_edges,
                  ymin = min (0., ymin),
                  ymax = max (0., ymax),
@@ -180,13 +221,14 @@ class KDESplit:
                  ymax = pltspace (p[dips]))
     ax.plot (s, pp)
     ax.set_ylabel (ylabel)
-    if self.plot_dip_markers:
+    if self.plot_dip_markers and splits_infos is not None:
+      _, dips, prominences, width_heights, left_ips, right_ips = splits_infos
       ax.vlines (x = s[dips], color = "r",
                  ymin = pltspace (p[dips] + prominences),
                  ymax = pltspace (p[dips]))
       ax.hlines (y = pltspace (-width_heights), color = "r",
                  xmin = left_ips, xmax = right_ips)
-    return {'ymin': ymin, 'ymax': ymax}
+    return extrema
 
 
   @staticmethod

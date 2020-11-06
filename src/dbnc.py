@@ -26,7 +26,8 @@ from pomegranate.distributions import (DiscreteDistribution,
 _log_test_selection_level = 2
 _log_progress_level = 3
 _log_interval_distance_level = 2
-_log_feature_discr_level = 10
+_log_feature_marginals_level = 3
+_log_all_feature_marginals_level = 4
 
 # ---
 
@@ -106,6 +107,7 @@ class KBinsFeatureDiscretizer (FeatureDiscretizer, KBinsDiscretizer):
   def __init__(self,
                kde_dip_space = 'dens',
                kde_dip_prominence_prop = None,
+               kde_topline_density_prop = None,
                kde_baseline_density_prop = None,
                kde_bandwidth_prop = None,
                kde_min_width = None,
@@ -115,6 +117,7 @@ class KBinsFeatureDiscretizer (FeatureDiscretizer, KBinsDiscretizer):
                kde_plot_dip_markers = None,
                kde_plot_training_samples = 500,
                kde_plot_one_splitter_only = False,
+               kde_plot_incorrectly_classified = False,
                n_jobs = None,
                **kwds):
     super().__init__(**kwds)
@@ -127,6 +130,7 @@ class KBinsFeatureDiscretizer (FeatureDiscretizer, KBinsDiscretizer):
     self.kde_ = []
     self.kde_split_args = dict (dip_space = kde_dip_space,
                                 dip_prominence_prop = kde_dip_prominence_prop,
+                                topline_density_prop = kde_topline_density_prop,
                                 baseline_density_prop = kde_baseline_density_prop,
                                 bandwidth_prop = kde_bandwidth_prop,
                                 min_width = kde_min_width,
@@ -136,6 +140,7 @@ class KBinsFeatureDiscretizer (FeatureDiscretizer, KBinsDiscretizer):
                                 n_jobs = n_jobs)
     self.kde_plot_actual_splits = some (kde_plot_actual_splits, True)
     self.kde_plot_one_splitter_only = some (kde_plot_one_splitter_only, False)
+    self.kde_plot_incorrectly_classified = some (kde_plot_incorrectly_classified, False)
 
   def feature_parts (self, feature) -> int:
     return self.n_bins_[feature]
@@ -194,7 +199,9 @@ class KBinsFeatureDiscretizer (FeatureDiscretizer, KBinsDiscretizer):
 
   def _kde_plot (self, _x, y, _feat_extr,
                  true_labels = None, pred_labels = None, layer = None,
-                 outdir: OutputDir = None, **kwds):
+                 outdir: OutputDir = None,
+                 y2plot = None, y2plot_labels = None,
+                 **kwds):
 
     if self.kde_split_args['plot_spaces'] is None:
       return
@@ -206,6 +213,8 @@ class KBinsFeatureDiscretizer (FeatureDiscretizer, KBinsDiscretizer):
     tp1 (f'KDE: Plotting discretized features...')
 
     KDESplit.setup_plot_style ()
+    plot_incorrects = self.kde_plot_incorrectly_classified and \
+                      y2plot is not None and len (y2plot) > 0
 
     cmap = None
     if true_labels is not None:
@@ -218,8 +227,19 @@ class KBinsFeatureDiscretizer (FeatureDiscretizer, KBinsDiscretizer):
                            bottom = 0.03, top = 0.99)
       for fi, splitters in enumerate (self.splitters_):
         axi = ax[fi] if len (self.splitters_) > 1 else ax
+        extrema = None
         for splitter in splitters:
-          extrema = splitter.plot_splits (axi, plot_space)
+          if plot_incorrects:
+            extrema = splitter.plot_kde (axi, plot_space, y2plot,
+                                         lineprops = dict (color = 'red',
+                                                           linewidth = 2,
+                                                           linestyle = 'dotted'),
+                                         logspace_min = -2,
+                                         logspace_max = .5,
+                                         logspace_steps = 10,
+                                         extrema = extrema)
+          extrema = splitter.plot_splits (axi, plot_space,
+                                          extrema = extrema)
           if self.kde_plot_one_splitter_only: break
         if extrema is not None and self.kde_plot_training_samples > 0:
           # customizable sub-sampling to keep graphs lightweight
@@ -228,6 +248,13 @@ class KBinsFeatureDiscretizer (FeatureDiscretizer, KBinsDiscretizer):
           axi.scatter (yy,
                        - 0.06 * extrema['ymax'] * np.random.random (yy.shape[0]),
                        marker = 'o', c = true_labels[:subyy], cmap = cmap)
+          if plot_incorrects:
+            subyy = min (len (y2plot), self.kde_plot_training_samples)
+            yy = y2plot[:subyy, fi]
+            axi.scatter (yy,
+                         0.01 + 0.06 * extrema['ymax'] * np.random.random (yy.shape[0]),
+                         marker = '+', c = y2plot_labels[:subyy], cmap = cmap)
+            axi.axhline (c = 'grey', lw = .2)
         if extrema is not None and self.kde_plot_actual_splits:
           axi.vlines (x = self.bin_edges_[fi],
                       ymin = min (0., extrema['ymin']),
@@ -296,6 +323,7 @@ class BFcLayer (CoverableLayer):
     assert isinstance (discretization, FeatureDiscretizer)
     self.transform = transform
     self.discr = discretization
+    self.skip = 0
 
   def get_params (self, deep = True):
     return dict (name = self.layer.name,
@@ -307,13 +335,7 @@ class BFcLayer (CoverableLayer):
     '''
     Number of extracted features for the layer.
     '''
-    return len (self.transform[-1].components_)
-
-
-  @property
-  def num_feature_parts (self) -> Sequence[int]:
-    return [ self.discr.feature_parts (feature)
-             for feature in self.range_features () ]
+    return len (self.transform[-1].components_) - self.skip
 
 
   def range_features (self):
@@ -321,6 +343,12 @@ class BFcLayer (CoverableLayer):
     Range over all feature indexes.
     '''
     return range (self.num_features)
+
+
+  @property
+  def num_feature_parts (self) -> Sequence[int]:
+    return [ self.discr.feature_parts (feature)
+             for feature in self.range_features () ]
 
 
   def flatten_map (self, map, acc = None):
@@ -332,7 +360,7 @@ class BFcLayer (CoverableLayer):
 
   def dimred_activations (self, acts, acc = None):
     x = np.vstack([a.flatten () for a in acts[self.layer_index]])
-    y = self.transform.transform (x)
+    y = self.transform.transform (x)[:,self.skip:]
     acc = np.hstack ((acc, y)) if acc is not None else y
     del x
     if acc is not y: del y
@@ -341,7 +369,7 @@ class BFcLayer (CoverableLayer):
 
   def dimred_n_discretize_activations (self, acts, acc = None):
     x = np.vstack([a.flatten () for a in acts[self.layer_index]])
-    y = self.discr.transform (self.transform.transform (x))
+    y = self.discr.transform (self.transform.transform (x)[:,self.skip:])
     acc = np.hstack ((acc, y.astype (int))) if acc is not None else y.astype (int)
     del x, y
     return acc
@@ -457,7 +485,7 @@ class _BaseBFcCriterion (Criterion):
     self.base_dimreds = None
     self.total_registered_cases = 0     # as modeled in BN
     self.outdir = outdir or OutputDir ()
-    self._log_feature_distr = None
+    self._log_feature_marginals = None
     super().__init__(*args, **kwds)
     self._reset_progress ()
 
@@ -508,22 +536,30 @@ class _BaseBFcCriterion (Criterion):
     self._reset_progress ()
 
 
+  def _log_discr_level (self, log_prefix = '| '):
+    if self.verbose >= _log_all_feature_marginals_level:
+      for feature, bn_node in enumerate (self.N.states):
+        p1 ('{} feature-{} distribution: {}'
+            .format (log_prefix, feature,
+                     self._probas (bn_node.distribution.marginal ())))
+    elif self.verbose >= _log_feature_marginals_level and \
+             self._log_feature_marginals is not None:
+      bn_node = self.N.states[self._log_feature_marginals]
+      p1 ('{} feature-{} distribution: {}'
+          .format (self._log_feature_marginals,
+                   self._probas (bn_node.distribution.marginal ())))
+
+
   def fit_activations (self, acts):
     facts = self.dimred_n_discretize_activations (acts)
     nbase = self.total_registered_cases
     self.total_registered_cases += len (facts)
-    if self.verbose >= _log_feature_discr_level and self._log_feature_distr is not None:
-      p1 ('| Old feature-{} distribution: {}'
-          .format (self._log_feature_distr,
-                   self._probas (self.N.states[self._log_feature_distr].distribution)))
+    self._log_discr_level ('| Old')
     self.N.fit (facts,
                 inertia = nbase / self.total_registered_cases,
                 n_jobs = int (self.bn_abstr_n_jobs))
-    if self.verbose >= _log_feature_discr_level and self._log_feature_distr is not None:
-      p1 ('| New feature-{} distribution: {}'
-          .format (self._log_feature_distr,
-                   self._probas (self.N.states[self._log_feature_distr].distribution)))
-      self._log_feature_distr = None
+    self._log_discr_level ('| New')
+    self._log_feature_marginals = None
 
 
   def register_new_activations (self, acts) -> None:
@@ -608,7 +644,7 @@ class _BaseBFcCriterion (Criterion):
                                                   old_v, new_v,
                                                   old_dist, new_dist)),
                       '\n')
-      self._log_feature_distr = feature
+      self._log_feature_marginals = feature
       return old_dist - new_dist, new_dist
     return aux
 
@@ -716,9 +752,15 @@ class _BaseBFcCriterion (Criterion):
 
     if true_labels is not None and pred_labels is not None:
       ok_labels = (np.asarray(true_labels) == np.asarray(pred_labels))
-      ok_acts = { layer: acts[layer][ok_labels] for layer in acts }
+      ok_acts = { layer: acts[layer][ ok_labels] for layer in acts }
+      ko_acts = { layer: acts[layer][~ok_labels] for layer in acts }
+      ok_labels = true_labels[ ok_labels]
+      ko_labels = true_labels[~ok_labels]
     else:
       ok_acts = acts
+      ok_labels = true_labels
+      ko_acts = {}
+      ko_labels = []
 
     ts0 = len(ok_acts[self.flayers[0].layer_index])
     cp1 ('| Given training data of size {}'.format (ts0))
@@ -732,34 +774,63 @@ class _BaseBFcCriterion (Criterion):
     # First, fit feature extraction and discretizer parameters:
     for fl in self.flayers:
       p1 ('| Extracting and discretizing features for layer {}... '.format (fl))
-      x = np.stack([a.flatten () for a in ok_acts[fl.layer_index]], axis = 0)
+      x_ok = np.stack([a.flatten () for a in ok_acts[fl.layer_index]], axis = 0)
+
       tp1 ('Extracting features...')
+
       if fts is None:
-        y = fl.transform.fit_transform (x)
+        y_ok = fl.transform.fit_transform (x_ok)
       else:
         # Copying the inputs here as we pass `copy = False` when
         # constructing the pipeline.
-        fl.transform.fit (copy.copy (x[:fts]))
-        y = fl.transform.transform (x)
-      p1 ('| Extracted {} feature{}'.format (*s_(y.shape[1])))
+        fl.transform.fit (copy.copy (x_ok[:fts]))
+        y_ok = fl.transform.transform (x_ok)
+      p1 ('| Extracted {} feature{}'.format (*s_(y_ok.shape[1])))
+      if fl.skip > 0:
+        p1 ('| Skipping {} feature{}'.format (*s_(fl.skip)))
+
+      fit_wrt_args = {}
+      if ko_acts != {}:
+        x_ko = np.stack([a.flatten () for a in ko_acts[fl.layer_index]], axis = 0)
+        y_ko = fl.transform.transform (x_ko)
+        fit_wrt_args = dict (y2plot = y_ko[:,fl.skip:],
+                             y2plot_labels = ko_labels)
+
       tp1 ('Discretizing features...')
-      fl.discr.fit_wrt (x, y, fl.transform, layer = fl, **kwds,
-                        outdir = self.outdir)
+
+      fl.discr.fit_wrt (x_ok[:,fl.skip:],
+                        y_ok[:,fl.skip:],
+                        fl.transform,
+                        layer = fl,
+                        **kwds,
+                        true_labels = ok_labels,
+                        outdir = self.outdir,
+                        **fit_wrt_args)
+
       for fi, nints in enumerate (fl.discr.n_bins_):
         p1 ('| Discretization of feature {} involes {} interval{}'
             .format (fi, *s_(nints)))
-      p1 ('| Discretized {} feature{}'.format (*s_(y.shape[1])))
-      del x, y
+      p1 ('| Discretized {} feature{}'.format (*s_(len (fl.discr.n_bins_))))
+      del x_ok, y_ok, x_ko, y_ko
 
     self.explained_variance_ratios_ = \
-      { str(fl): fl.transform[-1].explained_variance_ratio_.tolist ()
+      { str(fl): (fl.transform[-1].explained_variance_ratio_[fl.skip:].tolist (),
+                  fl.transform[-1].explained_variance_ratio_.tolist ())
         for fl in self.flayers
         if hasattr (fl.transform[-1], 'explained_variance_ratio_') }
 
     # Report on explained variance
     for fl in self.explained_variance_ratios_:
-      p1 ('| Captured variance ratio for layer {} is {:6.2%}'
-          .format (fl, sum (self.explained_variance_ratios_[fl])))
+      variance_ratios = self.explained_variance_ratios_[fl]
+      partv, totv = sum (variance_ratios[0]), sum (variance_ratios[1])
+      if totv == partv:
+        p1 ('| Captured variance ratio for layer {} is {:6.2%}'
+            .format (fl, totv))
+      else:
+        p1 ('| Captured variance ratio for layer {} is {:6.2%}'
+            ' (over a total of {:6.2%} extracted)'
+            .format (fl, partv, totv))
+
 
     # Second, fit some distributions with input layer values (NB: well, actually...)
     # Third, contruct the Bayesian Network
