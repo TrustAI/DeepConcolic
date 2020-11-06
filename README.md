@@ -22,12 +22,13 @@ usage: deepconcolic.py [-h] [--model MODEL] [--inputs DIR] --outputs DIR
                        [--max-iterations INT] [--save-all-tests]
                        [--rng-seed SEED] [--labels FILE]
                        [--dataset {mnist,fashion_mnist,cifar10,OpenML:har}]
-                       [--vgg16-model] [--filters {LOF}] [--norm linf, l0]
-                       [--input-rows INT] [--input-cols INT]
-                       [--input-channels INT] [--cond-ratio FLOAT]
-                       [--top-classes INT] [--layers LAYER [LAYER ...]]
-                       [--feature-index INT] [--fuzzing] [--num-tests INT]
-                       [--num-processes INT] [--sleep-time INT]
+                       [--extra-tests DIR [DIR ...]] [--vgg16-model]
+                       [--filters {LOF}] [--norm linf, l0] [--input-rows INT]
+                       [--input-cols INT] [--input-channels INT]
+                       [--cond-ratio FLOAT] [--top-classes INT]
+                       [--layers LAYER [LAYER ...]] [--feature-index INT]
+                       [--fuzzing] [--num-tests INT] [--num-processes INT]
+                       [--sleep-time INT]
 
 Concolic testing for neural networks
 
@@ -51,6 +52,8 @@ optional arguments:
   --labels FILE         the default labels
   --dataset {mnist,fashion_mnist,cifar10,OpenML:har}
                         selected dataset
+  --extra-tests DIR [DIR ...]
+                        additonal directories of test images
   --vgg16-model         vgg16 model
   --filters {LOF}       additional filters used to put aside generated test
                         inputs that are too far from training data (there is
