@@ -119,12 +119,12 @@ class _BFcPulpAnalyzer (Analyzer, PulpSolver4DNN):
 
   def __init__(self,
                input_metric: PulpLinearMetric = None,
-               fix_other_features = False,
+               fix_untargetted_features = False,
                **kwds):
     assert isinstance (input_metric, PulpLinearMetric)
     super().__init__(**kwds)
     self.metric = input_metric
-    self.fix_other_features = fix_other_features
+    self.fix_untargetted_features = fix_untargetted_features
 
 
   def finalize_setup(self, clayers):
@@ -168,12 +168,12 @@ class BFcPulpAnalyzer (_BFcPulpAnalyzer, BFcAnalyzer):
       prev = le
 
     dimred_activations = lc.flayer.dimred_activations (activations)[0] \
-                         if self.fix_other_features else None
+                         if self.fix_untargetted_features else None
     for feature in lc.flayer.range_features ():
       if feature == target.fnode.feature:
         cstrs.extend (lc.pulp_constrain_outputs_in_feature_part \
                       (target.fnode.feature, target.feature_part))
-      elif self.fix_other_features:
+      elif self.fix_untargetted_features:
         cstrs.extend (lc.pulp_replicate_feature_value \
                       (feature, dimred_activations[feature],
                        approx = False))
@@ -207,12 +207,12 @@ class BFDcPulpAnalyzer (_BFcPulpAnalyzer, BFDcAnalyzer):
       cstrs.extend (lc0.pulp_constrain_outputs_in_feature_part (f0, f0p))
 
     dimred_activations = lc1.flayer.dimred_activations (activations)[0] \
-                         if self.fix_other_features else None
+                         if self.fix_untargetted_features else None
     for feature in lc1.flayer.range_features ():
       if feature == target.fnode1.feature:
         cstrs.extend (lc1.pulp_constrain_outputs_in_feature_part \
                       (target.fnode1.feature, target.feature_part1))
-      elif self.fix_other_features:
+      elif self.fix_untargetted_features:
         cstrs.extend (lc1.pulp_replicate_feature_value \
                       (feature, dimred_activations[feature],
                        approx = False))
