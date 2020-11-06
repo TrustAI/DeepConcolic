@@ -13,7 +13,6 @@ import plotting
 # Some defaults:
 
 train_size = 20000
-num_runs = 3
 max_iterations = 100
 
 init_tests_range = (10, 100, 1000)
@@ -395,6 +394,62 @@ def run (args):
 parser_run = subparsers.add_parser ('run')
 parser_run.set_defaults (func = run)
 add_run_args (parser_run)
+
+# ---
+
+def add_randrun_args (parser):
+  add_run_common_args (parser)
+  parser.add_argument ('-c', '--criterion', required = True,
+                       choices = ('bfc', 'bfdc'),
+                       help = 'criterion to focus on')
+  parser.add_argument ('-n', '--total-runs', dest = 'total_runs',
+                       type = int, default = 1, metavar = 'INT',
+                       help = 'total number of runs (default is 1)',)
+
+def randrun (args):
+  test_object, outs = setup_run_common (args)
+  max_iterations = args.max_iterations
+  train_size = args.train_size
+  crit = args.criterion
+
+  global_outdir = OutputDir (f'{outs}/{crit}/', log = False)
+  append_results = setup_results_file (global_outdir,
+                                       discr_fields = ('n_bins',))
+
+  discr_strats = ('KDE',) + tuple (range (1, 6))
+
+  _run = 0
+  while _run < args.total_runs:
+    _run += 1
+
+    # draw parameters
+    tech = random.choice (all_feat_extr_techs)
+    N = random.randint (1, 6)
+    discr_strat = random.choice (discr_strats)
+    init_tests = random.choice (init_tests_range)
+
+    n_bins, discr_strat = (0, discr_strat) if discr_strat == 'KDE' else \
+                          (discr_strat, f'U{discr_strat}')
+
+    # setup output directory for this run
+    basename = f'{crit}-{tech}-N{N}-X{init_tests}-{discr_strat}'
+    outdir = global_outdir.fresh_dir (basename, enable_stamp = False,
+                                      log = True)
+
+    extra_descr = ('kde', 0, run) if discr_strat == 'KDE' else \
+                  ('uniform', n_bins, run)
+    discr = discr_kde if discr_strat == 'KDE' else \
+            lambda : discr_uniform (n_bins = n_bins)
+    runit (test_object, outdir, append_results,
+           init_tests, (crit, tech, N),
+           extra_descr = extra_descr,
+           discr = discr,
+           max_iterations = max_iterations,
+           train_size = train_size)
+
+parser_randrun = subparsers.add_parser ('randrun')
+parser_randrun.set_defaults (func = randrun)
+add_randrun_args (parser_randrun)
 
 # ---
 

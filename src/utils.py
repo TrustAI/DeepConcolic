@@ -200,6 +200,14 @@ class OutputDir:
   def stamped_filepath(self, *args, **kwds) -> str:
     return self.dirpath + self.stamped_filename (*args, **kwds)
 
+  def fresh_dir(self, basename, suff_fmt = '-{:x}', **kwds):
+    outdir = self.filepath (basename + suff_fmt.format (random.getrandbits (16)))
+    try:
+      os.makedirs (outdir)
+      return OutputDir (outdir, **kwds)
+    except FileExistsError:
+      return self.fresh_dir (basename, suff_fmt = suff_fmt, **kwds)
+
 # ---
 
 def _write_in_file (f, mode, *fmts):
