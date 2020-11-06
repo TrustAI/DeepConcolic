@@ -1,5 +1,6 @@
 import argparse
 import yaml
+from pathlib import Path
 from utils import *
 from bounds import UniformBounds, StatBasedInputBounds
 from deepconcolic_fuzz import deepconcolic_fuzz
@@ -139,6 +140,9 @@ def main():
                       help="the default labels", metavar="FILE")
   parser.add_argument("--dataset", dest='dataset',
                       help="selected dataset", choices=datasets.choices)
+  parser.add_argument("--extra-tests", dest='extra_testset_dirs', metavar="DIR",
+                      type=Path, nargs="+",
+                      help="additonal directories of test images")
   parser.add_argument("--vgg16-model", dest='vgg16',
                       help="vgg16 model", action="store_true")
   parser.add_argument("--filters", dest='filters', # nargs='+'
@@ -232,13 +236,21 @@ def main():
                  None
     amplify_diffs = kind in datasets.image_kinds
     lower_bound_metric_hard = 1 / 255
-    lower_bound_metric_noise = 0.2
+    lower_bound_metric_noise = 0.1
     input_bounds = UniformBounds () if kind in datasets.image_kinds else \
                    StatBasedInputBounds (hard_bounds = UniformBounds (-1.0, 1.0)) \
                    if kind in datasets.normalized_kinds else StatBasedInputBounds ()
     print ('done.')
   else:
     sys.exit ('Missing input dataset')
+
+  if args.extra_testset_dirs is not None:
+    for d in args.extra_testset_dirs:
+      np1 (f'Loading extra image testset from `{str(d)}\'... ')
+      x, y, _, _, _ = datasets.images_from_dir (str (d))
+      x_test = np.concatenate ((x_test, x))
+      y_test = np.concatenate ((y_test, y))
+      print ('done')
 
   input_filters = []
   for f in args.filters:

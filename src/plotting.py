@@ -70,21 +70,32 @@ pgf_setup ()
 
 # ---
 
-def subplots (*args, figsize = None, **kwds):
-  figsize = figsize or (pgf_default_figsize if pgf else png_default_figsize)
-  if plt:
-    return plt.subplots (*args, figsize = figsize, **kwds)
-  else:
-    return None
+def _def (f):
+  def __aux (*args, figsize = None, figsize_adjust = (1.0, 1.0), **kwds):
+    if not plt:
+      return None
+    figsize = figsize or (pgf_default_figsize if pgf else png_default_figsize)
+    figsize = tuple (figsize[i] * figsize_adjust[i] for i in (0, 1))
+    return f (*args, figsize = figsize, **kwds)
+  return __aux
+
+figure = _def (plt.figure)
+subplots = _def (plt.subplots)
 
 # import tikzplotlib
 
-def show (fig = None, outdir: OutputDir = None, basefilename = None):
+def show (fig = None, outdir: OutputDir = None, basefilename = None, **kwds):
   if plt:
     if not pgf and not png:
       plt.show ()
     elif fig is not None and basefilename is not None:
-      plt.tight_layout (pad = 0, w_pad = 0.1, h_pad = 0.1)
+      if not fig.get_constrained_layout ():
+        plt.tight_layout (**{**dict(pad = 0, w_pad = 0.1, h_pad = 0.1),
+                             **kwds})
+      else:
+        fig.set_constrained_layout_pads(**{**dict(w_pad = 0.01, h_pad = 0.01,
+                                                  hspace=0., wspace=0.),
+                                           **kwds})
       outdir = OutputDir () if outdir is None else outdir
       assert isinstance (outdir, OutputDir)
       if png:

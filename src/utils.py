@@ -291,6 +291,12 @@ def validate_strarg (valid, spec):
                         '{}'.format (spec, s, v, valid))
   return aux
 
+def validate_inttuplearg (v, s):
+  if isinstance (s, tuple) and all (isinstance (se, int) for se in s):
+    return
+  raise ValueError ('Invalid value for argument `{}\': expected tuple of ints'
+                    .format (v))
+
 # ---
 
 # Do we really manipulate many DNNs at once?
