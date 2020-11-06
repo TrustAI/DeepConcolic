@@ -278,6 +278,21 @@ def get_cover_layers (dnn, constr, layer_indices = None,
 
 # ---
 
+def validate_strarg (valid, spec):
+  def aux (v, s):
+    if s is not None and s not in valid:
+      raise ValueError ('Unknown {} `{}\' for argument `{}\': expected one of '
+                        '{}'.format (spec, s, v, valid))
+  return aux
+
+def validate_inttuplearg (v, s):
+  if isinstance (s, tuple) and all (isinstance (se, int) for se in s):
+    return
+  raise ValueError ('Invalid value for argument `{}\': expected tuple of ints'
+                    .format (v))
+
+# ---
+
 # Do we really manipulate many DNNs at once?
 from functools import lru_cache
 @lru_cache(4)
