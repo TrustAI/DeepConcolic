@@ -533,6 +533,7 @@ def plots (args):
   if not args.no_ica_progress:
     T_ica = T[T['tech'] == 'pca']
     P_ica = T_ica['progress']
+    P_ica = [ P for P in P_ica if len (P.shape) > 0 ]
     nDists = np.concatenate([P['new_dist'].astype (float) for P in P_ica ])
     oDists = np.concatenate([P['old_dist'].astype (float) for P in P_ica ])
     dDists = oDists - nDists
@@ -542,12 +543,12 @@ def plots (args):
                                  constrained_layout = True)
     ax[0].hist (nDists, bins = 200)
     ax[0].axvline (x = 0, lw = 1, color = 'black')
-    ax[0].set_ylabel ('\#steps where new distance is $d$')
-    ax[0].set_xlabel ('Distance ($d$)')
+    ax[0].set_ylabel (r'\#steps where new distance is $d$')
+    ax[0].set_xlabel (r'Distance ($d$)')
     ax[1].hist (dDists, bins = 200)
     ax[1].axvline (x = 0, lw = 1, color = 'black')
-    ax[1].set_ylabel ('\#steps where progress is $\delta$')
-    ax[1].set_xlabel ('Progress ($\delta$)')
+    ax[1].set_ylabel (r'\#steps where progress is $\delta$')
+    ax[1].set_xlabel (r'Progress ($\delta$)')
     plotting.show (fig,
                    outdir = outdir,
                    basefilename = filename ('ica-dist-n-progress'),
@@ -585,13 +586,19 @@ def plots (args):
     from matplotlib.ticker import StrMethodFormatter
     for init_tests, axi in zip (T_init_tests, it_(ax[1])):
       for run in T_init_tests[init_tests]:
+        if len (run['report']) == 0:
+          continue
         axi.plot (run['report']['coverage'] - run['report']['coverage'][0],
                   **plot_style (run))
       axi.yaxis.set_major_formatter(StrMethodFormatter('{x:2.1f}'))
 
     for init_tests, axi in zip (T_init_tests, it_(ax[2])):
-      init_covs  = [run['report']['coverage'][ 0] for run in T_init_tests[init_tests]]
-      final_covs = [run['report']['coverage'][-1] for run in T_init_tests[init_tests]]
+      init_covs  = [run['report']['coverage'][ 0]
+                    for run in T_init_tests[init_tests]
+                    if len (run['report']) > 0]
+      final_covs = [run['report']['coverage'][-1]
+                    for run in T_init_tests[init_tests]
+                    if len (run['report']) > 0]
       bp = axi.boxplot ([init_covs, final_covs],
                         positions = [0, 20], widths = 6,
                         # labels = [r'initial ($i=0$)', 'final'],
@@ -601,7 +608,7 @@ def plots (args):
       axi.yaxis.set_major_formatter(StrMethodFormatter('{x:2.1f}'))
       for box in bp['boxes']: box.set(linewidth=.5)
       for box in bp['caps']: box.set(linewidth=.5)
-      plotting.plt.setp(axi.get_xticklabels(), visible=False)
+      plt.setp(axi.get_xticklabels(), visible=False)
 
     for init_tests, axi in zip (T_init_tests, it_(ax[1])):
       axi.xaxis.set_tick_params(which='both', labelbottom=True)
@@ -609,7 +616,8 @@ def plots (args):
     # Set labels and column titles:
     for init_tests, axi in zip (T_init_tests, it_(ax[0])):
       axi.set_title (f'$|X_0| = {init_tests}$')
-    ax[-1][1].set_xlabel (r'iteration ($i$)')
+    for axi in it_(ax[-1]):
+      axi.set_xlabel (r'iteration ($i$)')
     it_(ax[0])[0].set_ylabel (r'$|X_i| - |X_0|$')
     it_(ax[1])[0].set_ylabel (r'$' +
                               cov_label (Nms, r'X_i') +
@@ -619,6 +627,7 @@ def plots (args):
     it_(ax[2])[0].set_ylabel (r'$' +
                               cov_label (Nms, r'X_i') +
                               '$')
+    # it_(ax[-1])[(len (T_init_tests) - 1) // 2 + 1].set_xlabel (r'iteration ($i$)')
     plotting.show (fig,
                    basefilename = filename ('summary-per-X0'),
                    outdir = outdir,
