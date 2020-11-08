@@ -1240,15 +1240,17 @@ class BFDcTarget (NamedTuple, BNcTarget):
 # ---
 
 
-class BFDcAnalyzer (Analyzer4RootedSearch):
+class BFDcAnalyzer (BFcAnalyzer):
   """
   Analyzer dedicated to targets of type :class:`BDFcTarget`.
   """
 
   @abstractmethod
-  def search_input_close_to(self, x: Input, target: BFDcTarget) -> Optional[Tuple[float, Input]]:
+  def search_input_close_to(self, x: Input, target: Union[BFcTarget,BFDcTarget]) -> \
+          Optional[Tuple[float, Input]]:
     """
-    Method specialized for targets of type :class:`BFDcTarget`.
+    Method specialized for targets of either type :class:`BFDcTarget`
+    or :class:`BFcTarget`.
     """
     pass
 
@@ -1257,7 +1259,7 @@ class BFDcAnalyzer (Analyzer4RootedSearch):
 # ---
 
 
-class BFDcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
+class BFDcCriterion (BFcCriterion, Criterion4RootedSearch):
   '''
   Adaptation of MC/DC coverage for partitioned features.
   '''
@@ -1270,16 +1272,10 @@ class BFDcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
     assert isinstance (analyzer, BFDcAnalyzer)
     super().__init__(clayers, analyzer = analyzer, *args, **kwds)
     assert len(self.flayers) >= 2
-    self.ban = { fl: set () for fl in self.flayers }
 
 
   def __repr__(self):
     return "BFdC"
-
-
-  def reset (self):
-    super().reset ()
-    self.ban = { fl: set () for fl in self.flayers }
 
 
   def coverage (self) -> Coverage:
@@ -1289,7 +1285,7 @@ class BFDcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
     return self.bfdc_coverage (multiply_with_bfc = True)
 
 
-  def find_next_rooted_test_target (self) -> Tuple[Input, BFcTarget]:
+  def find_next_rooted_test_target (self) -> Tuple[Input, Union[BFcTarget,BFDcTarget]]:
 
     # Gather non-epsilon conditional probabilities:
     cpts = [ np.array (cpt) for cpt in self._all_cpts () ]
@@ -1319,7 +1315,10 @@ class BFDcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
             res = epsilon_cond_prob_index, fli, ti
 
     if res is None:
-      raise EarlyTermination ('Unable to find a new candidate input!')
+      if self.bfc_coverage ().done:
+        raise EarlyTermination ('Unable to find a new candidate input!')
+      else:
+        return super ().find_next_rooted_test_target ()
 
     epsilon_cond_prob_index, fli, ti = res
     feature = self.flayers[0].num_features + epsilon_cond_prob_index

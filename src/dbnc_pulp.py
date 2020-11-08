@@ -189,9 +189,12 @@ class BFcPulpAnalyzer (_BFcPulpAnalyzer, BFcAnalyzer):
 from dbnc import BFDcTarget, BFDcAnalyzer
 
 
-class BFDcPulpAnalyzer (_BFcPulpAnalyzer, BFDcAnalyzer):
+class BFDcPulpAnalyzer (BFcPulpAnalyzer, BFDcAnalyzer):
 
-  def search_input_close_to(self, x, target: BFDcTarget):
+  def search_input_close_to(self, x, target: Union[BFcTarget,BFDcTarget]):
+    if isinstance (target, BFcTarget):
+      return super ().search_input_close_to (x, target)
+
     lc0 = self.layer_encoders[target.flayer0.layer_index]
     lc1 = self.layer_encoders[target.fnode1.flayer.layer_index]
     problem = self.for_layer (target.fnode1.flayer)
