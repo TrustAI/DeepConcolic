@@ -5,9 +5,9 @@ import numpy as np
 from pulp import *
 from utils import *
 
-epsilon=0.0001
-UPPER_BOUND=100000000
-LOWER_BOUND=-100000000
+epsilon = 1e-4
+VAR_UPPER_BOUND = 1e8
+VAR_LOWER_BOUND = -1e8
 
 
 # ---
@@ -177,7 +177,7 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
               pass
         base_prob += LpConstraint(LpAffineExpression(affine_expr),
                                   LpConstraintEQ,
-                                  'c_name_{0}'.format(u_var),
+                                  'c_name_conv_{0}'.format(u_var),
                                   -float(biases[nidx[-1]]))
 
       if activation_is_relu (layer):
@@ -194,7 +194,7 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
           affine_expr.append((in_exprs[0][II], float(weights[II][nidx[-1]])))
         base_prob += LpConstraint(LpAffineExpression(affine_expr),
                                   LpConstraintEQ,
-                                  'c_name_{0}'.format(u_var),
+                                  'c_name_dense_{0}'.format(u_var),
                                   -float(biases[nidx[-1]]))
 
       if activation_is_relu (layer):
@@ -206,7 +206,7 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
         in_expr = in_exprs[0][iidx]
         out_var = out_vars[0][oidx]
         base_prob += LpConstraint (LpAffineExpression ([(out_var, -1), (in_expr, +1)]),
-                                   LpConstraintEQ, 'c_name_{0}'.format(out_var), 0.)
+                                   LpConstraintEQ, 'c_name_flatten_{0}'.format(out_var), 0.)
 
     elif is_maxpooling_layer(layer):
       pool_size = layer.pool_size
@@ -531,7 +531,8 @@ def gen_vars(layer_index, sp, var_names, flatten = False):
   var_names.append (np.empty (shape, dtype = LpVariable))
   for idx in np.ndindex (*shape):
     var = LpVariable('_'.join(str(i) for i in ("x", layer_index) + idx),
-                     lowBound = LOWER_BOUND, upBound = UPPER_BOUND)
+                     lowBound = VAR_LOWER_BOUND,
+                     upBound = VAR_UPPER_BOUND)
     var_names[layer_index][idx] = var
   return layer_index + 1
 
@@ -554,7 +555,7 @@ def same_act (base_name, v_vars, u_exprs, pos, ap_x):
 
   if ap_x [pos] >= 0:
     x  = [ LpConstraint (LpAffineExpression ([(v_vars[pos], +1), (u_exprs[pos], -1)]),
-                        LpConstraintEQ, cname + '_eq', 0.) ] if v_vars is not None else []
+                         LpConstraintEQ, cname + '_eq', 0.) ] if v_vars is not None else []
     x += [ LpConstraint (LpAffineExpression ([(u_exprs[pos], +1)]),
                          LpConstraintGE, cname + '_ge', epsilon)]
     return x
@@ -579,14 +580,14 @@ def neg_act (base_name, v_vars, u_exprs, pos, ap_x):
   cname = '_'.join(str(i) for i in ("na__", base_name, ) + pos)
 
   if ap_x [pos] < 0:
-    x = [ LpConstraint (LpAffineExpression ([(v_vars[pos], +1), (u_exprs[pos], -1)]),
-                        LpConstraintEQ, cname + '_eq', 0.) ] if v_vars is not None else []
+    x  = [ LpConstraint (LpAffineExpression ([(v_vars[pos], +1), (u_exprs[pos], -1)]),
+                         LpConstraintEQ, cname + '_eq', 0.) ] if v_vars is not None else []
     x += [ LpConstraint (LpAffineExpression ([(u_exprs[pos], +1)]),
                          LpConstraintGE, cname + '_ge', epsilon) ]
     return x
   else:
-    x = [ LpConstraint (LpAffineExpression ([(v_vars[pos], +1)]),
-                        LpConstraintEQ, cname + '_eq', 0.) ] if v_vars is not None else []
+    x  = [ LpConstraint (LpAffineExpression ([(v_vars[pos], +1)]),
+                         LpConstraintEQ, cname + '_eq', 0.) ] if v_vars is not None else []
     x += [ LpConstraint (LpAffineExpression ([(u_exprs[pos], +1)]),
                          LpConstraintLE, cname + '_le', -epsilon) ]
     return x

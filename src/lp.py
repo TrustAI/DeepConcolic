@@ -227,15 +227,18 @@ class PulpSolver4DNN (LpSolver4DNN):
     tp1 ('LP solving: {} constraints'.format(len(problem.constraints)))
     assert (problem.objective is not None)
     problem.solve (self.solver)
-    tp1 ('Solved!')
+    status = LpStatus[problem.status]
+    tp1 (status)
 
     result = None
-    if LpStatus[problem.status] == 'Optimal':
+    if status == 'Optimal':
       res = np.zeros (in_vars.shape)
       for idx, var in np.ndenumerate (in_vars):
         res[idx] = pulp.value (var)
       val = pulp.value(problem.objective)
       result = val, res
+    else:
+      p1 (status)
 
     for c in cstrs: del problem.constraints[c.name]
     del cstrs, extra_constrs
