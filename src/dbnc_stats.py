@@ -78,7 +78,7 @@ def run (test_object = None,
     # ('kde-dens-nozerosplit',         { 'strategy': 'kde', 'kde_space': 'dens', 'zerosplit_policy': 'never'      }, 0),
     # ('kde-dens-alwayszerosplit',     { 'strategy': 'kde', 'kde_space': 'dens', 'zerosplit_policy': 'always'     }, 0),
     # ('kde-dens-lastresortzerosplit', { 'strategy': 'kde', 'kde_space': 'dens', 'zerosplit_policy': 'lastresort' }, 0),
-    # ('kde',          { 'strategy': 'kde', 'extended': False }, 0),
+    ('kde',          { 'strategy': 'kde', 'extended': False }, 0),
     ('kde-extended', { 'strategy': 'kde', 'extended': True  }, 0),
     # ('kde-dens', { 'strategy': 'kde', 'kde_peak_space': 'dens', 'extended': True }, 0),
     # ('kde-logl-0.1-extended', { 'strategy': 'kde', 'kde_space': 'logl', 'extended': True, 'kde_peak_prominence_prop': 0.1 }, 0),
@@ -99,13 +99,13 @@ def run (test_object = None,
     # # ('kde-logl-0.5', { 'strategy': 'kde', 'kde_space': 'logl', 'kde_rel_height': 0.5 }, 0),
     # ('kde-dens-0.5', { 'strategy': 'kde', 'kde_space': 'dens', 'kde_rel_height': 0.5 }, 0),
     ('1-bin-extended',         { 'n_bins': 1, 'extended': True }, 3),
-    # ('2-bin-uniform',          { 'n_bins': 2, 'strategy': 'uniform', 'extended': False }, 2),
+    ('2-bin-uniform',          { 'n_bins': 2, 'strategy': 'uniform' }, 2),
+    ('3-bin-uniform',          { 'n_bins': 3, 'strategy': 'uniform' }, 3),
+    ('4-bin-uniform',          { 'n_bins': 4, 'strategy': 'uniform' }, 4),
     ('2-bin-uniform-extended', { 'n_bins': 2, 'strategy': 'uniform', 'extended': True  }, 4),
     ('3-bin-uniform-extended', { 'n_bins': 3, 'strategy': 'uniform', 'extended': True  }, 5),
-    ('2-bin-quantile-extended', { 'n_bins': 2, 'strategy': 'quantile', 'extended': True  }, 4),
-    ('3-bin-quantile-extended', { 'n_bins': 3, 'strategy': 'quantile', 'extended': True  }, 5),
-    # ('3-bin-uniform', { 'n_bins': 3, 'strategy': 'uniform' }, 3),
-    # ('4-bin-uniform', { 'n_bins': 4, 'strategy': 'uniform' }, 4),
+    # ('2-bin-quantile-extended', { 'n_bins': 2, 'strategy': 'quantile', 'extended': True  }, 4),
+    # ('3-bin-quantile-extended', { 'n_bins': 3, 'strategy': 'quantile', 'extended': True  }, 5),
     # ('2-bin-kmeans', { 'n_bins': 2, 'strategy': 'kmeans' }, 2),
     # ('3-bin-extended-uniform', { 'n_bins': 3, 'extended': True, 'strategy': 'uniform' }, 5),
     # ('2-bin-extended-kmeans', { 'n_bins': 2, 'extended': True, 'strategy': 'kmeans' }, 4),
@@ -130,14 +130,16 @@ def run (test_object = None,
   dbnc_analyzer = FakeBFcAnalyzer (analyzed_dnn = test_object.dnn,
                                    input_bounds = input_bounds)
   dbnc_train_size = 20000
-  test_sizes = ((1,) * 5 +
-                (2,) * 5 +
-                (3,) * 5 +
-                (5,) * 5 +
-                (10,) * 5 +
-                (50,) * 5 +
-                (100,) * 5 +
-                (200,) * 5)
+  mul = 3
+  test_sizes = ((1,) * mul +
+                (2,) * mul +
+                (3,) * mul +
+                (5,) * mul +
+                (10,) * mul +
+                (50,) * mul +
+                (100,) * mul#  +
+                # (200,) * 5
+                )
   # test_sizes = ((1,) *  5 + (10,) * 5 + (100,))
 
   tname = test_object.raw_data.name
@@ -211,7 +213,8 @@ def run (test_object = None,
   # print (y[test_nobar_idxs])
 
   train_acts = dbnc_analyzer.eval_batch (x_train[train_idxs], allow_input_layer = True)
-  train_acts = { j: train_acts[j] for j in test_object.layer_indices } if test_object.layer_indices is not None else train_acts
+  train_acts = { j: train_acts[j] for j in test_object.layer_indices } \
+               if test_object.layer_indices is not None else train_acts
 
   # test_acts = []
   # for test_idx in test_idxs:
