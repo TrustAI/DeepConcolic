@@ -42,8 +42,6 @@ parser.add_argument ("--outputs", dest = "outputs", required = True,
 
 # ---
 
-# Run
-
 def load_dataset (name):
   print ('Loading {} dataset... '.format (name), end = '', flush = True)
   (x_train, y_train), (x_test, y_test), dims, kind, _ = datasets.load_by_name (name)
@@ -59,7 +57,7 @@ def load_model (model):
   dnn.summary()
   return dnn
 
-def add_run_common_args (parser):
+def add_common_run_args (parser):
   parser.add_argument ('--model', dest='model', required = True,
                        help='the input neural network model (.h5)')
   parser.add_argument ("--dataset", dest='dataset', required = True,
@@ -70,10 +68,6 @@ def add_run_common_args (parser):
                        metavar = "INT", type = int, default = max_iterations,
                        help = "maximum number of engine iterations "
                        f'(default is {max_iterations})')
-  parser.add_argument ("--train-size", dest = "train_size",
-                       metavar = "INT", type = int, default = train_size,
-                       help = 'size of training dataset (default is '
-                       f'{train_size})')
 
 def setup_run_common (args):
   train_data, test_data = load_dataset (args.dataset)
@@ -83,6 +77,134 @@ def setup_run_common (args):
   return (test_object, args.outputs)
 
 # ---
+
+# NC: Engine setup and helper functions
+
+def setup_results_file (go):
+  return scripting.setup_results_file \
+         (go, 'crit', 'run',
+          'init_tests', 'total_iterations',
+          'setup_time', 'init_time', 'run_time',
+          'init_coverage', 'final_coverage',
+          'num_tests', 'num_adversarials')
+
+def generic_setup (outdir, init_tests, crit, test_object, **dc_kwargs):
+  report_args = dict (**base_report_args, outdir = outdir)
+  return deepconcolic (crit, 'linf',
+                       test_object, report_args,
+                       **dc_kwargs,
+                       initial_test_cases = init_tests,
+                       max_iterations = 0)
+
+def generic_run (test_object,
+                 outdir,
+                 append_results,
+                 init_tests,
+                 setup_args,
+                 max_iterations = max_iterations,
+                 **analyzer_args):
+
+  tic, get_times = scripting.init_tics ()
+  engine, report = generic_setup (outdir, init_tests, *setup_args,
+                                  test_object,
+                                  norm_args = norm_args,
+                                  input_bounds = input_bounds,
+                                  **analyzer_args)
+  init_coverage = engine.criterion.coverage ().as_prop
+
+  tic ()
+
+  report = engine.run (report = report, max_iterations = max_iterations)
+  final_coverage = engine.criterion.coverage ().as_prop
+
+  tic ()
+
+  append_results (str (c) for c in
+                  (*setup_args,
+                   init_tests, report.nsteps,
+                   *get_times (),
+                   init_coverage, final_coverage,
+                   report.num_tests,
+                   report.num_adversarials))
+
+# ---
+
+def add_generic_args (parser):
+  add_common_run_args (parser)
+  parser.add_argument ('-c', '--criterion', # required = True,
+                       choices = ('nc',), default ='nc',
+                       help = 'criterion to focus on')
+  parser.add_argument ('-n', '--total-runs', dest = 'total_runs',
+                       type = int, default = 1, metavar = 'INT',
+                       help = 'total number of runs (default is 1)',)
+
+def generic (args):
+  test_object, outs = setup_run_common (args)
+  max_iterations = args.max_iterations
+  crit = args.criterion
+
+  global_outdir = OutputDir (f'{outs}/{crit}/', log = False)
+  append_results = setup_results_file (global_outdir)
+
+  init_tests_range = (1000,)
+
+  _run = 0
+  while _run < args.total_runs:
+    _run += 1
+
+    # draw parameters (not much...)
+    init_tests = random.choice (init_tests_range)
+
+    # setup output directory for this run
+    basename = f'{crit}-X{init_tests}'
+    outdir = global_outdir.fresh_dir (basename, enable_stamp = False,
+                                      log = True)
+
+    generic_run (test_object, outdir, append_results,
+                 init_tests, (crit,),
+                 max_iterations = max_iterations)
+
+parser_generic = subparsers.add_parser ('generic')
+parser_generic.set_defaults (func = generic)
+add_generic_args (parser_generic)
+
+# ---
+
+# DBNC: Engine setup and helper functions
+
+def add_common_dbnc_run_args (parser):
+  add_common_run_args (parser)
+  parser.add_argument ("--train-size", dest = "train_size",
+                       metavar = "INT", type = int, default = train_size,
+                       help = 'size of training dataset (default is '
+                       f'{train_size})')
+
+# Setup outputs
+
+def setup_dbnc_results_file (go, discr_fields = ()):
+  return scripting.setup_results_file \
+         (go, 'crit', 'tech', 'N', 'discr', *discr_fields, 'run',
+          'min_n_bins', 'mean_n_bins', 'max_n_bins',
+          'init_tests', 'total_iterations',
+          'setup_time', 'init_time', 'run_time',
+          'init_coverage', 'final_coverage',
+          'num_tests', 'num_adversarials')
+
+def setup_init_coverages_file (outdir, init_tests, discr_fields = [], discr_fields_fmt = ()):
+  init_coverages_file = outdir.stamped_filepath (f'init_coverages-{init_tests}',
+                                                 suff = '.csv')
+  init_coverages_dtype = ([('tech', 'U4'), ('discr', 'U10')] + discr_fields +
+                          [('N', 'i4'), ('crit', 'U6'), ('run', 'O')] +
+                          [(f'f{i}', 'f8') for i in range (1, init_tests + 1)])
+  init_coverages_header = '\t'.join (f[0] for f in init_coverages_dtype)
+  init_coverages_fmt = ('%s', '%s', *discr_fields_fmt, '%d', '%s', '%d',) + ('%f',) * init_tests
+  init_coverages = []
+  def write ():
+    ic = np.asarray (init_coverages, dtype = np.dtype (init_coverages_dtype,
+                                                       (len (init_coverages),)))
+    np.savetxt (init_coverages_file, ic, delimiter = '\t', encoding = 'utf8',
+                header = init_coverages_header, fmt = init_coverages_fmt)
+  return init_coverages.append, write
 
 # DBNC specifications
 
@@ -98,7 +220,7 @@ def feats_pca_spec (n_components = 1, **k):
                n_components = n_components,
                # svd_solver = 'full',
                # svd_solver = 'arpack',
-               svd_solver = 'randomized',
+               # svd_solver = 'randomized',
                **k)
 
 def feats_ipca_spec (n_components = 1, **k):
@@ -130,36 +252,7 @@ def discr_uniform (extended = True, n_bins = 1, **k):
                extended = extended,
                **k)
 
-# Setup outputs
-
-def setup_results_file (go, discr_fields = ()):
-  return scripting.setup_results_file \
-         (go, 'crit', 'tech', 'N', 'discr', *discr_fields, 'run',
-          'min_n_bins', 'mean_n_bins', 'max_n_bins',
-          'init_tests', 'total_iterations',
-          'setup_time', 'init_time', 'run_time',
-          'init_coverage', 'final_coverage',
-          'num_tests', 'num_adversarials')
-
-def setup_init_coverages_file (outdir, init_tests, discr_fields = [], discr_fields_fmt = ()):
-  init_coverages_file = outdir.stamped_filepath (f'init_coverages-{init_tests}',
-                                                 suff = '.csv')
-  init_coverages_dtype = ([('tech', 'U4'), ('discr', 'U10')] + discr_fields +
-                          [('N', 'i4'), ('crit', 'U6'), ('run', 'O')] +
-                          [(f'f{i}', 'f8') for i in range (1, init_tests + 1)])
-  init_coverages_header = '\t'.join (f[0] for f in init_coverages_dtype)
-  init_coverages_fmt = ('%s', '%s', *discr_fields_fmt, '%d', '%s', '%d',) + ('%f',) * init_tests
-  init_coverages = []
-  def write ():
-    ic = np.asarray (init_coverages, dtype = np.dtype (init_coverages_dtype,
-                                                       (len (init_coverages),)))
-    np.savetxt (init_coverages_file, ic, delimiter = '\t', encoding = 'utf8',
-                header = init_coverages_header, fmt = init_coverages_fmt)
-  return init_coverages.append, write
-
-# Engine setup and helper functions
-
-def engine_setup (outdir, init_tests, crit, tech, N, test_object,
+def dbnc_setup (outdir, init_tests, crit, tech, N, test_object,
                   train_size, discr = discr_kde, **dc_kwargs):
   dbnc_spec = dict (**base_dbnc_spec (bn_abstr_train_size = train_size),
                     feats = feats_spec (tech, n_components = N),
@@ -200,24 +293,24 @@ def acc_init_dbnc_coverages (engine, report, init_tests):
   return bfc_coverages, bfdc_coverages, n
 
 
-def runit (test_object,
-           outdir,
-           append_results,
-           init_tests,
-           setup_args,
-           extra_descr = (),
-           discr = None,
-           max_iterations = max_iterations,
-           train_size = train_size,
-           **analyzer_args):
+def dbnc_run (test_object,
+              outdir,
+              append_results,
+              init_tests,
+              setup_args,
+              extra_descr = (),
+              discr = None,
+              max_iterations = max_iterations,
+              train_size = train_size,
+              **analyzer_args):
 
   tic, get_times = scripting.init_tics ()
-  engine, report = engine_setup (outdir, init_tests, *setup_args,
-                                 test_object, train_size,
-                                 norm_args = norm_args,
-                                 input_bounds = input_bounds,
-                                 discr = discr,
-                                 **analyzer_args)
+  engine, report = dbnc_setup (outdir, init_tests, *setup_args,
+                               test_object, train_size,
+                               norm_args = norm_args,
+                               input_bounds = input_bounds,
+                               discr = discr,
+                               **analyzer_args)
   init_coverage = engine.criterion.coverage ().as_prop
 
   tic ()
@@ -244,7 +337,7 @@ def runit (test_object,
 num_runs = 3
 
 def add_run_args (parser):
-  add_run_common_args (parser)
+  add_common_dbnc_run_args (parser)
   parser.add_argument ("--runs", type = int, default = num_runs,
                        help = 'number of runs for each parameter selection (default is '
                        f'{num_runs})')
@@ -258,8 +351,8 @@ def run (args):
   for crit in ('bfc', 'bfdc',):
 
     global_outdir = OutputDir (f'{outs}/{crit}/', log = True)
-    append_results = setup_results_file (global_outdir,
-                                         discr_fields = ('n_bins',))
+    append_results = setup_dbnc_results_file (global_outdir,
+                                              discr_fields = ('n_bins',))
 
     for init_tests in init_tests_range:
       for tech in all_feat_extr_techs:
@@ -270,12 +363,12 @@ def run (args):
             outdir = OutputDir (global_outdir.filepath \
                                 (f'{crit}-{tech}-N{N}-X{init_tests}-KDE-R{run}'),
                                 enable_stamp = False, log = True)
-            runit (test_object, outdir, append_results,
-                   init_tests, (crit, tech, N),
-                   extra_descr = ('kde', 0, run),
-                   discr = discr_kde,
-                   max_iterations = max_iterations,
-                   train_size = train_size)
+            dbnc_run (test_object, outdir, append_results,
+                      init_tests, (crit, tech, N),
+                      extra_descr = ('kde', 0, run),
+                      discr = discr_kde,
+                      max_iterations = max_iterations,
+                      train_size = train_size)
 
           for n_bins in n_bins_range:
             for run in range (num_runs):
@@ -283,12 +376,12 @@ def run (args):
               outdir = OutputDir (global_outdir.filepath \
                                   (f'{crit}-{tech}-N{N}-X{init_tests}-U{n_bins}-R{run}'),
                                   enable_stamp = False, log = True)
-              runit (test_object, outdir, append_results,
-                     init_tests, (crit, tech, N),
-                     extra_descr = ('uniform', n_bins, run),
-                     discr = lambda : discr_uniform (n_bins = n_bins),
-                     max_iterations = max_iterations,
-                     train_size = train_size)
+              dbnc_run (test_object, outdir, append_results,
+                        init_tests, (crit, tech, N),
+                        extra_descr = ('uniform', n_bins, run),
+                        discr = lambda : discr_uniform (n_bins = n_bins),
+                        max_iterations = max_iterations,
+                        train_size = train_size)
 
 
   # ---
@@ -310,9 +403,9 @@ def run (args):
   #                             (f'{tech}-N{N}-X{init_tests}-R{run}'),
   #                             enable_stamp = False, log = True)
 
-  #         engine, report = engine_setup (outdir, 1, 'bfc', tech, N,
-  #                                        test_object, norm_args = norm_args,
-  #                                        input_bounds = input_bounds)
+  #         engine, report = dbnc_setup (outdir, 1, 'bfc', tech, N,
+  #                                      test_object, norm_args = norm_args,
+  #                                      input_bounds = input_bounds)
 
   #         bfc_coverages, bfdc_coverages, n_init = \
   #             acc_init_dbnc_coverages (engine, report, init_tests)
@@ -344,10 +437,10 @@ def run (args):
   #                               enable_stamp = False, log = True)
 
   #           discr = lambda : discr_uniform (n_bins = n_bins)
-  #           engine, report = engine_setup (outdir, 1, 'bfc', tech, N,
-  #                                          test_object, norm_args = norm_args,
-  #                                          input_bounds = input_bounds,
-  #                                          discr = discr)
+  #           engine, report = dbnc_setup (outdir, 1, 'bfc', tech, N,
+  #                                        test_object, norm_args = norm_args,
+  #                                        input_bounds = input_bounds,
+  #                                        discr = discr)
 
   #           bfc_coverages, bfdc_coverages, n_init = \
   #               acc_init_dbnc_coverages (engine, report, init_tests)
@@ -379,10 +472,10 @@ def run (args):
   #                               enable_stamp = False, log = True)
 
   #           discr = lambda : discr_uniform (n_bins = n_bins)
-  #           engine, report = engine_setup (outdir, init_tests, 'bfc', tech, N,
-  #                                          test_object, norm_args = norm_args,
-  #                                          input_bounds = input_bounds,
-  #                                          discr = discr)
+  #           engine, report = dbnc_setup (outdir, init_tests, 'bfc', tech, N,
+  #                                        test_object, norm_args = norm_args,
+  #                                        input_bounds = input_bounds,
+  #                                        discr = discr)
 
   #           bfc_coverages, bfdc_coverages, n_init = \
   #               acc_init_dbnc_coverages (engine, report, init_tests)
@@ -398,7 +491,7 @@ add_run_args (parser_run)
 # ---
 
 def add_randrun_args (parser):
-  add_run_common_args (parser)
+  add_common_dbnc_run_args (parser)
   parser.add_argument ('-c', '--criterion', required = True,
                        choices = ('bfc', 'bfdc'),
                        help = 'criterion to focus on')
@@ -413,8 +506,8 @@ def randrun (args):
   crit = args.criterion
 
   global_outdir = OutputDir (f'{outs}/{crit}/', log = False)
-  append_results = setup_results_file (global_outdir,
-                                       discr_fields = ('n_bins',))
+  append_results = setup_dbnc_results_file (global_outdir,
+                                            discr_fields = ('n_bins',))
 
   discr_strats = ('KDE',) + tuple (range (1, 6))
 
@@ -440,12 +533,12 @@ def randrun (args):
                   ('uniform', n_bins, run)
     discr = discr_kde if discr_strat == 'KDE' else \
             lambda : discr_uniform (n_bins = n_bins)
-    runit (test_object, outdir, append_results,
-           init_tests, (crit, tech, N),
-           extra_descr = extra_descr,
-           discr = discr,
-           max_iterations = max_iterations,
-           train_size = train_size)
+    dbnc_run (test_object, outdir, append_results,
+              init_tests, (crit, tech, N),
+              extra_descr = extra_descr,
+              discr = discr,
+              max_iterations = max_iterations,
+              train_size = train_size)
 
 parser_randrun = subparsers.add_parser ('randrun')
 parser_randrun.set_defaults (func = randrun)
@@ -494,29 +587,33 @@ def add_plots_args (parser):
   parser.add_argument ('--reports-dir', dest = 'dir', metavar = "DIR", required = True,
                        help = 'directory where all execution reports are to be found')
   parser.add_argument ('-p', '--outputs-prefix', dest = 'prefix', type = str,
-                       help = 'prefix of outputs filenames')
+                       help = 'prefix of output filenames (e.g. PNGs, PDFs, PGFs...)')
   parser.add_argument ('-c', '--criterion', required = True, choices = ('bfc', 'bfdc'),
                        help = 'criterion to focus on')
+  parser.add_argument ('--no-pca-progress', dest='no_pca_progress', action = 'store_true',
+                       help = 'disable plotting of PCA distances and progress')
   parser.add_argument ('--no-ica-progress', dest='no_ica_progress', action = 'store_true',
                        help = 'disable plotting of ICA distances and progress')
   parser.add_argument ('--no-summary', dest='no_summary', action = 'store_true',
                        help = 'disable plotting of overall summary')
   parser.add_argument ('--dnn-name', dest='dnn_name', default = r'\mathcal{N}',
                        help = 'name of the DNN (in LaTeX math)')
+  parser.add_argument ('--hist-bins', dest='hist_bins', type = int, default = 200,
+                       help = 'number of bins in each histogram')
 
 def read_reports (dir):
   T = scripting.gather_all_reports \
       (dir,
-       '{crit}-{tech}-N{N:d}-X{init_tests:d}-{discr}-{run}',
+       '{crit}-{tech}-N{N:g}-X{init_tests:d}-{discr}-{run}',
        [('crit', 'U4'),
         ('tech', 'U4'),
-        ('N', 'i4'),
+        ('N', 'f8'),
         ('init_tests', 'i4'),
         ('discr', 'U10'),
         ('run', 'O')],
        ignore_head = 1)                 # ignore first init entry
-  print (f'Found {len(T)} reports')
-  for k in ('crit', 'tech', 'N', 'discr', 'init_tests', 'run'):
+  print ('Found {} report{}'.format (*s_(len(T))))
+  for k in ('crit', 'tech', 'N', 'discr', 'init_tests'):
     print (f'>> {k}:', *(np.unique (T[k])))
   return T
 
@@ -528,37 +625,55 @@ def plots (args):
   T = T[T['crit'] == args.criterion]
   T_init_tests = { n: T[T['init_tests'] == n] for n in np.unique(T['init_tests']) }
 
+  for init_tests in T_init_tests:
+    generated_tests = sum (run['report']['#tests'][-1] - init_tests
+                           for run in T_init_tests[init_tests])
+    n_runs = len (T_init_tests[init_tests])
+    print (f'{generated_tests} tests generated for |X_0|={init_tests}'
+           '(average = {} test{}/run).'
+           .format (*s_(generated_tests * 1. / n_runs)))
+
+  def tech_style (tech):
+    return dict (color = 'blue' if tech == 'pca' else 'red')
+
   # Progress/ICA
 
-  if not args.no_ica_progress:
-    T_ica = T[T['tech'] == 'pca']
-    P_ica = T_ica['progress']
-    P_ica = [ P for P in P_ica if len (P.shape) > 0 ]
-    nDists = np.concatenate([P['new_dist'].astype (float) for P in P_ica ])
-    oDists = np.concatenate([P['old_dist'].astype (float) for P in P_ica ])
+  def plot_progress (tech, T):
+    P_tech = T[T['tech'] == tech]['progress']
+    P_tech = [ P for P in P_tech if len (P.shape) > 0 ]
+    nDists = np.concatenate([P['new_dist'].astype (float) for P in P_tech ])
+    oDists = np.concatenate([P['old_dist'].astype (float) for P in P_tech ])
     dDists = oDists - nDists
 
     fig, ax = plotting.subplots (1, 2,
                                  figsize_adjust = (1.0, 0.5),
                                  constrained_layout = True)
-    ax[0].hist (nDists, bins = 200)
+    ax[0].hist (nDists, bins = args.hist_bins, **tech_style (tech))
     ax[0].axvline (x = 0, lw = 1, color = 'black')
     ax[0].set_ylabel (r'\#steps where new distance is $d$')
-    ax[0].set_xlabel (r'Distance ($d$)')
-    ax[1].hist (dDists, bins = 200)
+    ax[0].set_xlabel (r'Distance ($d$ — '+tech+r')')
+    ax[1].hist (dDists, bins = args.hist_bins, **tech_style (tech))
     ax[1].axvline (x = 0, lw = 1, color = 'black')
     ax[1].set_ylabel (r'\#steps where progress is $\delta$')
-    ax[1].set_xlabel (r'Progress ($\delta$)')
+    ax[1].set_xlabel (r'Progress ($\delta$ — '+tech+r')')
     plotting.show (fig,
                    outdir = outdir,
-                   basefilename = filename ('ica-dist-n-progress'),
+                   basefilename = filename (tech + '-dist-n-progress'),
                    w_pad = 0.06)
+
+  if not args.no_pca_progress:
+    plot_progress ('pca', T)
+
+  # Progress/ICA
+
+  if not args.no_ica_progress:
+    plot_progress ('ica', T)
 
   # Summary
 
   if not args.no_summary:
     def plot_style (report):
-      return dict (color = 'blue' if report['tech'] == 'pca' else 'red')
+      return tech_style (report['tech'])
 
     def it_(ax):
       return ax if len (T_init_tests) > 1 else [ax]
@@ -591,6 +706,7 @@ def plots (args):
         axi.plot (run['report']['coverage'] - run['report']['coverage'][0],
                   **plot_style (run))
       axi.yaxis.set_major_formatter(StrMethodFormatter('{x:2.1f}'))
+      axi.yaxis.set_ticks(np.arange (0, np.amax(axi.get_yticks()), step=0.1))
 
     for init_tests, axi in zip (T_init_tests, it_(ax[2])):
       init_covs  = [run['report']['coverage'][ 0]
