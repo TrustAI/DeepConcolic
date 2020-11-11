@@ -11,12 +11,12 @@ choices = []
 choices += ['LOF']
 class LOFNoveltyFilter (StaticFilter, _InputsStatBasedInitializable):
 
-  def __init__(self, name = 'LOF-based novelty', sample_size = 3000, lof_kwds = {}, **kwds):
+  def __init__(self, name = 'LOF-based novelty', sample_size = 3000, metric = 'cosine', lof_kwds = {}, **kwds):
     assert (isinstance (sample_size, int) and 1 <= sample_size)
     self.name = name
     self.sample_size = sample_size
     self.lof_threshold = 0.0
-    self.lof = LocalOutlierFactor (**lof_kwds, metric = 'correlation', novelty = True)
+    self.lof = LocalOutlierFactor (**lof_kwds, metric = metric, novelty = True)
     super().__init__(**kwds)
 
   def inputs_stat_initialize (self,
