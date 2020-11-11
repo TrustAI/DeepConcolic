@@ -118,12 +118,12 @@ class _BFcPulpAnalyzer (Analyzer, PulpSolver4DNN):
 
   def __init__(self,
                input_metric: PulpLinearMetric = None,
-               fix_untargetted_features = False,
+               fix_untargetted_components = False,
                **kwds):
     assert isinstance (input_metric, PulpLinearMetric)
     super().__init__(**kwds)
     self.metric = input_metric
-    self.fix_untargetted_features = fix_untargetted_features
+    self.fix_untargetted_components = fix_untargetted_components
 
 
   def finalize_setup(self, clayers):
@@ -151,7 +151,7 @@ class _BFcPulpAnalyzer (Analyzer, PulpSolver4DNN):
   def constrain_target_interval(self, lc, feature, feature_part, activations):
     cstrs = lc.pulp_constrain_outputs_in_feature_part (feature, feature_part)
 
-    if self.fix_untargetted_features:
+    if self.fix_untargetted_components:
       dimred = lc.flayer.dimred_activations (activations,
                                              feature_space = False)[0]
       for component in lc.flayer.range_components ():

@@ -1562,6 +1562,7 @@ def setup (setup_criterion = None,
                        cover_layers = cover_layers,
                        setup_criterion = setup_criterion,
                        criterion_args = criterion_args,
+                       fix_untargetted_components = True,
                        **kwds)
 
 # ---
