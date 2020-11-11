@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 
 # ---
 
-class FakeBFcAnalyzer (BFcAnalyzer, BFDcAnalyzer):
+class FakeBFcAnalyzer (BFDcAnalyzer):
 
   def finalize_setup(self, _clayers):
     pass

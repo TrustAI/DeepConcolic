@@ -20,7 +20,7 @@ class PulpBFcAbstrLayerEncoder (PulpStrictLayerEncoder):
     self.flayer = fl
 
 
-  def pulp_output_feature_linear_expression (self, feature: int):
+  def pulp_output_component_linear_expression (self, component: int):
 
     transform = self.flayer.transform
 
@@ -37,19 +37,19 @@ class PulpBFcAbstrLayerEncoder (PulpStrictLayerEncoder):
                         .format (transform[-1]))
 
     o = self.pulp_out_exprs ()
-    m = transform[-1].mean_[self.flayer.skip:]
-    c = transform[-1].components_[self.flayer.skip:]
+    m = transform[-1].mean_
+    c = transform[-1].components_
 
     if isinstance (transform[0], StandardScaler):
-      u = transform[0].mean_[self.flayer.skip:]
-      s = transform[0].scale_[self.flayer.skip:]
+      u = transform[0].mean_
+      s = transform[0].scale_
       lin_expr = lpSum ([LpAffineExpression ([(o, c / s)], - (u / s) * c - m * c)
                          for (o, u, s, m, c) in
-                         zip (o.flatten (), u, s, m, c[feature].T)])
+                         zip (o.flatten (), u, s, m, c[component].T)])
     else:
       lin_expr = lpSum ([LpAffineExpression ([(o, c)], - m * c)
                          for (o, m, c) in
-                         zip (o.flatten (), m, c[feature].T)])
+                         zip (o.flatten (), m, c[component].T)])
 
     # if True:                 # Filter-out terms where coeff < epsilon:
     #   lin_expr = LpAffineExpression ([ (x, a) for (x, a) in lin_expr.items ()
@@ -57,6 +57,10 @@ class PulpBFcAbstrLayerEncoder (PulpStrictLayerEncoder):
     #                                  lin_expr.constant)
 
     return lin_expr
+
+
+  def pulp_output_feature_linear_expression (self, feature: int):
+    return self.pulp_output_component_linear_expression (self.flayer.first + feature)
 
 
 
@@ -81,29 +85,24 @@ class PulpBFcAbstrLayerEncoder (PulpStrictLayerEncoder):
     return cstrs
 
 
-  def pulp_replicate_feature_value (self, feature: int, value: float, approx = False):
-    lin_expr = self.pulp_output_feature_linear_expression (feature)
+
+  def pulp_replicate_component_value (self, component: int, value: float, approx = False):
+    lin_expr = self.pulp_output_component_linear_expression (component)
     if approx:
       return [ LpConstraint (lin_expr, LpConstraintGE,
-                             '{}_low_{}'.format(self.flayer, feature),
+                             '{}_low_{}'.format(self.flayer, component),
                              value - epsilon),
                LpConstraint (lin_expr, LpConstraintLE,
-                             '{}_up_{}'.format(self.flayer, feature),
+                             '{}_up_{}'.format(self.flayer, component),
                              value + epsilon)]
     else:
       return [ LpConstraint (lin_expr, LpConstraintEQ,
-                             '{}_eq_{}'.format(self.flayer, feature),
+                             '{}_eq_{}'.format(self.flayer, component),
                              value) ]
 
 
-  # def pulp_replicate_activations_outside_of_feature (self, feature: int, ap_x,
-  #                                                    prev: PulpLayerOutput):
-  #   o = self.pulp_out_exprs ()
-  #   c = self.flayer.transform[-1].components_[feature].reshape(o.shape)
-  #   m = self.flayer.transform[-1].mean_.reshape(o.shape)
-  #   return self.pulp_replicate_activations (
-  #     ap_x, prev, exclude = lambda i: abs(c[i] # * m[i]
-  #                                         ) > epsilon)
+  def pulp_replicate_feature_value (self, feature: int, value: float, **kwds):
+    return pulp_replicate_component_value (self.flayer.first + feature, value, **kwds)
 
 
 # ---
@@ -149,6 +148,22 @@ class _BFcPulpAnalyzer (Analyzer, PulpSolver4DNN):
       return self.metric.distance (x, res[1]), res[1]
 
 
+  def constrain_target_interval(self, lc, feature, feature_part, activations):
+    cstrs = lc.pulp_constrain_outputs_in_feature_part (feature, feature_part)
+
+    if self.fix_untargetted_features:
+      dimred = lc.flayer.dimred_activations (activations,
+                                             feature_space = False)[0]
+      for component in lc.flayer.range_components ():
+        cfeat = lc.flayer.feature_of_component (component)
+        if cfeat is not None and cfeat == feature:
+          continue
+        cstrs.extend (lc.pulp_replicate_component_value \
+                         (component, dimred[component], approx = False))
+
+    return cstrs
+
+
 # ---
 
 from dbnc import BFcTarget, BFcAnalyzer
@@ -167,20 +182,8 @@ class BFcPulpAnalyzer (_BFcPulpAnalyzer, BFcAnalyzer):
       cstrs.extend (le.pulp_replicate_behavior (activations, prev))
       prev = le
 
-    dimred_activations = lc.flayer.dimred_activations (activations)[0] \
-                         if self.fix_untargetted_features else None
-    for feature in lc.flayer.range_features ():
-      if feature == target.fnode.feature:
-        cstrs.extend (lc.pulp_constrain_outputs_in_feature_part \
-                      (target.fnode.feature, target.feature_part))
-      elif self.fix_untargetted_features:
-        cstrs.extend (lc.pulp_replicate_feature_value \
-                      (feature, dimred_activations[feature],
-                       approx = False))
-
-    # cstrs.extend(lc.pulp_replicate_activations_outside_of_feature (
-    #   target.fnode.feature, self.eval (x),
-    #   self.layer_encoders[target.fnode.flayer.layer_index - 1]))
+    cstrs.extend (self.constrain_target_interval ( \
+      lc, target.fnode.feature, target.feature_part, activations))
 
     return self.actual_search (problem, x, cstrs, target)
 
@@ -209,20 +212,8 @@ class BFDcPulpAnalyzer (BFcPulpAnalyzer, BFDcAnalyzer):
     for f0, f0p in enumerate (target.feature_parts0):
       cstrs.extend (lc0.pulp_constrain_outputs_in_feature_part (f0, f0p))
 
-    dimred_activations = lc1.flayer.dimred_activations (activations)[0] \
-                         if self.fix_untargetted_features else None
-    for feature in lc1.flayer.range_features ():
-      if feature == target.fnode1.feature:
-        cstrs.extend (lc1.pulp_constrain_outputs_in_feature_part \
-                      (target.fnode1.feature, target.feature_part1))
-      elif self.fix_untargetted_features:
-        cstrs.extend (lc1.pulp_replicate_feature_value \
-                      (feature, dimred_activations[feature],
-                       approx = False))
-
-    # cstrs.extend(lc.pulp_replicate_activations_outside_of_feature (
-    #   target.fnode.feature, self.eval (x),
-    #   self.layer_encoders[target.fnode.flayer.layer_index - 1]))
+    cstrs.extend (self.constrain_target_interval ( \
+      lc1, target.fnode1.feature, target.feature_part1, activations))
 
     return self.actual_search (problem, x, cstrs, target)
 

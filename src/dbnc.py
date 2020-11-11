@@ -323,11 +323,23 @@ class BFcLayer (CoverableLayer):
     assert isinstance (discretization, FeatureDiscretizer)
     self.transform = transform
     self.discr = discretization
-    self.skip = 0
+    self.first = 0
+    self.last = -1
 
   def get_params (self, deep = True):
     return dict (name = self.layer.name,
                  transform = self.transform.get_params (deep))
+
+
+  def feature_of_component (self, component: int) -> Optional[int]:
+    if self.first <= component and (self.last < 0 or component < self.last):
+      return component - self.first
+    else:
+      return None
+
+
+  def range_components (self) -> range:
+    return range (len (self.transform[-1].components_))
 
 
   @property
@@ -335,10 +347,10 @@ class BFcLayer (CoverableLayer):
     '''
     Number of extracted features for the layer.
     '''
-    return len (self.transform[-1].components_) - self.skip
+    return len (self.transform[-1].components_[self.first:self.last])
 
 
-  def range_features (self):
+  def range_features (self) -> range:
     '''
     Range over all feature indexes.
     '''
@@ -358,9 +370,10 @@ class BFcLayer (CoverableLayer):
     return acc
 
 
-  def dimred_activations (self, acts, acc = None):
+  def dimred_activations (self, acts, acc = None, feature_space = True):
     x = np.vstack([a.flatten () for a in acts[self.layer_index]])
-    y = self.transform.transform (x)[:,self.skip:]
+    y = self.transform.transform (x)
+    y = y[:,self.first:self.last] if feature_space else y
     acc = np.hstack ((acc, y)) if acc is not None else y
     del x
     if acc is not y: del y
@@ -369,7 +382,7 @@ class BFcLayer (CoverableLayer):
 
   def dimred_n_discretize_activations (self, acts, acc = None):
     x = np.vstack([a.flatten () for a in acts[self.layer_index]])
-    y = self.discr.transform (self.transform.transform (x)[:,self.skip:])
+    y = self.discr.transform (self.transform.transform (x)[:,self.first:self.last])
     acc = np.hstack ((acc, y.astype (int))) if acc is not None else y.astype (int)
     del x, y
     return acc
@@ -501,10 +514,10 @@ class _BaseBFcCriterion (Criterion):
     return acc
 
 
-  def dimred_activations (self, acts, fls = None):
+  def dimred_activations (self, acts, fls = None, **kwds):
     acc = None
     for fl in self.flayers if fls is None else fls:
-      acc = fl.dimred_activations (acts, acc = acc)
+      acc = fl.dimred_activations (acts, acc = acc, **kwds)
     return acc
 
 
@@ -786,20 +799,21 @@ class _BaseBFcCriterion (Criterion):
         fl.transform.fit (copy.copy (x_ok[:fts]))
         y_ok = fl.transform.transform (x_ok)
       p1 ('| Extracted {} feature{}'.format (*s_(y_ok.shape[1])))
-      if fl.skip > 0:
-        p1 ('| Skipping {} feature{}'.format (*s_(fl.skip)))
+      if fl.first > 0:
+        p1 ('| Skipping {} important feature{}'.format (*s_(fl.first)))
 
       fit_wrt_args = {}
+      x_ko, y_ko = [], []
       if ko_acts != {}:
         x_ko = np.stack([a.flatten () for a in ko_acts[fl.layer_index]], axis = 0)
         y_ko = fl.transform.transform (x_ko)
-        fit_wrt_args = dict (y2plot = y_ko[:,fl.skip:],
+        fit_wrt_args = dict (y2plot = y_ko[:,fl.first:fl.last],
                              y2plot_labels = ko_labels)
 
       tp1 ('Discretizing features...')
 
-      fl.discr.fit_wrt (x_ok[:,fl.skip:],
-                        y_ok[:,fl.skip:],
+      fl.discr.fit_wrt (x_ok[:,fl.first:fl.last],
+                        y_ok[:,fl.first:fl.last],
                         fl.transform,
                         layer = fl,
                         **kwds,
@@ -814,7 +828,7 @@ class _BaseBFcCriterion (Criterion):
       del x_ok, y_ok, x_ko, y_ko
 
     self.explained_variance_ratios_ = \
-      { str(fl): (fl.transform[-1].explained_variance_ratio_[fl.skip:].tolist (),
+      { str(fl): (fl.transform[-1].explained_variance_ratio_[fl.first:fl.last].tolist (),
                   fl.transform[-1].explained_variance_ratio_.tolist ())
         for fl in self.flayers
         if hasattr (fl.transform[-1], 'explained_variance_ratio_') }
