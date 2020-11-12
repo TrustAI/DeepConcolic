@@ -2,6 +2,7 @@ from typing import *
 from utils import *
 from pulp import *
 from pulp_encoding import *
+from amplif import AnalyzerWithLinearExtrapolation
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA, FastICA
@@ -10,6 +11,8 @@ from sklearn.decomposition import PCA, FastICA
 
 from engine import Analyzer
 from dbnc import BFcLayer
+from dbnc import BFcTarget, BFcAnalyzer
+from dbnc import BFDcTarget, BFDcAnalyzer
 from lp import PulpLinearMetric, PulpSolver4DNN
 
 
@@ -114,7 +117,7 @@ def abstracted_layer_encoder (flayers):
                         PulpStrictLayerEncoder (i, l)))
 
 
-class _BFcPulpAnalyzer (Analyzer, PulpSolver4DNN):
+class _BasePulpAnalyzer (Analyzer, PulpSolver4DNN):
 
   def __init__(self,
                input_metric: PulpLinearMetric = None,
@@ -166,10 +169,7 @@ class _BFcPulpAnalyzer (Analyzer, PulpSolver4DNN):
 
 # ---
 
-from dbnc import BFcTarget, BFcAnalyzer
-
-
-class BFcPulpAnalyzer (_BFcPulpAnalyzer, BFcAnalyzer):
+class BFcPulpAnalyzer (_BasePulpAnalyzer, BFcAnalyzer):
 
   def search_input_close_to(self, x, target: BFcTarget):
     lc = self.layer_encoders[target.fnode.flayer.layer_index]
@@ -187,9 +187,14 @@ class BFcPulpAnalyzer (_BFcPulpAnalyzer, BFcAnalyzer):
 
     return self.actual_search (problem, x, cstrs, target)
 
-# ---
 
-from dbnc import BFDcTarget, BFDcAnalyzer
+
+class BFcPulpAnalyzerWithLinearExtrapolation \
+          (AnalyzerWithLinearExtrapolation, BFcPulpAnalyzer):
+  pass
+
+
+# ---
 
 
 class BFDcPulpAnalyzer (BFcPulpAnalyzer, BFDcAnalyzer):
@@ -216,6 +221,11 @@ class BFDcPulpAnalyzer (BFcPulpAnalyzer, BFDcAnalyzer):
       lc1, target.fnode1.feature, target.feature_part1, activations))
 
     return self.actual_search (problem, x, cstrs, target)
+
+
+class BFDcPulpAnalyzerWithLinearExtrapolation \
+          (AnalyzerWithLinearExtrapolation, BFDcPulpAnalyzer):
+  pass
 
 
 # ---

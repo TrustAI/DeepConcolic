@@ -781,13 +781,13 @@ class _BaseBFcCriterion (Criterion):
       ko_labels = []
 
     ts0 = len(ok_acts[self.flayers[0].layer_index])
-    cp1 ('| Given training data of size {}'.format (ts0))
+    cp1 ('| Given {} correctly classified training sample'.format (*s_(ts0)))
     fts = None if self.feat_extr_train_size == 1 \
           else (min (ts0, int (self.feat_extr_train_size))
                 if self.feat_extr_train_size > 1
                 else int (ts0 * self.feat_extr_train_size))
     if fts is not None:
-      p1 ('| Using training data of size {} for feature extraction'.format (fts))
+      p1 ('| Using {} training samples for feature extraction'.format (*s_(fts)))
 
     # First, fit feature extraction and discretizer parameters:
     for fl in self.flayers:
@@ -1084,6 +1084,17 @@ class BFcTarget (NamedTuple, BNcTarget):
                     self.fnode.feature, self.feature_part))
 
 
+  def __eq__ (self, t) -> bool:
+    '''Basic equality test'''
+    return type (self) == type (t) and \
+           self.fnode == t.fnode and \
+           self.feature_part == t.feature_part
+
+
+  def __hash__(self) -> int:
+    return hash ((self.fnode, self.feature_part))
+
+
   def cover(self, acts) -> None:
     # Do nothing for now; ideally: update some probabilities
     # somewhere.
@@ -1233,6 +1244,19 @@ class BFDcTarget (NamedTuple, BNcTarget):
                     self.feature_parts0))
 
 
+  def __eq__ (self, t) -> bool:
+    '''Basic equality test'''
+    return type (self) == type (t) and \
+           self.fnode1 == t.fnode1 and \
+           self.feature_part1 == t.feature_part1 and \
+           self.flayer0 == t.flayer0 and \
+           self.feature_parts0 == t.feature_parts0
+
+  def __hash__(self) -> int:
+    return hash ((self.fnode1, self.feature_part1,
+                  self.flayer0, self.feature_parts0))
+
+
   def cover(self, acts) -> None:
     # Do nothing for now; ideally: update some probabilities
     # somewhere.
@@ -1352,7 +1376,8 @@ class BFDcCriterion (BFcCriterion, Criterion4RootedSearch):
     measure_progress = \
         self._measure_progress_towards_interval (feature, interval, ti)
     cond_intervals = cpts[epsilon_cond_prob_index][fli, :-2].astype (int)
-    fct = BFDcTarget (feature_node, feature_interval, fl_prev, cond_intervals,
+    fct = BFDcTarget (feature_node, feature_interval,
+                      fl_prev, tuple (cond_intervals.tolist ()),
                       # self._check_within (feature, feature_interval),
                       measure_progress, ti, self.verbose)
     self.ban[fl].add ((feature, feature_interval, ti))

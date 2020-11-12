@@ -45,12 +45,12 @@ def deepconcolic(criterion, norm, test_object, report_args,
     print ("DBNC Spec:\n", yaml.dump (dbnc_spec), sep='')
     if norm == 'linf':
       from pulp_norms import LInfPulp
-      from dbnc_pulp import BFcPulpAnalyzer
+      from dbnc_pulp import BFcPulpAnalyzerWithLinearExtrapolation as Analyzer
       engine = dbnc_setup (**dbnc_spec,
                            test_object = test_object,
                            engine_args = engine_args,
                            setup_criterion = BFcCriterion,
-                           setup_analyzer = BFcPulpAnalyzer,
+                           setup_analyzer = Analyzer,
                            input_metric = LInfPulp (**norm_args),
                            input_bounds = input_bounds,
                            outdir = report_args['outdir'])
@@ -62,12 +62,12 @@ def deepconcolic(criterion, norm, test_object, report_args,
     print ("DBNC Spec:\n", yaml.dump (dbnc_spec), sep='')
     if norm == 'linf':
       from pulp_norms import LInfPulp
-      from dbnc_pulp import BFDcPulpAnalyzer
+      from dbnc_pulp import BFDcPulpAnalyzerWithLinearExtrapolation as Analyzer
       engine = dbnc_setup (**dbnc_spec,
                            test_object = test_object,
                            engine_args = engine_args,
                            setup_criterion = BFDcCriterion,
-                           setup_analyzer = BFDcPulpAnalyzer,
+                           setup_analyzer = Analyzer,
                            input_metric = LInfPulp (**norm_args),
                            input_bounds = input_bounds,
                            outdir = report_args['outdir'])
