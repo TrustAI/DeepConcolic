@@ -318,13 +318,20 @@ class BFcLayer (CoverableLayer):
   Base class for layers to be covered by BN-based criteria.
   """
 
-  def __init__(self, transform = None, discretization: FeatureDiscretizer = None, **kwds):
+  def __init__(self, transform = None,
+               discretization: FeatureDiscretizer = None,
+               skip: Optional[int] = None,
+               focus: Optional[int] = None,
+               **kwds):
     super().__init__(**kwds)
     assert isinstance (discretization, FeatureDiscretizer)
+    assert skip is None or isinstance (skip, int)
+    assert focus is None or isinstance (focus, int)
     self.transform = transform
     self.discr = discretization
-    self.first = 0
-    self.last = None
+    self.first = some (skip, 0)
+    self.last = focus
+
 
   @property
   def focus (self) -> slice:
@@ -804,8 +811,15 @@ class _BaseBFcCriterion (Criterion):
         fl.transform.fit (copy.copy (x_ok[:fts]))
         y_ok = fl.transform.transform (x_ok)
       p1 ('| Extracted {} feature{}'.format (*s_(y_ok.shape[1])))
+
+      # Correct feature range (or should we error out for invalid
+      # spec?):
+      fl.first = min (fl.first, y_ok.shape[1] - 1)
       if fl.first > 0:
         p1 ('| Skipping {} important feature{}'.format (*s_(fl.first)))
+      if fl.last is not None:
+        fl.last = max (min (fl.last, y_ok.shape[1]), fl.first + 1)
+        p1 ('| Focusing on {} feature{}'.format (*s_(fl.last - fl.first)))
 
       fit_wrt_args = {}
       x_ko, y_ko = [], []
@@ -1472,18 +1486,29 @@ def abstract_layer_feature_discretization (l, li, discr = None, discr_n_jobs = N
 
 def abstract_layer_setup (l, i, feats = None, discr = None, **kwds):
   options = abstract_layer_features (i, feats, discr)
-  if isinstance (options, dict) and 'decomp' in options:
-    decomp = options['decomp']
-    options = { **options }
-    del options['decomp']
-  else:
-    decomp = 'pca'
-  if (decomp == 'pca' and
-      (isinstance (options, (int, float)) or options == 'mle')):
-    svd_solver = ('arpack' if isinstance (options, int) else
-                  'full' if isinstance (options, float) else 'auto')
-    options = { 'n_components': options, 'svd_solver': svd_solver }
-  # from sklearn.decomposition import IncrementalPCA
+  decomp = 'pca'
+  skip, focus = None, None
+  if isinstance (options, dict):
+    options = dict (options)
+    if 'decomp' in options:
+      decomp = options['decomp']
+      del options['decomp']
+    if 'skip' in options:
+      skip = options['skip']
+      del options['skip']
+    if 'focus' in options:
+      focus = options['focus']
+      del options['focus']
+  elif (isinstance (options, (int, float)) or options == 'mle') and \
+           decomp == 'pca':
+    options = dict (n_components = options,
+                    svd_solver = ('arpack' if isinstance (options, int) else
+                                  'full' if isinstance (options, float) else 'auto'))
+  if isinstance (options, dict) and \
+         'n_components' in options and isinstance (options['n_components'], int):
+    options = dict (options)
+    options['n_components'] = min (np.prod (l.output.shape[1:]) - 1,
+                                   options['n_components'])
   fext = (make_pipeline (StandardScaler (copy = False),
                          CvPCA (**options, copy = False)) if decomp == 'pca' else \
           make_pipeline (StandardScaler (copy = False),
@@ -1492,7 +1517,9 @@ def abstract_layer_setup (l, i, feats = None, discr = None, **kwds):
   feature_discretization = abstract_layer_feature_discretization (l, i, discr, **kwds)
   return BFcLayer (layer = l, layer_index = i,
                    transform = fext,
-                   discretization = feature_discretization)
+                   discretization = feature_discretization,
+                   skip = skip,
+                   focus = focus)
 
 
 # ---
