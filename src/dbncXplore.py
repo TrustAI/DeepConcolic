@@ -252,10 +252,11 @@ def discr_uniform (extended = True, n_bins = 1, **k):
                extended = extended,
                **k)
 
-def dbnc_setup (outdir, init_tests, crit, tech, N, test_object,
-                  train_size, discr = discr_kde, **dc_kwargs):
+def dbnc_setup (outdir, init_tests, crit, tech, N, skip, focus, test_object,
+                train_size, discr = discr_kde, **dc_kwargs):
   dbnc_spec = dict (**base_dbnc_spec (bn_abstr_train_size = train_size),
-                    feats = feats_spec (tech, n_components = N),
+                    feats = feats_spec (tech, n_components = N,
+                                        skip = skip, focus = focus),
                     discr = discr ())
   report_args = dict (**base_report_args, outdir = outdir)
   return deepconcolic (crit, 'linf',
@@ -357,14 +358,15 @@ def run (args):
     for init_tests in init_tests_range:
       for tech in all_feat_extr_techs:
         for N in n_components_range:
+          skip, focus = 0, N
 
           for run in range (num_runs):
             rng_seed (42 + run)
             outdir = OutputDir (global_outdir.filepath \
-                                (f'{crit}-{tech}-N{N}-X{init_tests}-KDE-R{run}'),
+                                (f'{crit}-{tech}-N{N}-{skip}-{focus}-X{init_tests}-KDE-R{run}'),
                                 enable_stamp = False, log = True)
             dbnc_run (test_object, outdir, append_results,
-                      init_tests, (crit, tech, N),
+                      init_tests, (crit, tech, N, skip, focus),
                       extra_descr = ('kde', 0, run),
                       discr = discr_kde,
                       max_iterations = max_iterations,
@@ -374,10 +376,10 @@ def run (args):
             for run in range (num_runs):
               rng_seed (42 + run)
               outdir = OutputDir (global_outdir.filepath \
-                                  (f'{crit}-{tech}-N{N}-X{init_tests}-U{n_bins}-R{run}'),
+                                  (f'{crit}-{tech}-N{N}-{skip}-{focus}-X{init_tests}-U{n_bins}-R{run}'),
                                   enable_stamp = False, log = True)
               dbnc_run (test_object, outdir, append_results,
-                        init_tests, (crit, tech, N),
+                        init_tests, (crit, tech, N, skip, focus),
                         extra_descr = ('uniform', n_bins, run),
                         discr = lambda : discr_uniform (n_bins = n_bins),
                         max_iterations = max_iterations,
@@ -517,7 +519,9 @@ def randrun (args):
 
     # draw parameters
     tech = random.choice (all_feat_extr_techs)
-    N = random.randint (1, 6)
+    N = random.randint (1, 9)                     # extract up to 9 features
+    skip = 0                                      # fixed for now
+    focus = min (random.randint (1, N - skip), 5) # cap to 5 to avoid too large BNs
     discr_strat = random.choice (discr_strats)
     init_tests = random.choice (init_tests_range)
 
@@ -525,7 +529,7 @@ def randrun (args):
                           (discr_strat, f'U{discr_strat}')
 
     # setup output directory for this run
-    basename = f'{crit}-{tech}-N{N}-X{init_tests}-{discr_strat}'
+    basename = f'{crit}-{tech}-N{N}-{skip}-{focus}-X{init_tests}-{discr_strat}'
     outdir = global_outdir.fresh_dir (basename, enable_stamp = False,
                                       log = True)
 
@@ -534,7 +538,7 @@ def randrun (args):
     discr = discr_kde if discr_strat == 'KDE' else \
             lambda : discr_uniform (n_bins = n_bins)
     dbnc_run (test_object, outdir, append_results,
-              init_tests, (crit, tech, N),
+              init_tests, (crit, tech, N, skip, focus),
               extra_descr = extra_descr,
               discr = discr,
               max_iterations = max_iterations,
@@ -604,16 +608,18 @@ def add_plots_args (parser):
 def read_reports (dir):
   T = scripting.gather_all_reports \
       (dir,
-       '{crit}-{tech}-N{N:g}-X{init_tests:d}-{discr}-{run}',
+       '{crit}-{tech}-N{N:g}-{skip:d}-{focus:d}-X{init_tests:d}-{discr}-{run}',
        [('crit', 'U4'),
         ('tech', 'U4'),
         ('N', 'f8'),
+        ('skip', 'i4'),
+        ('focus', 'i4'),
         ('init_tests', 'i4'),
         ('discr', 'U10'),
         ('run', 'O')],
        ignore_head = 1)                 # ignore first init entry
   print ('Found {} report{}'.format (*s_(len(T))))
-  for k in ('crit', 'tech', 'N', 'discr', 'init_tests'):
+  for k in ('crit', 'tech', 'N', 'skip', 'focus', 'discr', 'init_tests'):
     print (f'>> {k}:', *(np.unique (T[k])))
   return T
 
