@@ -1014,20 +1014,32 @@ class Engine:
 
       train_size = x['train_size'] if 'train_size' in x else None
       test_size = x['test_size'] if 'test_size' in x else None
-      if isinstance (train_size, int) and isinstance (test_size, int):
-        train_size = max (1, min (train_size, len (idxs) - test_size))
-      elif isinstance (train_size, int):
-        train_size = min (train_size, len (idxs) - 1)
 
-      if isinstance (train_size, int) and test_size is None:
-        test_size = min (len (idxs) - train_size, len (idxs) - 1)
-      elif isinstance (train_size, int) and isinstance (test_size, int):
-        test_size = min (test_size, len (idxs) - train_size)
-      elif isinstance (test_size, int):
-        test_size = min (test_size, len (idxs) - 1)
+      rng = np.random.default_rng (randint ())
+      if 'train' in x:
+        if isinstance (train_size, int) and isinstance (test_size, int):
+          train_size = max (1, min (train_size, len (idxs) - test_size))
+        elif isinstance (train_size, int):
+          train_size = min (train_size, len (idxs) - 1)
 
-      train_idxs, test_idxs = train_test_split \
-                              (idxs, test_size = test_size, train_size = train_size)
+      if 'test' in x:
+        if isinstance (train_size, int) and test_size is None:
+          test_size = min (len (idxs) - train_size, len (idxs) - 1)
+        elif isinstance (train_size, int) and isinstance (test_size, int):
+          test_size = min (test_size, len (idxs) - train_size)
+        elif isinstance (test_size, int):
+          test_size = min (test_size, len (idxs) - 1)
+        elif train_size is not None and isinstance (train_size, float) and \
+                 isinstance (test_size, float):
+          test_size = min (test_size, 1. - train_size)
+
+      train_idxs, test_idxs = \
+        train_test_split (idxs, test_size = test_size, train_size = train_size) \
+        if 'train' in x and 'test' in x else \
+        (rng.choice (a = idxs, axis = 0, size = min (train_size, len (idxs))), None) \
+        if 'train' in x else \
+        (None, rng.choice (a = idxs, axis = 0, size = min (test_size, len (idxs))))
+
       if 'train' in x:
         acts, input_data, preds = self._activations_on_indexed_data (data, train_idxs)
         acc = x['train']({ j: acts[j] for j in x['layer_indexes'] },
