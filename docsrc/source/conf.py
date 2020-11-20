@@ -61,7 +61,7 @@ html_static_path = ['_static']
 
 # -- Options for Autodoc -----------------------------------------------------
 
-autodoc_mock_imports = ['tensorflow', 'sklearn',
+autodoc_mock_imports = ['tensorflow', 'sklearn', 'pomegranate',
                         'cv2', 'typing']
 autoclass_content = 'both'
 autodoc_default_options = {
@@ -96,5 +96,6 @@ intersphinx_mapping = {
     'sklearn': ('https://scikit-learn.org/stable', None),
     'tensorflow': ("https://www.tensorflow.org/api_docs/python",
                    "https://raw.githubusercontent.com/mr-ubik/tensorflow-intersphinx/master/tf2_py_objects.inv"),
+    'pomegranate': ('https://pomegranate.readthedocs.io/en/latest/', None),
     'matplotlib': ('https://matplotlib.org', None)
 }

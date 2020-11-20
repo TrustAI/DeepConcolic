@@ -23,6 +23,18 @@ def make_small_model (input_shape, **kwds):
         tf.keras.layers.Activation('softmax'),
     ], **kwds)
 
+def make_small_maxp_model (input_shape, **kwds):
+    return tf.keras.models.Sequential([
+        tf.keras.layers.Conv2D(8, (3, 3), input_shape = input_shape),
+        tf.keras.layers.Activation('relu'),
+        tf.keras.layers.MaxPooling2D(),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(42),
+        tf.keras.layers.Activation('relu'),
+        tf.keras.layers.Dense(10),
+        tf.keras.layers.Activation('softmax'),
+    ], **kwds)
+
 def make_medium_model (input_shape, **kwds):
     return tf.keras.models.Sequential([
         tf.keras.layers.Conv2D(5, (3, 3), input_shape = input_shape),
@@ -67,10 +79,15 @@ def make_large_model (input_shape, **kwds):
 #             epochs = 20,
 #             outdir = '/tmp')
 
-classifier (load_data, make_small_model,
-            model_name = 'mnist_small_overfitting',
-            early_stopping = False,
-            epochs = 50,
+# classifier (load_data, make_small_model,
+#             model_name = 'mnist_small_overfitting',
+#             early_stopping = False,
+#             epochs = 50,
+#             outdir = '/tmp')
+
+classifier (load_data, make_small_maxp_model,
+            model_name = 'mnist_small_maxp',
+            epochs = 20,
             outdir = '/tmp')
 
 # classifier (load_data, make_medium_model,

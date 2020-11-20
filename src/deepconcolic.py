@@ -1,5 +1,6 @@
 import argparse
 import yaml
+from pathlib import Path
 from utils import *
 from bounds import UniformBounds, StatBasedInputBounds
 from deepconcolic_fuzz import deepconcolic_fuzz
@@ -9,6 +10,7 @@ import filters
 def deepconcolic(criterion, norm, test_object, report_args,
                  engine_args = {},
                  norm_args = {},
+                 dbnc_spec = {},
                  input_bounds = None,
                  run_engine = True,
                  **engine_run_args):
@@ -37,6 +39,44 @@ def deepconcolic(criterion, norm, test_object, report_args,
     else:
       print('\n not supported norm... {0}\n'.format(norm))
       sys.exit(0)
+  elif criterion=='bfc':                ## feature cover
+    from dbnc import setup as dbnc_setup
+    from dbnc import BFcCriterion
+    print ("DBNC Spec:\n", yaml.dump (dbnc_spec), sep='')
+    if norm == 'linf':
+      from pulp_norms import LInfPulp
+      from dbnc_pulp import BFcPulpAnalyzer
+      engine = dbnc_setup (**dbnc_spec,
+                           test_object = test_object,
+                           engine_args = engine_args,
+                           setup_criterion = BFcCriterion,
+                           setup_analyzer = BFcPulpAnalyzer,
+                           input_metric = LInfPulp (**norm_args),
+                           input_bounds = input_bounds,
+                           outdir = report_args['outdir'])
+    else:
+      sys.exit ('\n not supported norm... {0}\n'.format(norm))
+  elif criterion=='bfdc':               ## feature-dependence cover
+    from dbnc import setup as dbnc_setup
+    from dbnc import BFDcCriterion
+    print ("DBNC Spec:\n", yaml.dump (dbnc_spec), sep='')
+    if norm == 'linf':
+      from pulp_norms import LInfPulp
+      from dbnc_pulp import BFDcPulpAnalyzer
+      engine = dbnc_setup (**dbnc_spec,
+                           test_object = test_object,
+                           engine_args = engine_args,
+                           setup_criterion = BFDcCriterion,
+                           setup_analyzer = BFDcPulpAnalyzer,
+                           input_metric = LInfPulp (**norm_args),
+                           input_bounds = input_bounds,
+                           outdir = report_args['outdir'])
+    else:
+      sys.exit ('\n not supported norm... {0}\n'.format(norm))
+  elif criterion=='dbnc_stats':
+    import dbnc_stats
+    dbnc_stats.run (test_object, report_args['outdir'],
+                    input_bounds = input_bounds)
   elif criterion=='ssc':
     from ssc import SScGANBasedAnalyzer, setup as ssc_setup
     linf_args = copy.copy (norm_args)
@@ -100,6 +140,9 @@ def main():
                       help="the default labels", metavar="FILE")
   parser.add_argument("--dataset", dest='dataset',
                       help="selected dataset", choices=datasets.choices)
+  parser.add_argument("--extra-tests", dest='extra_testset_dirs', metavar="DIR",
+                      type=Path, nargs="+",
+                      help="additonal directories of test images")
   parser.add_argument("--vgg16-model", dest='vgg16',
                       help="vgg16 model", action="store_true")
   parser.add_argument("--filters", dest='filters', # nargs='+'
@@ -124,6 +167,7 @@ def main():
                       help="test layers given by name or index")
   parser.add_argument("--feature-index", dest="feature_index", default="-1",
                       help="to test a particular feature map", metavar="INT")
+
   # fuzzing params
   parser.add_argument("--fuzzing", dest='fuzzing', help="to start fuzzing", action="store_true")
   parser.add_argument("--num-tests", dest="num_tests", default="1000",
@@ -132,6 +176,11 @@ def main():
                     help="number of processes to use", metavar="INT")
   parser.add_argument("--sleep-time", dest="stime", default="4",
                     help="fuzzing sleep time", metavar="INT")
+
+  # DBNC-specific params
+  parser.add_argument("--dbnc-spec", dest="dbnc_spec", default="{}",
+                      help="Feature extraction and discretisation specification",
+                      metavar="SPEC")
   
   args=parser.parse_args()
 
@@ -153,7 +202,8 @@ def main():
   inp_ub = 1
   save_input = None
   amplify_diffs = True
-  lower_bound_metric_noise = .01
+  lower_bound_metric_hard = .01
+  lower_bound_metric_noise = 0
   input_bounds = UniformBounds (0.0, 1.0)
 
   # fuzzing_params
@@ -185,13 +235,22 @@ def main():
                  save_in_csv ('new_inputs') if len (dims) == 1 else \
                  None
     amplify_diffs = kind in datasets.image_kinds
-    lower_bound_metric_noise = .1       # 10%
+    lower_bound_metric_hard = 1 / 255
+    lower_bound_metric_noise = 0.1
     input_bounds = UniformBounds () if kind in datasets.image_kinds else \
                    StatBasedInputBounds (hard_bounds = UniformBounds (-1.0, 1.0)) \
                    if kind in datasets.normalized_kinds else StatBasedInputBounds ()
     print ('done.')
   else:
     sys.exit ('Missing input dataset')
+
+  if args.extra_testset_dirs is not None:
+    for d in args.extra_testset_dirs:
+      np1 (f'Loading extra image testset from `{str(d)}\'... ')
+      x, y, _, _, _ = datasets.images_from_dir (str (d))
+      x_test = np.concatenate ((x_test, x))
+      y_test = np.concatenate ((y_test, y))
+      print ('done')
 
   input_filters = []
   for f in args.filters:
@@ -209,7 +268,7 @@ def main():
     tf.compat.v1.disable_eager_execution ()
     dnn = keras.applications.VGG16 ()
     inp_ub = 255
-    lower_bound_metric_noise = 1/255
+    lower_bound_metric_hard = 1/255
     dnn.summary()
     save_input = save_an_image
   else:
@@ -265,14 +324,26 @@ def main():
                       num_processes = int(args.num_processes))
     sys.exit(0)
 
+  # DBNC-specific parameters:
+  try:
+    if args.dbnc_spec != "{}" and os.path.exists(args.dbnc_spec):
+      with open(args.dbnc_spec, 'r') as f:
+        dbnc_spec = yaml.safe_load (f)
+    else:
+      dbnc_spec = yaml.safe_load (args.dbnc_spec)
+  except yaml.YAMLError as exc:
+    sys.exit(exc)
+
   deepconcolic (args.criterion, args.norm, test_object,
                 report_args = { 'outdir': OutputDir (outs, log = True),
                                 'save_new_tests': args.save_all_tests,
                                 'save_input_func': save_input,
                                 'amplify_diffs': amplify_diffs },
                 norm_args = { 'factor': .25,
+                              'LB_hard': lower_bound_metric_hard,
                               'LB_noise': lower_bound_metric_noise },
                 engine_args = { 'custom_filters': input_filters },
+                dbnc_spec = dbnc_spec,
                 input_bounds = input_bounds,
                 run_engine = not args.setup_only,
                 initial_test_cases = init_tests,

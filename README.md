@@ -22,12 +22,13 @@ usage: deepconcolic.py [-h] [--model MODEL] [--inputs DIR] --outputs DIR
                        [--max-iterations INT] [--save-all-tests]
                        [--rng-seed SEED] [--labels FILE]
                        [--dataset {mnist,fashion_mnist,cifar10,OpenML:har}]
-                       [--vgg16-model] [--filters {LOF}] [--norm linf, l0]
-                       [--input-rows INT] [--input-cols INT]
-                       [--input-channels INT] [--cond-ratio FLOAT]
-                       [--top-classes INT] [--layers LAYER [LAYER ...]]
-                       [--feature-index INT] [--fuzzing] [--num-tests INT]
-                       [--num-processes INT] [--sleep-time INT]
+                       [--extra-tests DIR [DIR ...]] [--vgg16-model]
+                       [--filters {LOF}] [--norm linf, l0] [--input-rows INT]
+                       [--input-cols INT] [--input-channels INT]
+                       [--cond-ratio FLOAT] [--top-classes INT]
+                       [--layers LAYER [LAYER ...]] [--feature-index INT]
+                       [--fuzzing] [--num-tests INT] [--num-processes INT]
+                       [--sleep-time INT] [--dbnc-spec SPEC]
 
 Concolic testing for neural networks
 
@@ -51,6 +52,8 @@ optional arguments:
   --labels FILE         the default labels
   --dataset {mnist,fashion_mnist,cifar10,OpenML:har}
                         selected dataset
+  --extra-tests DIR [DIR ...]
+                        additonal directories of test images
   --vgg16-model         vgg16 model
   --filters {LOF}       additional filters used to put aside generated test
                         inputs that are too far from training data (there is
@@ -69,6 +72,7 @@ optional arguments:
   --num-tests INT       number of tests to generate
   --num-processes INT   number of processes to use
   --sleep-time INT      fuzzing sleep time
+  --dbnc-spec SPEC      Feature extraction and discretisation specification
 ```
 
 The neural network model under tested is specified by ``--model`` and a set of raw test data should be given
@@ -118,6 +122,19 @@ DeepConcolic nows supports an experimental fuzzing engine. Try ``--fuzzing`` to 
 python src/deepconcolic.py --fuzzing --model ./saved_models/mnist2.h5 --inputs data/mnist-seeds/ --outputs outs --input-rows 28 --input-cols 28
 ```
 
+To run Concolic BN-based Feature coverage (BFCov) for DNNs on the MNIST model
+```
+python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --criterion bfc --norm linf --dataset mnist --outputs outs --dbnc-spec ../dbnc/example.yaml
+```
+See [the example YAML specification](dbnc/example.yaml) for details on how to configure the BN-based abstraction.
+
+
+To run Concolic BN-based Feature-dependence coverage (BFdCov) for DNNs on the MNIST model
+```
+python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --criterion bfdc --norm linf --dataset mnist --outputs outs --dbnc-spec ../dbnc/example.yaml
+```
+
+
 ### Concolic Testing on Lipschitz Constants for DNNs
 
 To run Lipschitz Constant Testing, please refer to instructions in folder "Lipschitz Constant Testing".
@@ -132,6 +149,7 @@ pip3 install scikit-learn\>=0.22
 pip3 install tensorflow\>=2.3
 pip3 install pulp\>=2
 pip3 install adversarial-robustness-toolbox\>=1.3
+pip3 install pomegranate\>=0.13.4
 ```
 
 Note as of September 2020 one may need to append `--use-feature=2020-resolver` at the end of each `pip3 install` command-line to work-around errors in dependency resolution.  Further missing dependency errors for a package _p_ can then be solved by uninstalling/installing _p_.

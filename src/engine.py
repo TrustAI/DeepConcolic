@@ -2,6 +2,8 @@ from typing import *
 from utils import *
 from functools import reduce
 from sklearn.model_selection import train_test_split
+import yaml                             # for dumping record
+import hashlib                          # for hashing test inputs
 
 # ---
 
@@ -445,6 +447,28 @@ class Report:
       self.nsteps += 1
 
 
+  def record(self, test_cases, record, **kwds) -> None:
+    """
+    Outputs a record about all initial and generated test cases.
+
+    The record essentually encodes the tree that enables one to trace
+    the origins of all generated tests.
+    """
+    tests = [ dict (**record[x],
+                    md5 = hashlib.md5 (x).hexdigest ())
+              for x in test_cases ]
+    advrs = [ dict (**record[n[0]],
+                    md5 = hashlib.md5 (n[0]).hexdigest ())
+              for _o, n, _d in self.adversarials ]
+    data = dict (passed_tests = tests,
+                 adversarials = advrs,
+                 **kwds)
+    path = self.outdir.stamped_filepath ('record', suff = '.yml')
+    with open(path, 'w') as f:
+      yaml.dump (data, f)
+
+
+
 # ---
 
 
@@ -589,7 +613,7 @@ class Criterion (_ActivationStatBasedInitializable):
         covered_target.cover (acts)
       self.register_new_activations (acts)
 
-  def _batched_activations(self, tl: Sequence[Input], **kwds):
+  def _batched_activations(self, tl: Sequence[Input], **kwds) -> range:
     batches = np.array_split (tl, len (tl) // 100 + 1)
     for batch in batches:
       yield (self.analyzer.eval_batch (batch, **kwds))
@@ -769,7 +793,7 @@ class Engine:
   def run(self,
           report: Union[Report, Callable[[Criterion], Report]] = setup_basic_report,
           initial_test_cases = None,
-          trace_origins: bool = False,
+          check_root_only: bool = True,
           max_iterations = -1,
           **kwds) -> Report:
     '''
@@ -779,8 +803,10 @@ class Engine:
     if `max_iterations >= 0`, or else until full coverage is reached,
     or the criterion is fulfilled (whichever happens first).
 
-    Set `trace_origins` to `True` to keep track of the origin of
-    generated test cases and speed up filtering by the oracle.
+    Set `check_root_only` to `False` to ensure every new generated
+    test case that is close enough to any reference test data is
+    kept. Leaving it to `True` speeds the oracle check by only
+    comparing new tests agains the original reference version.
     '''
 
     criterion = self.criterion
@@ -813,8 +839,12 @@ class Engine:
     iteration = 1
     init_tests = report.num_tests
     init_adversarials = report.num_adversarials
-    origin = (None if not trace_origins else
-              InputsDict ([(x, i) for i, x in enumerate (criterion.test_cases)]))
+    # Note some test cases might be inserted multiple times: in such a
+    # case only the max index will be remembered as origin:
+    record = InputsDict ([(x, dict (root_index = i,
+                                    index = i,
+                                    label = int (self._run_test (x))))
+                          for i, x in enumerate (criterion.test_cases)])
 
     try:
 
@@ -827,19 +857,30 @@ class Engine:
         if search_attempt != None:
           x0, x1, d = search_attempt
 
+          # Check if x1 is already met:
+          new = x1 not in record
+
           # Test oracle for adversarial testing
-          close_enough = all (f.close_to (self.ref_data.data if origin is None else
-                                          [criterion.test_cases[origin[x0]]], x1)
-                              for f in self.dynamic_filters)
+          close_enough = new
+          close_enough &= all (f.close_to (self.ref_data.data if not check_root_only else
+                                           [criterion.test_cases[record[x0]['root_index']]], x1)
+                               for f in self.dynamic_filters)
           close_enough &= all (f.close_enough (x1) for f in self.static_filters)
           if close_enough:
             criterion.add_new_test_cases ([x1], covered_target = target)
-            if origin is not None:
-              origin[x1] = origin[x0]
             coverage = criterion.coverage ()
             y0 = self._run_test (x0)
             y1 = self._run_test (x1)
-  
+            root_index = record[x0]['root_index']
+            root_dist = criterion.metric.distance (x1, criterion.test_cases[root_index])
+            record[x1] = dict (root_index = root_index,
+                               root_dist = float (root_dist),
+                               origin_index = record[x0]['index'],
+                               origin_dist = float (d),
+                               gen_test_id = report.num_tests,
+                               index = len (record),
+                               label = int (y1))
+
             if y1 != y0:
               adversarial = True
               criterion.pop_test ()
@@ -852,10 +893,11 @@ class Engine:
         p1 ('#{} {}: {.as_prop:10.8%} {}'
             .format (iteration, criterion, coverage,
                      'with {} at {} distance {}: {}'
-                     .format('new test case' if close_enough else 'failed attempt',
+                     .format('new test case' if close_enough else
+                             'failed attempt' if new else 'not new',
                              criterion.metric, d,
                              'too far from raw input' if (not close_enough and
-                                                          not trace_origins) else
+                                                          not check_root_only) else
                              'too far from original input' if not close_enough else
                              'adversarial' if adversarial else 'passed')
                      if search_attempt != None else 'after failed attempt'))
@@ -880,6 +922,9 @@ class Engine:
         .format (*s_(iteration - 1),
                  *s_(report.num_tests - init_tests),
                  *is_are_(report.num_adversarials - init_adversarials)))
+
+    report.record (criterion.test_cases, record,
+                    norm = repr (criterion.metric))
 
     return report
 
@@ -969,25 +1014,38 @@ class Engine:
 
       train_size = x['train_size'] if 'train_size' in x else None
       test_size = x['test_size'] if 'test_size' in x else None
-      if isinstance (train_size, int) and isinstance (test_size, int):
-        train_size = max (1, min (train_size, len (idxs) - test_size))
-      elif isinstance (train_size, int):
-        train_size = min (train_size, len (idxs) - 1)
 
-      if isinstance (train_size, int) and test_size is None:
-        test_size = min (len (idxs) - train_size, len (idxs) - 1)
-      elif isinstance (train_size, int) and isinstance (test_size, int):
-        test_size = min (test_size, len (idxs) - train_size)
-      elif isinstance (test_size, int):
-        test_size = min (test_size, len (idxs) - 1)
+      rng = np.random.default_rng (randint ())
+      if 'train' in x:
+        if isinstance (train_size, int) and isinstance (test_size, int):
+          train_size = max (1, min (train_size, len (idxs) - test_size))
+        elif isinstance (train_size, int):
+          train_size = min (train_size, len (idxs) - 1)
 
-      train_idxs, test_idxs = train_test_split \
-                              (idxs, test_size = test_size, train_size = train_size)
-      acts, input_data, preds = self._activations_on_indexed_data (data, train_idxs)
-      acc = x['train']({ j: acts[j] for j in x['layer_indexes'] },
-                       input_data = input_data,
-                       true_labels = data.labels[train_idxs],
-                       pred_labels = preds)
+      if 'test' in x:
+        if isinstance (train_size, int) and test_size is None:
+          test_size = min (len (idxs) - train_size, len (idxs) - 1)
+        elif isinstance (train_size, int) and isinstance (test_size, int):
+          test_size = min (test_size, len (idxs) - train_size)
+        elif isinstance (test_size, int):
+          test_size = min (test_size, len (idxs) - 1)
+        elif train_size is not None and isinstance (train_size, float) and \
+                 isinstance (test_size, float):
+          test_size = min (test_size, 1. - train_size)
+
+      train_idxs, test_idxs = \
+        train_test_split (idxs, test_size = test_size, train_size = train_size) \
+        if 'train' in x and 'test' in x else \
+        (rng.choice (a = idxs, axis = 0, size = min (train_size, len (idxs))), None) \
+        if 'train' in x else \
+        (None, rng.choice (a = idxs, axis = 0, size = min (test_size, len (idxs))))
+
+      if 'train' in x:
+        acts, input_data, preds = self._activations_on_indexed_data (data, train_idxs)
+        acc = x['train']({ j: acts[j] for j in x['layer_indexes'] },
+                         input_data = input_data,
+                         true_labels = data.labels[train_idxs],
+                         pred_labels = preds)
 
       if 'test' in x:
         acts, input_data, preds = self._activations_on_indexed_data (data, test_idxs)
@@ -1245,7 +1303,7 @@ class LayerLocalCriterion (Criterion):
   def stat_based_incremental_initializers(self):
     if len (self.cover_layers) <= 1:
       for cl in self.cover_layers: cl.pfactor = 1.0
-      return None
+      return []
     else:
       return [{
         'name': 'magnitude coefficients',
@@ -1318,8 +1376,7 @@ class LayerLocalCriterion (Criterion):
         if self.shallow_first: break
         if np.random.uniform (0., 1.) < i * 1.0 / len(self.cover_layers): break
     if layer == None:
-      sys.exit('incorrect layer indices specified' +
-               '(the layer tested shall be either conv or dense layer)')
+      raise EarlyTermination ('Unable to find a new candidate input!')
     return self.cover_layers[layer], pos, value, self.test_cases[-1-pos[0]]
 
 

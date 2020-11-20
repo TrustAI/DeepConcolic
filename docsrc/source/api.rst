@@ -22,6 +22,7 @@ along with one or more associated analyzers for each of them.
 
    nc
    mcdc
+   dbnc
 
 Internals
 ---------

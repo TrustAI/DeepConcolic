@@ -22,6 +22,9 @@ def rng_seed (seed: Optional[int]):
   # In case one also uses pythons' stdlib ?
   random.seed (seed)
 
+def randint ():
+  return int (np.random.uniform (2**32-1))
+
 print ("Using TensorFlow version:", tf.__version__, file = sys.stderr)
 
 COLUMNS = os.getenv ('COLUMNS', default = '80')
@@ -55,6 +58,12 @@ def xtuple(t):
 
 def xlist(t):
   return [t] if t is not None else []
+
+def seqx(t):
+  return [] if t is None else t if isinstance (t, (list, tuple)) else [t]
+
+def some(a, d):
+  return a if a is not None else d
 
 def s_(i):
   return i, 's' if i > 1 else ''
@@ -180,8 +189,8 @@ class OutputDir:
   def path(self) -> str:
     return self.dirpath
 
-  def filepath(self, base) -> str:
-    return self.dirpath + base
+  def filepath(self, base, suff = '') -> str:
+    return self.dirpath + base + suff
 
   def stamped_filename(self, base, sep = '-', suff = '') -> str:
     return ((self.stamp + sep + base) if self.enable_stamp and self.prefix_stamp else \
@@ -190,6 +199,14 @@ class OutputDir:
 
   def stamped_filepath(self, *args, **kwds) -> str:
     return self.dirpath + self.stamped_filename (*args, **kwds)
+
+  def fresh_dir(self, basename, suff_fmt = '-{:x}', **kwds):
+    outdir = self.filepath (basename + suff_fmt.format (random.getrandbits (16)))
+    try:
+      os.makedirs (outdir)
+      return OutputDir (outdir, **kwds)
+    except FileExistsError:
+      return self.fresh_dir (basename, suff_fmt = suff_fmt, **kwds)
 
 # ---
 
@@ -272,6 +289,21 @@ def get_cover_layers (dnn, constr, layer_indices = None,
            if not (exclude_direct_input_succ and
                    (layer[0] == 0 or layer[0] == 1 and is_input_layer (dnn.layers[0])))
            and (layer_indices == None or layer[0] in layer_indices) ]
+
+# ---
+
+def validate_strarg (valid, spec):
+  def aux (v, s):
+    if s is not None and s not in valid:
+      raise ValueError ('Unknown {} `{}\' for argument `{}\': expected one of '
+                        '{}'.format (spec, s, v, valid))
+  return aux
+
+def validate_inttuplearg (v, s):
+  if isinstance (s, tuple) and all (isinstance (se, int) for se in s):
+    return
+  raise ValueError ('Invalid value for argument `{}\': expected tuple of ints'
+                    .format (v))
 
 # ---
 
@@ -391,6 +423,11 @@ def is_padding(dec_pos, dec_layer, cond_layer, post = True, unravel_pos = True):
              weights.shape[0]   > cond_layer.output.shape[1]))
   return False
 
+# TODO: stride & padding
+def maxpool_idxs (oidx, pool_size) -> range:
+  for pool_idx in np.ndindex (pool_size):
+    yield (tuple (oidx[i] * pool_size[i] + pool_idx[i]
+                  for i in range (len (pool_size))))
 
 def get_ssc_next(clayers, layer_indices=None, feature_indices=None):
   #global the_dec_pos
@@ -497,6 +534,11 @@ class Coverage:
                      total = self.total + x.total)
 
 
+  def __mul__(self, f: float):
+    return Coverage (covered = float(self.c) * f,
+                     total = self.total)
+
+
   @property
   def done(self) -> bool:
     return self.total == self.c
@@ -539,20 +581,39 @@ class Bounds:
 
 from collections import UserDict
 
+try:
+  # Use xxhash if available as it's probably more efficient
+  import xxhash
+  __h = xxhash.xxh64 ()
+  def np_hash (x):
+    __h.reset ()
+    __h.update (x)
+    return __h.digest ()
+except:
+  def np_hash (x):
+    return hash (x.tobytes ())
+  # NB: In case we experience too many collisions:
+  # import hashlib
+  # def np_hash (x):
+  #   return hashlib.md5 (x).digest ()
+
 class NPArrayDict (UserDict):
   '''
   Custom dictionary that accepts numpy arrays as keys.
   '''
 
   def __getitem__(self, x: np.ndarray):
-    return self.data[hash (x.tobytes ())]
+    return self.data[np_hash (x)]
 
   def __delitem__(self, x: np.ndarray):
-    del self.data[hash (x.tobytes ())]
+    del self.data[np_hash (x)]
 
   def __setitem__(self, x: np.ndarray, val):
     x.flags.writeable = False
-    self.data[hash (x.tobytes ())] = val
+    self.data[np_hash (x)] = val
+
+  def __contains__(self, x: np.ndarray):
+    return np_hash (x) in self.data
 
 
 # ---

@@ -1,4 +1,4 @@
-from utils import OutputDir
+from utils import OutputDir, tp1
 import os
 mpl_backend = os.getenv ('DC_MPL_BACKEND')
 mpl_fig_width = float (os.getenv ('DC_MPL_FIG_WIDTH', default = 7.))
@@ -20,12 +20,12 @@ pgf_output_pdf = True
 pgf_default_figsize = (mpl_fig_pgf_width, mpl_fig_pgf_width * mpl_fig_ratio)
 pgf_default_params = {
   'font.size': 8,
-  'font.family': 'cmr10',        # lmodern
+  'font.family': 'cmr10',               # lmodern
   'text.usetex': True,
   'axes.linewidth': .5,
-  'axes.unicode_minus': True,    # fix mpl bug in 3.3.0?
+  'axes.unicode_minus': True,           # fix mpl bug in 3.3.0?
   'lines.linewidth': .5,
-  'lines.markersize': .5,
+  'lines.markersize': .2,
   'pgf.texsystem': 'pdflatex',
   'pgf.rcfonts': False,        # don't setup fonts from rc parameters
   # "pgf.preamble": [r"\input{../macro}"]
@@ -70,21 +70,32 @@ pgf_setup ()
 
 # ---
 
-def subplots (*args, figsize = None, **kwds):
-  figsize = figsize or (pgf_default_figsize if pgf else png_default_figsize)
-  if plt:
-    return plt.subplots (*args, figsize = figsize, **kwds)
-  else:
-    return None
+def _def (f):
+  def __aux (*args, figsize = None, figsize_adjust = (1.0, 1.0), **kwds):
+    if not plt:
+      return None
+    figsize = figsize or (pgf_default_figsize if pgf else png_default_figsize)
+    figsize = tuple (figsize[i] * figsize_adjust[i] for i in (0, 1))
+    return f (*args, figsize = figsize, **kwds)
+  return __aux
+
+figure = _def (plt.figure)
+subplots = _def (plt.subplots)
 
 # import tikzplotlib
 
-def show (fig = None, outdir: OutputDir = None, basefilename = None):
+def show (fig = None, outdir: OutputDir = None, basefilename = None, **kwds):
   if plt:
     if not pgf and not png:
       plt.show ()
     elif fig is not None and basefilename is not None:
-      plt.tight_layout (pad = 0, w_pad = 0.1, h_pad = 0.1)
+      if not fig.get_constrained_layout ():
+        plt.tight_layout (**{**dict(pad = 0, w_pad = 0.1, h_pad = 0.1),
+                             **kwds})
+      else:
+        fig.set_constrained_layout_pads(**{**dict(w_pad = 0.01, h_pad = 0.01,
+                                                  hspace=0., wspace=0.),
+                                           **kwds})
       outdir = OutputDir () if outdir is None else outdir
       assert isinstance (outdir, OutputDir)
       if png:
