@@ -145,7 +145,7 @@ We suggest to create an environment using [miniconda](https://docs.conda.io/en/l
 conda create --name deepconcolic
 conda activate deepconcolic
 conda install opencv 
-pip3 install scikit-learn\>=0.22
+pip3 install scikit-learn\>=0.22.1
 pip3 install tensorflow\>=2.3
 pip3 install pulp\>=2
 pip3 install adversarial-robustness-toolbox\>=1.3
@@ -153,6 +153,11 @@ pip3 install pomegranate\>=0.13.4
 ```
 
 Note as of September 2020 one may need to append `--use-feature=2020-resolver` at the end of each `pip3 install` command-line to work-around errors in dependency resolution.  Further missing dependency errors for a package _p_ can then be solved by uninstalling/installing _p_. Note: if pomegranate installation failed with the above command, please try "pip3 install pomegranate==0.13.4" instead. 
+
+```
+pip3 install scikit-learn==0.22.1 adversarial-robustness-toolbox==1.3 scipy==1.4.1 numpy==1.16.0 --use-feature=2020-resolver
+
+```
 
 # Publications
 
