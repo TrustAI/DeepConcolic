@@ -29,6 +29,7 @@ def deepconcolic(criterion, norm, test_object, report_args,
     elif norm=='l0':
       from nc_l0 import NcL0Analyzer
       l0_args = copy.copy (norm_args)
+      del l0_args['LB_hard']
       del l0_args['LB_noise']
       engine = nc_setup (test_object = test_object,
                          engine_args = engine_args,
@@ -80,6 +81,7 @@ def deepconcolic(criterion, norm, test_object, report_args,
   elif criterion=='ssc':
     from ssc import SScGANBasedAnalyzer, setup as ssc_setup
     linf_args = copy.copy (norm_args)
+    del linf_args['LB_hard']
     del linf_args['LB_noise']
     engine = ssc_setup (test_object = test_object,
                         engine_args = engine_args,
