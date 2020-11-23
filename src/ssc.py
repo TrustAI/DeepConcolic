@@ -62,7 +62,7 @@ def local_search(eval_batch, local_input, ssc_pair, adv_crafter, e_max_input, ss
       not_changed+=1
 
     if d_min==1: break
-    if d_min<=ssc_ratio* np.prod (ssc_pair.cond_layer.output.shape[1:]): break
+    if d_min <= ssc_ratio * np.prod (ssc_pair.cond_layer.output.shape[1:].as_list ()): break
 
   return d_min, x_ret, diff_map
 
@@ -127,7 +127,7 @@ def ssc_search(eval_batch, raw_data, cond_ratio, cond_layer, dec_layer, dec_pos,
       if d_min==1: break
 
     #print ("++++++",d_min, ssc_ratio, ssc_ratio*cond_layer.ssc_map.size)
-    if d_min <= ssc_ratio * np.prod (cond_layer.output.shape[1:]): break
+    if d_min <= ssc_ratio * np.prod (cond_layer.output.shape[1:].as_list ()): break
 
   #print ('final d: ', d_min, ' count:', count)
   if x is not None:
@@ -635,7 +635,7 @@ class SScGANBasedAnalyzer (SScAnalyzer4FreeSearch):
       ssc_search (self.eval_batch, self.ref_data, self.cond_ratio,
                   cond_layer, dec_layer, dec_pos, self.adv_crafter))
     tp1 ('#Condition changes: {0}, norm distance: {1}'.format(d_min, d_norm))
-    feasible = (d_min <= self.cond_ratio * np.prod(cond_layer.output.shape[1:]) or
+    feasible = (d_min <= self.cond_ratio * np.prod(cond_layer.output.shape[1:].as_list ()) or
                 d_min == 1)             # ???
     if not feasible:
       return None
