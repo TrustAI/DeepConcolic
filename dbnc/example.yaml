@@ -1,5 +1,5 @@
 {
-    # 
+    #
     # Training Data
     # =============
     #
@@ -10,7 +10,7 @@
     # Proportion of the training data (above) to use for feature
     # extraction (defaults to 1, i.e. use all of it).
     # feat_extr_train_size: .5,
-    # 
+    #
     # Feature Extraction (for each layer)
     # ===================================
     #
@@ -20,7 +20,7 @@
     # usually quite efficient, yet may impair the generatation of test
     # cases via the LP-based algorithm):
     # feats: { decomp: 'pca', n_components: 3, svd_solver: 'randomized' },
-    # 
+    #
     # PCA: Use 5 components with exact algorthm (potentially slower,
     # but yields exact inverse transformation---needed for LP-based
     # test case generation):
@@ -29,7 +29,7 @@
     # PCA: Use 5 components and guess a good algorithms based on size
     # of training data:
     # feats: 5,
-    # 
+    #
     # PCA: Use as many components as needed to capture at least 50% of
     # variance.  High values for shallow layers (close to input) is
     # discouraged, as this usually leads to large amounts of
@@ -55,7 +55,7 @@
     #
     # Hybrid: Use ICA(3) for the three first layers, PCA(4) elsewhere:
     # feats: '(lambda li: { "decomp": "ica", "n_components": 3 } if li <= 2 else { "n_components": 4 })',
-    # 
+    #
     # Discretization Strategy (for each extracted feature)
     # ====================================================
     #
@@ -68,11 +68,11 @@
     # data is evenly spread among each interval---the default for
     # non-binarization):
     # discr: 2,
-    # 
+    #
     # Perform a 3-clustering of the projected training data, and use 3
     # adjacent intervals that each span exactly one cluster:
     # discr: { n_bins: 3, strategy: "kmeans" },
-    # 
+    #
     # Use 4 intervals of identical width that span all training data:
     # discr: { n_bins: 4, strategy: "uniform" },
     #
@@ -108,15 +108,15 @@
     #
     # Extended Variants
     # -----------------
-    # 
+    #
     # Extended discretization strategies (with `extended: True') add
     # two left- and right-open intervals that contain no projected
     # training data.
-    # 
+    #
     # Use 3 extended bins (so, 5 in total) to discretize based on
     # 3-clustered training data:
     # discr: { n_bins: 3, extended: True, strategy: "kmeans" },
-    # 
+    #
     # Use 3 extended bins (so, 5 in total) to discretize with 3
     # intervals of identical width:
     # discr: { n_bins: 3, extended: True, strategy: "uniform" },
@@ -142,7 +142,7 @@
     # =========
     #
     # Current reporting requires `matplotlib` to be installed.
-    # 
+    #
     # If True, plot graphs that show how some of the training data is
     # spread w.r.t each extracted features for each layer:
     report_on_feature_extractions: False,
@@ -150,6 +150,16 @@
     # Size of test sample (also extracted from training data) to use
     # for scoring and reporting:
     bn_abstr_test_size: 200,
+    #
+    # Dump the BN fit with the (portion of the) training dataset that
+    # was used to extract and discretize features in a file called
+    # 'bn4trained.yml':
+    dump_bn_with_trained_dataset_distribution: False,
+    #
+    # Dump the BN fit with the initial and generated dataset in a file
+    # called 'bn4tests.yml' upon termination of the generation
+    # process:
+    dump_bn_with_final_dataset_distribution: False,
     #
     #
     # Process Customization
