@@ -77,9 +77,8 @@ class FeatureDiscretizer:
   def fit_wrt (self, x, y, feat_extr, **kwds) -> None:
     raise NotImplementedError
 
-  @abstractmethod
   def get_params (self, deep = True) -> dict:
-    raise NotImplementedError
+    return dict ()
 
 
 class FeatureBinarizer (FeatureDiscretizer, Binarizer):
@@ -340,7 +339,15 @@ class BFcLayer (CoverableLayer):
 
   def get_params (self, deep = True):
     return dict (name = self.layer.name,
-                 transform = self.transform.get_params (deep))
+                 # transform = self.transform.get_params (deep),
+                 # discretization = self.discr.get_params (deep),
+                 discretized_latent_features = {
+                   f: [ interval_repr (self.discr.part_edges (f, i))
+                        for i in range (self.discr.feature_parts (f)) ]
+                   for f in self.range_features ()
+                 },
+                 first = self.first,
+                 last = self.last)
 
 
   def feature_of_component (self, component: int) -> Optional[int]:
@@ -488,6 +495,8 @@ class _BaseBFcCriterion (Criterion):
                report_on_feature_extractions = None,
                close_reports_on_feature_extractions = None,
                assess_discretized_feature_probas = False,
+               dump_bn_with_trained_dataset_distribution = False,
+               dump_bn_with_final_dataset_distribution = False,
                outdir: OutputDir = None,
                **kwds):
     assert (print_classification_reports is None or isinstance (print_classification_reports, bool))
@@ -504,6 +513,8 @@ class _BaseBFcCriterion (Criterion):
     self.report_on_feature_extractions = report_on_feature_extractions
     self.close_reports_on_feature_extractions = close_reports_on_feature_extractions
     self.assess_discretized_feature_probas = assess_discretized_feature_probas
+    self.dump_bn_with_trained_dataset_distribution = dump_bn_with_trained_dataset_distribution
+    self.dump_bn_with_final_dataset_distribution = dump_bn_with_final_dataset_distribution
     self.flayers = list (filter (lambda l: isinstance (l, BFcLayer), clayers))
     clayers = list (filter (lambda l: isinstance (l, BoolMappedCoverableLayer), clayers))
     assert (clayers == [])
@@ -515,8 +526,32 @@ class _BaseBFcCriterion (Criterion):
     self._reset_progress ()
 
 
+
   def finalize_setup(self):
     self.analyzer.finalize_setup (self.flayers)
+
+
+  def terminate (self):
+    if self.dump_bn_with_final_dataset_distribution:
+      self.dump_bn ('bn4tests', 'generated dataset')
+
+
+  def dump_bn (self, base, descr):
+    fn = self.outdir.filepath (base, suff = '.yml')
+    header = '\n# '.join ((f'# BN fit with {descr}',
+                           '',
+                           'Reload with:',
+                           f"  with open ('{base}.yml', mode = 'r') as f:",
+                           "    N = pomegranate.BayesianNetwork.from_yaml (f.read ())",
+                           '\n'))
+    extra = dict (dataset_size = self.total_registered_cases,
+                  params = self.get_params (True))
+    np1 (f'Outputting BN fit with {descr} in `{fn}\'... ')
+    write_in_file (fn, header, self.N.to_yaml (), yaml.dump (extra))
+    c1 ('done')
+
+
+  # ---
 
 
   def flatten_for_layer (self, map, fls = None):
@@ -553,10 +588,15 @@ class _BaseBFcCriterion (Criterion):
   # ---
 
 
-  def reset (self):
-    super().reset ()
+  def reset_bn (self):
+    # Next call to fit_activations will reset the BN's probabilities
     self.base_dimreds = None
     self.total_registered_cases = 0
+
+
+  def reset (self):
+    super().reset ()
+    self.reset_bn ()
     self.outdir.reset_stamp ()
     self._reset_progress ()
 
@@ -879,14 +919,22 @@ class _BaseBFcCriterion (Criterion):
     # Last, fit the Bayesian Network with given training activations
     # for now, for the purpose of preliminary assessments; the BN will
     # be re-initialized upon the first call to `add_new_test_cases`:
-    if self.score_layer_likelihoods or self.assess_discretized_feature_probas:
+    if self.score_layer_likelihoods or \
+       self.assess_discretized_feature_probas or \
+       self.dump_bn_with_trained_dataset_distribution:
       self.fit_activations (ok_acts)
+
+    if self.dump_bn_with_trained_dataset_distribution:
+      self.dump_bn ('bn4trained', 'training dataset')
+      if not (self.score_layer_likelihoods or \
+              self.assess_discretized_feature_probas):
+        self.reset_bn ()
 
 
   def get_params (self, deep = True):
     p = dict (node_count = self.N.node_count (),
               edge_count = self.N.edge_count (),
-              explained_variance_ratios = self.explained_variance_ratios_)
+              explained_variance_ratios = list (self.explained_variance_ratios_))
     if deep:
       p['layers'] = [ fl.get_params (deep) for fl in self.flayers ]
     return p
@@ -958,6 +1006,8 @@ class _BaseBFcCriterion (Criterion):
       truth = self.dimred_n_discretize_activations (acts)
       self._score_discretized_feature_probas (truth)
       del truth
+
+    self.reset_bn ()
 
 
   def _score_feature_extractions (self, acts, true_labels = None):
@@ -1590,6 +1640,8 @@ def setup (setup_criterion = None,
            bn_abstr_train_size = 0.5,
            bn_abstr_test_size = 0.5,
            bn_abstr_n_jobs = None,
+           dump_bn_with_trained_dataset_distribution = None,
+           dump_bn_with_final_dataset_distribution = None,
            verbose: int = None,
            **kwds):
 
@@ -1609,6 +1661,8 @@ def setup (setup_criterion = None,
             print_classification_reports = True,
             epsilon = epsilon,
             bn_abstr_n_jobs = bn_abstr_n_jobs,
+            dump_bn_with_trained_dataset_distribution = dump_bn_with_trained_dataset_distribution,
+            dump_bn_with_final_dataset_distribution = dump_bn_with_final_dataset_distribution,
             outdir = outdir,
             verbose = verbose)
   if report_on_feature_extractions:

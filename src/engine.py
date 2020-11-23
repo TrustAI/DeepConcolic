@@ -549,7 +549,7 @@ class Criterion (_ActivationStatBasedInitializable):
 
 
   @abstractmethod
-  def finalize_setup(self):
+  def finalize_setup(self) -> None:
     """
     Called once after any stat-based initialization (see, e.g.,
     :meth:`stat_based_basic_initializers`), and before any call to
@@ -558,6 +558,15 @@ class Criterion (_ActivationStatBasedInitializable):
     """
     raise NotImplementedError
     # self.analyzer.finalize_setup ()
+
+
+  def terminate(self) -> None:
+    """
+    Called once upon termination of the test case generation.
+
+    Use this to dump some files or reports.
+    """
+    pass
 
 
   def reset(self):
@@ -930,6 +939,8 @@ class Engine:
     if len (record) > 0:
       report.record (criterion.test_cases, record,
                      norm = repr (criterion.metric))
+
+    criterion.terminate ()
 
     return report
 
