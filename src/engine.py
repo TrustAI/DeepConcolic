@@ -844,7 +844,9 @@ class Engine:
     record = InputsDict ([(x, dict (root_index = i,
                                     index = i,
                                     label = int (self._run_test (x))))
-                          for i, x in enumerate (criterion.test_cases)])
+                          for i, x in enumerate (criterion.test_cases)]) \
+             if criterion.rooted_search else InputsDict ()
+    check_root_only &= criterion.rooted_search
 
     try:
 
@@ -871,15 +873,17 @@ class Engine:
             coverage = criterion.coverage ()
             y0 = self._run_test (x0)
             y1 = self._run_test (x1)
-            root_index = record[x0]['root_index']
-            root_dist = criterion.metric.distance (x1, criterion.test_cases[root_index])
-            record[x1] = dict (root_index = root_index,
-                               root_dist = float (root_dist),
-                               origin_index = record[x0]['index'],
-                               origin_dist = float (d),
-                               gen_test_id = report.num_tests,
-                               index = len (record),
-                               label = int (y1))
+            if criterion.rooted_search:
+              root_index = record[x0]['root_index']
+              root_dist = criterion.metric.distance (x1, criterion.test_cases[root_index])
+              record[x1] = dict (root_index = root_index,
+                                 root_dist = float (root_dist),
+                                 origin_index = record[x0]['index'],
+                                 origin_dist = float (d),
+                                 gen_test_id = report.num_tests,
+                                 index = len (record),
+                                 label = int (y1))
+
 
             if y1 != y0:
               adversarial = True
@@ -923,8 +927,9 @@ class Engine:
                  *s_(report.num_tests - init_tests),
                  *is_are_(report.num_adversarials - init_adversarials)))
 
-    report.record (criterion.test_cases, record,
-                    norm = repr (criterion.metric))
+    if len (record) > 0:
+      report.record (criterion.test_cases, record,
+                     norm = repr (criterion.metric))
 
     return report
 
