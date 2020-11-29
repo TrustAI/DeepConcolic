@@ -139,8 +139,7 @@ python deepconcolic.py --model ../saved_models/mnist_complicated.h5
 DeepConcolic nows supports an experimental fuzzing engine. Try ``--fuzzing`` to use it. The following command will result in: one ``mutants`` folder, one ``advs`` folder for adversarial examples and an adversarial list ``adv.list``.
 
 ```
-python src/deepconcolic.py --fuzzing 
-                           --model ./saved_models/mnist2.h5 
+python src/deepconcolic.py --fuzzing <br/> --model ./saved_models/mnist2.h5 
                            --inputs data/mnist-seeds/ 
                            --outputs outs 
                            --input-rows 28 
