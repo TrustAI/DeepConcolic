@@ -133,7 +133,11 @@ To run Concolic BN-based Feature-dependence coverage (BFdCov) for DNNs on the MN
 ```
 python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --criterion bfdc --norm linf --dataset mnist --outputs outs --dbnc-spec ../dbnc/example.yaml
 ```
-
+You could adjust the following two parameters in the DBNC specification file defined by `--dbnc-spec' to dump the generated bayesian network to files `bn4trained.yml' and `bn4tests.yml'. 
+ ```  
+    dump_bn_with_trained_dataset_distribution: True,
+    dump_bn_with_final_dataset_distribution: True,
+ ```
 
 ### Concolic Testing on Lipschitz Constants for DNNs
 
