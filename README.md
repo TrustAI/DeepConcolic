@@ -84,88 +84,54 @@ to run DeepConcolic are in the following.
 To run an MNIST model
 
 ```
-python deepconcolic.py --model ../saved_models/mnist_complicated.h5 
-                       --dataset mnist 
-                       --outputs outs/
+python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --dataset mnist --outputs outs/
 ```
 
 To run an CIFAR10 model
 
 ```
-python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 
-                       --dataset cifar10 
-                       --outputs outs/
+python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --dataset cifar10 --outputs outs/
 ```
 
 To test a particular layer
 ```
-python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 
-                       --dataset cifar10 
-                       --outputs outs/ 
-                       --layers 2
+python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --dataset cifar10 --outputs outs/ --layers 2
 ```
 
 To run MC/DC for DNNs on the CIFAR-10 model
 
 ```
-python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 
-                       --criterion ssc 
-                       --cond-ratio 0.1 
-                       --dataset cifar10 
-                       --outputs outs
+python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --criterion ssc --cond-ratio 0.1 --dataset cifar10 --outputs outs
 ```
 
 To run MC/DC for DNNs on the VGG16 model (with input images from the ``data`` sub-directory)
 
 ```
-python deepconcolic.py --vgg16-model 
-                       --inputs data/ 
-                       --outputs outs 
-                       --cond-ratio 0.1 
-                       --top-classes 5 
-                       --labels labels.txt 
-                       --criterion ssc
+python deepconcolic.py --vgg16-model --inputs data/ --outputs outs --cond-ratio 0.1 --top-classes 5 --labels labels.txt --criterion ssc
 ```
 
 To run Concolic Sign-sign-coverage (MC/DC) for DNNs on the MNIST model
 
 ```
-python deepconcolic.py --model ../saved_models/mnist_complicated.h5 
-                       --dataset mnist 
-                       --outputs outs 
-                       --criterion ssclp
+python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --dataset mnist --outputs outs --criterion ssclp
 ```
 
 DeepConcolic nows supports an experimental fuzzing engine. Try ``--fuzzing`` to use it. The following command will result in: one ``mutants`` folder, one ``advs`` folder for adversarial examples and an adversarial list ``adv.list``.
 
 ```
-python src/deepconcolic.py --fuzzing <br/> --model ./saved_models/mnist2.h5 
-                           --inputs data/mnist-seeds/ 
-                           --outputs outs 
-                           --input-rows 28 
-                           --input-cols 28
+python src/deepconcolic.py --fuzzing <br/> --model ./saved_models/mnist2.h5 --inputs data/mnist-seeds/ --outputs outs --input-rows 28 --input-cols 28
 ```
 
 To run Concolic BN-based Feature coverage (BFCov) for DNNs on the MNIST model
 ```
-python deepconcolic.py --model ../saved_models/mnist_complicated.h5 
-                       --criterion bfc 
-                       --norm linf 
-                       --dataset mnist 
-                       --outputs outs 
-                       --dbnc-spec ../dbnc/example.yaml
+python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --criterion bfc --norm linf --dataset mnist --outputs outs --dbnc-spec ../dbnc/example.yaml
 ```
 See [the example YAML specification](dbnc/example.yaml) for details on how to configure the BN-based abstraction.
 
 
 To run Concolic BN-based Feature-dependence coverage (BFdCov) for DNNs on the MNIST model
 ```
-python deepconcolic.py --model ../saved_models/mnist_complicated.h5 
-                       --criterion bfdc 
-                       --norm linf 
-                       --dataset mnist 
-                       --outputs outs 
-                       --dbnc-spec ../dbnc/example.yaml
+python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --criterion bfdc --norm linf --dataset mnist --outputs outs --dbnc-spec ../dbnc/example.yaml
 ```
 
 
