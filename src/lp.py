@@ -155,8 +155,8 @@ class PulpSolver4DNN (LpSolver4DNN):
                               'COIN_CMD',
                               # 'COINMP_DLL',
                               'GLPK_CMD',
-                              'CHOCO_CMD',
-                              'PULP_CHOCO_CMD',
+                              # 'CHOCO_CMD',
+                              # 'PULP_CHOCO_CMD',
                               'PULP_CBC_CMD',
                               # 'MIPCL_CMD',
                               # 'SCIP_CMD',
@@ -175,7 +175,7 @@ class PulpSolver4DNN (LpSolver4DNN):
       if solver in available_solvers:
         self.solver = get_solver (solver, **args)
         # NB: does CPLEX_PY actually supports time limits?
-        if solver in ('PULP_CHOCO_CMD', 'PULP_CBC_CMD', 'GLPK_CMD', 'CHOCO_CMD'):
+        if solver in ('PULP_CBC_CMD', 'GLPK_CMD',):
           print ('PuLP: {} solver selected.'.format (solver))
           print ('PuLP: WARNING: {} does not support time limit.'.format (solver))
         else:

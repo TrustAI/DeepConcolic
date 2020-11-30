@@ -819,13 +819,10 @@ class _BaseBFcCriterion (Criterion):
       ok_labels = (np.asarray(true_labels) == np.asarray(pred_labels))
       ok_acts = { layer: acts[layer][ ok_labels] for layer in acts }
       ko_acts = { layer: acts[layer][~ok_labels] for layer in acts }
-      ok_labels = true_labels[ ok_labels]
-      ko_labels = true_labels[~ok_labels]
+      ok_labels, ko_labels = true_labels[ ok_labels], true_labels[~ok_labels]
     else:
-      ok_acts = acts
-      ok_labels = true_labels
-      ko_acts = {}
-      ko_labels = []
+      ok_acts, ko_acts = acts, {}
+      ok_labels, ko_labels = true_labels, []
 
     ts0 = len(ok_acts[self.flayers[0].layer_index])
     cp1 ('| Given {} correctly classified training sample'.format (*s_(ts0)))
@@ -863,7 +860,7 @@ class _BaseBFcCriterion (Criterion):
 
       fit_wrt_args = {}
       x_ko, y_ko = [], []
-      if ko_acts != {}:
+      if len (ko_labels) > 0:
         x_ko = np.stack([a.flatten () for a in ko_acts[fl.layer_index]], axis = 0)
         y_ko = fl.transform.transform (x_ko)
         fit_wrt_args = dict (y2plot = y_ko[:,fl.focus],
