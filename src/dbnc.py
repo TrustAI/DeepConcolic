@@ -1649,6 +1649,7 @@ def setup (setup_criterion = None,
                                                             discr_n_jobs = discr_n_jobs))
   cover_layers = get_cover_layers (test_object.dnn, setup_layer,
                                    layer_indices = test_object.layer_indices,
+                                   include_all_activations = True,
                                    exclude_direct_input_succ = False,
                                    exclude_output_layer = False)
   criterion_args \

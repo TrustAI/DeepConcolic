@@ -269,19 +269,23 @@ def deepest_tested_layer (dnn, clayers):
 
 
 def testable_layer (dnn, idx,
+                    include_all_activations = False,
                     exclude_direct_input_succ = False):
   layer = dnn.layers[idx]
-  return ((is_conv_layer(layer) or is_dense_layer(layer)) and
-          (idx != len(dnn.layers)-1 or activation_is_relu (layer)) and
+  return (((is_conv_layer(layer) or is_dense_layer(layer)) and
+           (idx != len(dnn.layers)-1 or activation_is_relu (layer)) or
+           (is_activation_layer(layer) and include_all_activations)) and
           not (exclude_direct_input_succ and
                (idx == 0 or idx == 1 and is_input_layer (dnn.layers[0]))))
 
 def get_cover_layers (dnn, constr, layer_indices = None,
+                      include_all_activations = False,
                       exclude_direct_input_succ = False,
                       exclude_output_layer = True):
   # All coverable layers:
   layers = dnn.layers[:-1] if exclude_output_layer else dnn.layers
-  cls = [ (l, layer) for l, layer in enumerate (layers) if testable_layer (dnn, l) ]
+  cls = [ (l, layer) for l, layer in enumerate (layers)
+          if testable_layer (dnn, l, include_all_activations = include_all_activations) ]
   return [ constr (layer[1], layer[0],
                    prev = (cls[l-1][0] if l > 0 else None),
                    succ = (cls[l+1][1] if l < len(cls) - 1 else None))
@@ -390,7 +394,10 @@ class test_objectt:
   def check_layer_indices (self, criterion):
     if self.layer_indices == None: return
     mcdc = criterion in ('ssc', 'ssclp')
-    testable = lambda l: testable_layer (self.dnn, l, exclude_direct_input_succ = mcdc)
+    dbnc = criterion in ('bfc', 'bfdc')
+    testable = lambda l: testable_layer (self.dnn, l,
+                                         include_all_activations = dbnc,
+                                         exclude_direct_input_succ = mcdc)
     testable_layers_indices = [ l for l in range(0, len(self.dnn.layers)) if testable (l) ]
     wrong_layer_indices = [ i for i in self.layer_indices if i not in testable_layers_indices ]
     if wrong_layer_indices != []:
