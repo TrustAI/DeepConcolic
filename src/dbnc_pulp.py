@@ -9,7 +9,7 @@ from sklearn.decomposition import PCA, FastICA
 
 # ---
 
-from engine import Analyzer
+from engine import Analyzer, CL
 from dbnc import BFcLayer
 from dbnc import BFcTarget, BFcAnalyzer
 from dbnc import BFDcTarget, BFDcAnalyzer
@@ -133,6 +133,10 @@ class _BasePulpAnalyzer (Analyzer, PulpSolver4DNN):
     super().setup (self.dnn, self.metric, self._input_bounds,
                    build_encoder = abstracted_layer_encoder (clayers),
                    upto = deepest_tested_layer (self.dnn, clayers))
+
+
+  def for_layer(self, cl: CL) -> pulp.LpProblem:
+    return self.base_constraints[cl.layer_index]
 
 
   def input_metric(self) -> PulpLinearMetric:
