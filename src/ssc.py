@@ -614,6 +614,9 @@ from norms import LInf
 class SScGANBasedAnalyzer (SScAnalyzer4FreeSearch):
 
   def __init__(self, linf_args = {}, cond_ratio = 0.01, ref_data = None, **kwds):
+    """
+    TODO: FGM also accepts the L1 and L2 norms, in addition to Linf.
+    """
     super().__init__(**kwds)
     self.metric = LInf (**linf_args)
     self.cond_ratio = cond_ratio

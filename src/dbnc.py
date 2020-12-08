@@ -5,7 +5,6 @@ from typing import *
 from utils import *
 from engine import *
 from kde_utils import KDESplit
-from stat_utils import CvPCA
 from functools import reduce
 from operator import iconcat
 from itertools import product
@@ -1557,7 +1556,7 @@ def abstract_layer_setup (l, i, feats = None, discr = None, **kwds):
     options['n_components'] = min (np.prod (l.output.shape[1:]) - 1,
                                    options['n_components'])
   fext = (make_pipeline (StandardScaler (copy = False),
-                         CvPCA (**options, copy = False)) if decomp == 'pca' else \
+                         PCA (**options, copy = False)) if decomp == 'pca' else \
           make_pipeline (StandardScaler (copy = False),
                          IncrementalPCA (**options, copy = False)) if decomp == 'ipca' else \
           make_pipeline (FastICA (**options)))
