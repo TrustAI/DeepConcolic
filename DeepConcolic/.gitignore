@@ -1,0 +1,5 @@
+**/__pycache__/
+**/outs/
+/docsrc/build
+# For branches other than master:
+/docs
