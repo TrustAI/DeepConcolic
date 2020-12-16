@@ -32,7 +32,7 @@ Note: with the above commands, we create a new virtual environment dedicated for
 
        conda install -c menpo opencv keras nltk matplotlib
       
-       pip install saxpy sklearn
+       pip install saxpy sklearn scikit-image
 
 ## Command to Run: 
 
