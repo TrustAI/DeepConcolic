@@ -1,4 +1,6 @@
 import argparse
+import sys
+sys.path.append('DeepConcolic/src')
 import yaml
 from pathlib import Path
 from utils import *
