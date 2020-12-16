@@ -60,7 +60,7 @@ where
 8. \<modeName> can be in {train, test} with default value test 
 9. \<output file path> specifies the path to the output file
 
-For example, we can run the following 
+For example, we can run the following from the root directory
 
     python testRNN/main.py --model mnist --TestCaseNum 10000 --threshold_SC 0.6 --threshold_BC 0.8 --symbols_TC 3 --seq [4,24] --output testRNN/log_folder/record.txt
 
