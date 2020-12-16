@@ -26,8 +26,9 @@ pip install scipy scikit-learn pysmt
 --output : './model/'
 
 ```python
-python main.py --Dataset iris --Mode embedding --Embedding_Method black-box --Model forest
+python EKiML/main.py --Dataset iris --Mode embedding --Embedding_Method black-box --Model forest
 ```
+Should be Called from the outer, i.e., DeepConcolic, directory. 
 
 ## Contributing
 
