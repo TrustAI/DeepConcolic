@@ -62,7 +62,7 @@ where
 
 For example, we can run the following 
 
-    python main.py --model mnist --TestCaseNum 10000 --threshold_SC 0.6 --threshold_BC 0.8 --symbols_TC 3 --seq [4,24] --output log_folder/record.txt
+    python testRNN/main.py --model mnist --TestCaseNum 10000 --threshold_SC 0.6 --threshold_BC 0.8 --symbols_TC 3 --seq [4,24] --output testRNN/log_folder/record.txt
 
 which says that, we are working with MNIST model, and the test case generation will terminate when the number of test cases is over 10000. We need to specify other parameters including threshold_SC, threshold_BC, symbols_TC, seq. Moreover, the log is generated to the file log_folder/record.txt. 
     
