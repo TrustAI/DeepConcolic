@@ -19,7 +19,7 @@ from lp import PulpLinearMetric, PulpSolver4DNN
 class PulpBFcAbstrLayerEncoder (PulpStrictLayerEncoder):
 
   def __init__(self, fl: BFcLayer, *args, **kwds):
-    super().__init__(*args, **kwds)
+    super().__init__(*args, **kwds, nonact_layers = True)
     self.flayer = fl
 
 

@@ -1071,6 +1071,8 @@ class Engine:
           train_size = max (1, min (train_size, len (idxs) - test_size))
         elif isinstance (train_size, int):
           train_size = min (train_size, len (idxs) - 1)
+        elif isinstance (train_size, float):
+          train_size = int (round (train_size * len (idxs)))
 
       if 'test' in x:
         if isinstance (train_size, int) and test_size is None:

@@ -95,10 +95,11 @@ class PulpLayerEncoder (PulpLayerOutput):
 
 class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
 
-  def __init__(self, l, layer, **kwds):
+  def __init__(self, l, layer, nonact_layers = False, **kwds):
     super().__init__(**kwds)
     self.layer_index = l
     self.layer = layer
+    self.nonact_layers = nonact_layers
 
 
   def pulp_gen_vars(self, idx, var_names):
@@ -183,7 +184,8 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
                                   'c_name_conv_{0}'.format(u_var),
                                   -float(biases[nidx[-1]]))
 
-      base_prob_dict[self.layer_index] = base_prob.copy()
+      if self.nonact_layers or activation_is_relu (layer):
+        base_prob_dict[self.layer_index] = base_prob.copy()
 
     elif is_dense_layer(layer):
       u_vars = self.u_var_names
@@ -199,7 +201,8 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
                                   'c_name_dense_{0}'.format(u_var),
                                   -float(biases[nidx[-1]]))
 
-      base_prob_dict[self.layer_index] = base_prob.copy()
+      if self.nonact_layers or activation_is_relu (layer):
+        base_prob_dict[self.layer_index] = base_prob.copy()
 
     elif is_flatten_layer (layer) or is_reshape_layer (layer):
       pass

@@ -99,6 +99,10 @@ class FeatureBinarizer (FeatureDiscretizer, Binarizer):
           .reshape (1, -1)
     self.fit (y)
 
+  @property
+  def n_bins_ (self):
+    return np.full (len (self.threshold), 2, dtype = int)
+
 
 class KBinsFeatureDiscretizer (FeatureDiscretizer, KBinsDiscretizer):
 
@@ -864,7 +868,7 @@ class _BaseBFcCriterion (Criterion):
                         **fit_wrt_args)
 
       for fi, nints in enumerate (fl.discr.n_bins_):
-        p1 ('| Discretization of feature {} involes {} interval{}'
+        p1 ('| Discretization of feature {} involves {} interval{}'
             .format (fi, *s_(nints)))
       p1 ('| Discretized {} feature{}'.format (*s_(len (fl.discr.n_bins_))))
       del x_ok, y_ok, x_ko, y_ko
@@ -905,7 +909,8 @@ class _BaseBFcCriterion (Criterion):
     if self.score_layer_likelihoods or \
        self.assess_discretized_feature_probas or \
        self.dump_bn_with_trained_dataset_distribution:
-      batch_size = 3000
+      # XXX: means to customize this:
+      batch_size = 1000
       for i in range (0, len (true_labels), batch_size):
         imax = min (i + batch_size, len (true_labels) - 1)
         imsk = ok_idxs[i:imax]
