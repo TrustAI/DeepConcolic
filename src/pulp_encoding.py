@@ -37,8 +37,7 @@ class BasicPulpInputLayerEncoder (PulpLayerOutput):
   """
 
   def __init__(self, shape = None, bounds: Bounds = None, **kwds):
-    assert shape is not None and \
-           isinstance (shape, (tuple, tf.python.framework.tensor_shape.TensorShape))
+    assert shape is not None and isinstance (shape, (tuple, tf.TensorShape))
     assert bounds is not None and isinstance (bounds, Bounds)
     self.shape = shape
     self.bounds = bounds
