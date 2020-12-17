@@ -183,8 +183,7 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
                                   'c_name_conv_{0}'.format(u_var),
                                   -float(biases[nidx[-1]]))
 
-      if activation_is_relu (layer):
-        base_prob_dict[self.layer_index] = base_prob.copy()
+      base_prob_dict[self.layer_index] = base_prob.copy()
 
     elif is_dense_layer(layer):
       u_vars = self.u_var_names
@@ -200,8 +199,7 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
                                   'c_name_dense_{0}'.format(u_var),
                                   -float(biases[nidx[-1]]))
 
-      if activation_is_relu (layer):
-        base_prob_dict[self.layer_index] = base_prob.copy()
+      base_prob_dict[self.layer_index] = base_prob.copy()
 
     elif is_flatten_layer (layer) or is_reshape_layer (layer):
       pass

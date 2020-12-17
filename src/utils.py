@@ -322,30 +322,26 @@ def get_layer_functions(dnn):
 # ---
 
 ### given input images, evaluate activations
-def eval_batch(o, ims, allow_input_layer = False):
+def eval_batch(o, ims, allow_input_layer = False, layer_indexes = None):
   layer_functions, has_input_layer = (
     get_layer_functions (o) if isinstance (o, (keras.Sequential, keras.Model))
     # TODO: Check it's sequential? --------------------------------------^
     else o)
   having_input_layer = allow_input_layer and has_input_layer
   activations = []
-  for l, func in enumerate(layer_functions):
-    if not having_input_layer:
-      if l==0:
-        activations.append(func([ims])[0])
-      else:
-        activations.append(func([activations[l-1]])[0])
-    else:
-      if l==0:
-        activations.append([]) #activations.append(func([ims])[0])
-      elif l==1:
-        activations.append(func([ims])[0])
-      else:
-        activations.append(func([activations[l-1]])[0])
+  prev, prevv = None, None
+  for l, func in enumerate (layer_functions):
+    prev = ([] if having_input_layer and l == 0 else \
+            func([ims])[0] if l == (1 if having_input_layer else 0) else \
+            func([prev])[0])
+    if prevv is not None and activations[-1] is not prevv:
+      del prevv
+    activations.append (prev if layer_indexes is None or l in layer_indexes else [])
+    prevv = prev
   return activations
 
-def eval(o, im, having_input_layer = False):
-  return eval_batch (o, np.array([im]), having_input_layer)
+def eval(o, im, having_input_layer = False, **kwds):
+  return eval_batch (o, np.array([im]), having_input_layer, **kwds)
 
 def eval_batch_func (dnn):
   return lambda imgs, **kwds: eval_batch (dnn, imgs, **kwds)
@@ -621,6 +617,53 @@ class NPArrayDict (UserDict):
 
   def __contains__(self, x: np.ndarray):
     return np_hash (x) in self.data
+
+
+# ---
+
+
+D, C = TypeVar ('D'), TypeVar ('C')
+
+
+class LazyLambda:
+  '''
+  Lazy eval on an unknown domain.
+  '''
+
+  def __init__(self, f: Callable[[D], C], **kwds):
+    super ().__init__(**kwds)
+    self.f = f
+
+  def __getitem__(self, x: D) -> C:
+    return self.f (x)
+
+
+class LazyLambdaDict (Dict[D, C]):
+  '''
+  Lazy function eval on a fixed domain.
+  '''
+
+  def __init__(self, f: Callable[[D], C], domain: Set[D], **kwds) -> Dict[D, C]:
+    super ().__init__(**kwds)
+    self.domain = domain
+    self.f = f
+
+  def __getitem__(self, x: D) -> D:
+    if x not in self.domain:
+      return KeyError
+    return self.f (x)
+
+  def __contains__(self, x: D) -> bool:
+    return x in self.domain
+
+  def __iter__(self) -> Iterator[D]:
+    return self.domain.__iter__ ()
+
+  def __setitem__(self,_):
+    raise RuntimeError ('Invalid item assignment on `LazyLambdaDict` object')
+
+  def __delitem__(self,_):
+    raise RuntimeError ('Invalid item deletion on `LazyLambdaDict` object')
 
 
 # ---

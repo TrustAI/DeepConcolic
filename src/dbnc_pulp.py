@@ -9,7 +9,7 @@ from sklearn.decomposition import PCA, FastICA
 
 # ---
 
-from engine import Analyzer, CL
+from engine import Analyzer, CoverableLayer
 from dbnc import BFcLayer
 from dbnc import BFcTarget, BFcAnalyzer
 from dbnc import BFDcTarget, BFDcAnalyzer
@@ -135,7 +135,7 @@ class _BasePulpAnalyzer (Analyzer, PulpSolver4DNN):
                    upto = deepest_tested_layer (self.dnn, clayers))
 
 
-  def for_layer(self, cl: CL) -> pulp.LpProblem:
+  def for_layer(self, cl: CoverableLayer) -> pulp.LpProblem:
     return self.base_constraints[cl.layer_index]
 
 

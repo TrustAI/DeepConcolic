@@ -272,18 +272,20 @@ class Analyzer:
     return self._analyzed_dnn
 
 
-  def eval(self, i, allow_input_layer = False):
+  def eval(self, i, allow_input_layer = False, layer_indexes = None):
     '''
     Returns the activations associated to a given input.
     '''
-    return eval (self.dnn, i, allow_input_layer)
+    return eval (self.dnn, i, allow_input_layer,
+                 layer_indexes = layer_indexes)
 
 
-  def eval_batch(self, i, allow_input_layer = False):
+  def eval_batch(self, i, allow_input_layer = False, layer_indexes = None):
     '''
     Returns all activations associated to a given input batch.
     '''
-    return eval_batch (self.dnn, i, allow_input_layer)
+    return eval_batch (self.dnn, i, allow_input_layer,
+                       layer_indexes = layer_indexes)
 
 
   @abstractmethod
@@ -482,6 +484,28 @@ class EarlyTermination (Exception):
 # ---
 
 
+class CoverableLayer:
+  '''
+  Base class for any layer based on which coverability criteria are
+  defined.
+  '''
+
+  def __init__(self, layer = None, layer_index = None,
+               prev: int = None, succ: int = None):
+    self.layer = layer
+    self.layer_index = layer_index
+    self.is_conv = is_conv_layer (layer)
+    self.prev_layer_index = prev
+    self.succ_layer_index = succ
+
+
+  def __repr__(self):
+    return self.layer.name
+
+
+# ---
+
+
 _log_target_selection_level = 1
 
 
@@ -494,6 +518,7 @@ class Criterion (_ActivationStatBasedInitializable):
   '''
 
   def __init__(self,
+               clayers: Sequence[CoverableLayer],
                analyzer: Analyzer = None,
                prefer_rooted_search = None,
                verbose: int = 1,
@@ -508,6 +533,7 @@ class Criterion (_ActivationStatBasedInitializable):
     '''
     assert isinstance (analyzer, Analyzer)
     super().__init__(**kwds)
+    self.cover_layers = clayers
     self.analyzer = analyzer
     self.test_cases = []
     self.verbose = some (verbose, 1)
@@ -608,6 +634,11 @@ class Criterion (_ActivationStatBasedInitializable):
     self.test_cases.pop ()
 
 
+  @abstractmethod
+  def covered_layer_indexes (self) -> List[int]:
+    return [ cl.layer_index for cl in self.cover_layers ]
+
+
   # final as well
   def add_new_test_cases(self, tl: Sequence[Input],
                          covered_target: TestTarget = None) -> None:
@@ -617,10 +648,13 @@ class Criterion (_ActivationStatBasedInitializable):
     """
     tp1 ('Adding {} test case{}'.format (*s_(len (tl))))
     self.test_cases.extend (tl)
-    for acts in self._batched_activations (tl, allow_input_layer = False):
+    layer_indexes = self.covered_layer_indexes ()
+    for acts in self._batched_activations (tl, allow_input_layer = False,
+                                           layer_indexes = layer_indexes):
       if covered_target is not None:
         covered_target.cover (acts)
       self.register_new_activations (acts)
+
 
   def _batched_activations(self, tl: Sequence[Input], **kwds) -> range:
     batches = np.array_split (tl, len (tl) // 100 + 1)
@@ -1057,18 +1091,12 @@ class Engine:
         (None, rng.choice (a = idxs, axis = 0, size = min (test_size, len (idxs))))
 
       if 'train' in x:
-        acts, input_data, preds = self._activations_on_indexed_data (data, train_idxs)
-        acc = x['train']({ j: acts[j] for j in x['layer_indexes'] },
-                         input_data = input_data,
-                         true_labels = data.labels[train_idxs],
-                         pred_labels = preds)
+        self._lazy_activations_on_indexed_data \
+          (x['train'], data, train_idxs, x['layer_indexes'])
 
       if 'test' in x:
-        acts, input_data, preds = self._activations_on_indexed_data (data, test_idxs)
-        x['test']({ j: acts[j] for j in x['layer_indexes'] },
-                  input_data = input_data,
-                  true_labels = data.labels[test_idxs],
-                  pred_labels = preds)
+        self._lazy_activations_on_indexed_data \
+          (x['test'], data, test_idxs, x['layer_indexes'])
 
 
   def _batched_activations_on_raw_data(self):
@@ -1078,11 +1106,16 @@ class Engine:
       yield (self.criterion.analyzer.eval_batch (batch, allow_input_layer = True))
 
 
-  def _activations_on_indexed_data(self, data, indexes):
-    batch = data.data[indexes]
-    return (self.criterion.analyzer.eval_batch (batch, allow_input_layer = True),
-            batch,
-            self._run_tests (batch))
+  def _lazy_activations_on_indexed_data(self, fnc, data, indexes, layer_indexes):
+    input_data = data.data[indexes]
+    f = lambda j: LazyLambda \
+      ( lambda i: self.criterion.analyzer.eval_batch (input_data[i],
+                                                      allow_input_layer = True,
+                                                      layer_indexes = (j,))[j])
+    return fnc (LazyLambdaDict (f, layer_indexes),
+                input_data = input_data,
+                true_labels = data.labels[indexes],
+                pred_labels = self._run_tests (input_data))
 
 
   # ---
@@ -1090,12 +1123,11 @@ class Engine:
 
 # ---
 
-CL = TypeVar('CL')                  # Type variable for covered layers
-
 def setup (test_object: test_objectt = None,
-           cover_layers: Sequence[CL] = None,
+           cover_layers: Sequence[CoverableLayer] = None,
            setup_analyzer: Callable[[dict], Analyzer] = None,
-           setup_criterion: Callable[[Sequence[CL], Analyzer, dict], Criterion] = None,
+           setup_criterion: Callable[[Sequence[CoverableLayer],
+                                      Analyzer, dict], Criterion] = None,
            criterion_args: dict = {},
            engine_args: dict = {},
            **kwds) -> Engine:
@@ -1122,36 +1154,6 @@ def setup (test_object: test_objectt = None,
 
 # ------------------------------------------------------------------------------
 # Provide slightly more specialized classes:
-
-
-class CoverableLayer:
-  '''
-  Base class for any layer based on which coverability criteria are
-  defined.
-
-  Note: this reuses `cover_layert` to hold `layer` and `layer_index`,
-  yet one should not rely on that as this is only temporary.
-  '''
-
-  def __init__(self, layer = None, layer_index = None,
-               prev: int = None, succ: int = None):
-    self.layer = layer
-    self.layer_index = layer_index
-    self.is_conv = is_conv_layer (layer)
-    self.prev_layer_index = prev
-    self.succ_layer_index = succ
-
-
-  def __repr__(self):
-    return self.layer.name
-
-
-  @abstractmethod
-  def coverage(self):
-    pass
-
-
-# ---
 
 
 class BoolMappedCoverableLayer (CoverableLayer):
@@ -1295,9 +1297,8 @@ class LayerLocalCriterion (Criterion):
                feature_indices = None,
                **kwds):
     self.shallow_first = shallow_first
-    self.cover_layers = clayers
     self.feature_indices = feature_indices
-    super().__init__(**kwds)
+    super().__init__(clayers, **kwds)
     for cl in self.cover_layers:
       assert isinstance (cl, BoolMappedCoverableLayer)
 
