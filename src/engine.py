@@ -1142,8 +1142,8 @@ def setup (test_object: test_objectt = None,
   """
 
   print ('DNN under test has {0} layer functions, {1} of which {2} to be covered:'
-         .format(len(get_layer_functions (test_object.dnn)[0]), len(cover_layers),
-                 'is' if len(cover_layers) <= 1 else 'are'),
+         .format(len(get_layer_functions (test_object.dnn)[0]),
+                 *is_are_(len(cover_layers))),
          [ cl for cl in cover_layers ],
          sep='\n', end = '\n\n')
   analyzer = setup_analyzer (analyzed_dnn = test_object.dnn, **kwds)

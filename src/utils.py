@@ -261,38 +261,61 @@ def actual_layer(l):
 def post_activation_layer (dnn, idx):
   return min((i for i, layer in enumerate(dnn.layers)
               if (i >= idx and (is_activation_layer (layer) or
-                                activation_is_relu(layer)))))
+                                activation_is_relu (layer)))))
 
 
 def deepest_tested_layer (dnn, clayers):
   return post_activation_layer (dnn, max((l.layer_index for l in clayers)))
 
 
-def testable_layer (dnn, idx,
-                    include_all_activations = False,
-                    exclude_direct_input_succ = False):
+def post_conv_or_dense (dnn, idx):
+  prev = dnn.layers[idx - 1] if idx > 0 else None
+  return prev is not None and (is_conv_layer (prev) or is_dense_layer (prev))
+
+
+def activation_of_conv_or_dense (dnn, idx):
   layer = dnn.layers[idx]
-  return (((is_conv_layer(layer) or is_dense_layer(layer)) and
-           (idx != len(dnn.layers)-1 or activation_is_relu (layer)) or
-           (is_activation_layer(layer) and include_all_activations)) and
-          not (exclude_direct_input_succ and
-               (idx == 0 or idx == 1 and is_input_layer (dnn.layers[0]))))
+  return post_conv_or_dense (dnn, idx) or \
+    ((is_conv_layer (layer) or is_dense_layer (layer)) and
+     activation_is_relu (layer))
+
+
+def testable_layer_function (dnn, idx,
+                             exclude_output_layer = True,
+                             exclude_direct_input_succ = False):
+  layer = dnn.layers[idx]
+  input_succ = idx == 0 or idx == 1 and is_input_layer (dnn.layers[0])
+  non_output = idx != len (dnn.layers) - 1
+  return \
+    (not input_succ if exclude_direct_input_succ else True) and \
+    (non_output if exclude_output_layer else True)#  and \
+
 
 def get_cover_layers (dnn, constr, layer_indices = None,
-                      include_all_activations = False,
-                      exclude_direct_input_succ = False,
-                      exclude_output_layer = True):
-  # All coverable layers:
-  layers = dnn.layers[:-1] if exclude_output_layer else dnn.layers
-  cls = [ (l, layer) for l, layer in enumerate (layers)
-          if testable_layer (dnn, l, include_all_activations = include_all_activations) ]
+                      activation_of_conv_or_dense_only = True,
+                      **kwds):
+  def a_(l):
+    in_layer_act = \
+      (is_conv_layer (dnn.layers[l]) or is_dense_layer (dnn.layers[l])) and \
+      activation_is_relu (dnn.layers[l])
+    return l if in_layer_act else l - 1
+
+  def flt (l):
+    return(activation_of_conv_or_dense (dnn, l) and
+           testable_layer_function (dnn, a_(l), **kwds)) if activation_of_conv_or_dense_only \
+      else testable_layer_function (dnn, l, **kwds)
+
+  def fun (l):
+    return (a_(l), dnn.layers[a_(l)]) if activation_of_conv_or_dense_only \
+      else (l, dnn.layers[l])
+
+  cls = [ fun (l) for l, layer in enumerate (dnn.layers) if
+          (layer_indices is None or l in layer_indices) and flt (l) ]
+
   return [ constr (layer[1], layer[0],
                    prev = (cls[l-1][0] if l > 0 else None),
                    succ = (cls[l+1][1] if l < len(cls) - 1 else None))
-           for l, layer in enumerate(cls)
-           if not (exclude_direct_input_succ and
-                   (layer[0] == 0 or layer[0] == 1 and is_input_layer (dnn.layers[0])))
-           and (layer_indices == None or layer[0] in layer_indices) ]
+           for l, layer in enumerate (cls) ]
 
 # ---
 
@@ -383,22 +406,41 @@ class test_objectt:
     self.layer_indices = [ self.layer_index (l) for l in ll ]
 
 
-  def tests_layer(self, cl):
+  def tests_layer (self, cl):
     return self.layer_indices == None or cl.layer_index in self.layer_indices
 
 
   def check_layer_indices (self, criterion):
-    if self.layer_indices == None: return
     mcdc = criterion in ('ssc', 'ssclp')
     dbnc = criterion in ('bfc', 'bfdc')
-    testable = lambda l: testable_layer (self.dnn, l,
-                                         include_all_activations = dbnc,
-                                         exclude_direct_input_succ = mcdc)
-    testable_layers_indices = [ l for l in range(0, len(self.dnn.layers)) if testable (l) ]
-    wrong_layer_indices = [ i for i in self.layer_indices if i not in testable_layers_indices ]
-    if wrong_layer_indices != []:
-      sys.exit ('Untestable layers: {}'
-                .format([self.dnn.layers[l].name for l in wrong_layer_indices]))
+    testable_layers = get_cover_layers (self.dnn, lambda x, y, **_: (x, y),
+                                        activation_of_conv_or_dense_only = not dbnc,
+                                        exclude_direct_input_succ = mcdc)
+    print ('Testable function layers: {}'
+           .format (', '.join (l.name for l, _ in testable_layers)))
+
+    if self.layer_indices == None: return
+
+    testable_idxs = tuple (l[1] for l in testable_layers)
+    testable_idxs = tuple (i + 1 if not dbnc else i for i in testable_idxs)
+    wrong_layer_indices = tuple (i for i in self.layer_indices if i not in testable_idxs)
+    if wrong_layer_indices != ():
+      sys.exit ('Untestable function {}layers: {}{}'
+                .format('or non-activation ' if not dbnc else '',
+                        ', '.join (self.dnn.layers[l].name for l in wrong_layer_indices),
+                        '\nOnly activation layers may be specified for '
+                        f'criterion {criterion}' if not dbnc else ''))
+
+    tested_layers = get_cover_layers (self.dnn, lambda x, y, **_: (x, y),
+                                      layer_indices = self.layer_indices,
+                                      activation_of_conv_or_dense_only = not dbnc,
+                                      exclude_direct_input_succ = mcdc)
+
+    if tested_layers == []:
+      sys.exit ('No layer function is to be tested: aborting.')
+    else:
+      print ('Function layers to be tested: {}'
+             .format (', '.join (l.name for l, _ in tested_layers)))
 
 # ---
 
