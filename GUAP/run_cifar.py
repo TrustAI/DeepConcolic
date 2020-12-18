@@ -1,0 +1,302 @@
+import torch
+from torch.autograd import Variable
+import torch.nn as nn
+import torch.nn.functional as F
+from torchsummary import summary
+import matplotlib.pyplot as plt
+import numpy as np
+import cv2
+import argparse
+import torchvision
+from torchvision import datasets, transforms
+from torch.utils.data import DataLoader, Dataset
+import torchvision.utils as vutils
+import logging
+import os
+import time
+import datetime
+import random
+import torchvision.models as models
+import attack_model
+from models import *
+from utils import *
+import torch.backends.cudnn as cudnn
+
+torch.cuda.empty_cache()
+
+
+if __name__ == '__main__':
+
+
+    if not os.path.exists('log'):
+        os.mkdir('log')
+
+    logger = logging.getLogger(__name__)
+    logging.basicConfig(
+        format='[%(asctime)s] - %(message)s',
+        datefmt='%Y/%m/%d %H:%M:%S',
+        level=logging.DEBUG)
+        # level=logging.INFO,
+        # filename='log/CIFAR10GUAP_'+datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')+'.log')
+    logging.getLogger('matplotlib.font_manager').disabled = True
+
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset', type=str, default='CIFAR10', help='CIFAR10')
+    parser.add_argument('--lr', type=float, required=False, default=0.01, help='Learning rate')
+    parser.add_argument('--batch-size', default=100, type=int)
+    parser.add_argument('--epochs', type=int, default=20, help='number of epochs to train for')
+    parser.add_argument('--l2reg', type=float, default=0.0001, help='weight factor for l2 regularization')
+    parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. default=0.5')
+    parser.add_argument('--tau',  type=float, default=0.1, help='max flow magnitude, default=0.1')
+    parser.add_argument('--allow', type=float, default=0.03, help='allow for linf noise. default=0.03')
+    parser.add_argument('--model', type=str, default='VGG19', help='VGG19/ResNet101/DenseNet121')
+    parser.add_argument('--manualSeed', type=int, default=5198, help='manual seed')
+    parser.add_argument('--gpuid', type=str, default='0', help='multi gpuid')
+
+    args = parser.parse_args()
+    logger.info(args)
+    tau = args.tau
+    lr = args.lr
+    dataSet = args.dataset
+    batch_size = args.batch_size
+    allow = args.allow
+    model_name = args.model
+    epochs = args.epochs
+    gpuid = args.gpuid
+    # 'DenseNet121','VGG19','ResNet101'
+
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = gpuid
+
+    random.seed(args.manualSeed)
+    np.random.seed(args.manualSeed)
+    torch.manual_seed(args.manualSeed)
+    torch.cuda.manual_seed(args.manualSeed)
+    torch.cuda.manual_seed_all(args.manualSeed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+    print('Generalizing Universarial Adversarial Examples')
+    print('==> Preparing data..')
+
+    torch.manual_seed(args.manualSeed)
+    transforms_normalize = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ])
+
+    trainset = torchvision.datasets.CIFAR10(root='/mnt/storage0_8/torch_datasets/cifar-data', train=True, download=True, transform=transforms_normalize)
+    train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
+
+    testset = torchvision.datasets.CIFAR10(root='/mnt/storage0_8/torch_datasets/cifar-data', train=False, download=True, transform=transforms_normalize)
+    test_loader = torch.utils.data.DataLoader(testset, batch_size=args.batch_size, shuffle=False, num_workers=2)
+
+    nc,H,W = trainset.__getitem__(0)[0].shape
+
+    if model_name == 'VGG19':
+        model = VGG('VGG19')
+        model.load_state_dict(torch.load('./checkpoints/cifar10_vgg19.pth')['net'])
+    elif model_name == 'ResNet101':
+        model = ResNet101()
+        model.load_state_dict(torch.load('./checkpoints/cifar10_resnet101.pth')['net'])
+    elif model_name == 'DenseNet121':
+        model = DenseNet121()
+        model.load_state_dict(torch.load('./checkpoints/cifar10_dense121.pth')['net'])
+    else:
+        assert 0 
+
+
+    dataset_mean = [0.4914, 0.4822, 0.4465]
+    dataset_std = [0.2023, 0.1994, 0.2010]
+    print(dataset_mean,dataset_std)
+
+    mu = torch.Tensor((dataset_mean)).unsqueeze(-1).unsqueeze(-1).cuda()
+    std = torch.Tensor((dataset_std)).unsqueeze(-1).unsqueeze(-1).cuda()
+    unnormalize = lambda x: x*std + mu
+    normalize = lambda x: (x-mu)/std
+
+
+    for params in model.parameters():
+        params.requires_grad = False
+    model.eval()
+
+
+    netAttacker = attack_model.Generator(1,nc,H)
+    netAttacker.apply(weights_init)
+
+
+    device_ids = [ i for i in range (torch.cuda.device_count())]
+
+    print('gpuid:', device_ids)
+
+    model= nn.DataParallel(model,device_ids=device_ids)
+    netAttacker = nn.DataParallel(netAttacker,device_ids=device_ids)
+
+    model = model.cuda()
+    netAttacker = netAttacker.cuda()
+
+
+    noise = torch.FloatTensor(1, 1, H, W)
+    noise = noise.cuda()
+    noise = Variable(noise)
+    torch.nn.init.normal_(noise, mean=0, std=1.)
+
+    loss_flow = Loss_flow()
+
+    optimizer = torch.optim.Adam(netAttacker.parameters(), lr=lr, betas=(args.beta1, 0.999), weight_decay=args.l2reg)
+
+    bestatt = 0.
+    bestloss = 10000
+
+    logger.info('Epoch \t Time \t Tr_loss \t L \t Tr_acc \t Tr_stAtt \t Tr_noiseAtt \t Tr_Attack Rate ')
+
+    for epoch in range(epochs):
+        start_time = time.time()
+        train_loss = 0
+        train_acc = 0
+        train_n = 0
+        train_attack_rate = 0
+        train_st_rate = 0
+        train_noise_rate = 0
+        train_ori_acc = 0
+        skipped = 0
+        no_skipped = 0
+       
+        netAttacker.train()
+        model.eval()
+
+        for i, (X, y) in enumerate(train_loader):
+
+            X, y = X.cuda(), y.cuda()
+            batch_size = X.size(0)
+
+            optimizer.zero_grad()
+
+            train_ori_logits = model(X) 
+            flow_field,perb_noise = netAttacker(noise)
+
+            L = loss_flow(flow_field)
+            flow_field = flow_field *args.tau/L 
+            perb_noise = perb_noise* allow
+
+            X_st = flow_st(unnormalize(X),flow_field,batch_size) 
+            X_noise = unnormalize(X)+ perb_noise
+            X_noise = normalize(torch.clamp(X_noise, 0, 1))
+            X_adv = X_st +perb_noise
+            X_adv = normalize(torch.clamp(X_adv, 0, 1))
+            optimizer.zero_grad()
+
+            logits_st = model(normalize(X_st))
+            logits_noise = model(X_noise)
+            logits_adv = model(X_adv)
+            adv_lossall = F.cross_entropy(logits_adv, train_ori_logits.max(1)[1], reduction = 'none')+1 
+            adv_loss = -torch.mean(torch.log(adv_lossall))
+            adv_loss.backward()
+            optimizer.step()
+
+            train_ori_acc += (train_ori_logits.max(1)[1] == y).sum().item()
+            train_loss += adv_loss.item() * y.size(0)
+            train_attack_rate += ((logits_adv.max(1)[1] != train_ori_logits.max(1)[1])).sum().item()
+            train_st_rate += ((logits_st.max(1)[1] != train_ori_logits.max(1)[1])).sum().item()
+            train_noise_rate += ((logits_noise.max(1)[1] != train_ori_logits.max(1)[1])).sum().item()
+            train_n += y.size(0)
+        
+        train_time = time.time()
+        logger.info('%d \t %.1f \t %.4f \t %.4f \t %.4f \t %.4f \t %.4f \t %.4f',
+                    epoch, train_time - start_time, train_loss / train_n, L.data.cpu(), train_ori_acc/(train_n+skipped),train_st_rate/train_n,train_noise_rate/train_n, train_attack_rate/train_n)
+
+        if bestatt<train_attack_rate/train_n and bestloss>train_loss / train_n:
+            bestloss = train_loss / train_n
+            bestatt = train_attack_rate/train_n
+            bestflow = flow_field
+            bestnoise = perb_noise
+
+    print('Best train ASR:',end = '\t')
+    print(bestatt)      
+    flow_field = bestflow
+    perb_noise = bestnoise 
+
+    print('==> start testing ..')
+    test_ori_acc = 0
+    test_n = 0
+    test_adv_loss = 0
+    test_adv_acc = 0
+    test_attack_rate = 0
+    test_st_rate = 0
+    test_noise_rate = 0
+
+    start_time = time.time()
+
+    clean_np = np.empty((0,nc, H, W))
+    st_np = np.empty((0,nc, H, W))
+    perb_np = np.empty((0, nc, H, W))
+    clean_preds_np = np.empty(0)
+    perb_preds_np = np.empty(0)
+    skipped = 0
+    no_skipped = 0
+    model.eval()
+    netAttacker.eval()
+
+    test_l2 = []
+    with torch.no_grad():
+        for i, (X, y) in enumerate(test_loader):
+            X, y = X.cuda(), y.cuda()
+
+            batch_size = X.size(0)
+            test_ori_logits = model(X)
+            X_st = flow_st(unnormalize(X),flow_field,batch_size) 
+            X_noise = unnormalize(X)+ perb_noise
+            X_noise = normalize(torch.clamp(X_noise, 0, 1))
+            X_perb = X_st+ perb_noise
+            X_perb = normalize(torch.clamp(X_perb, 0, 1))
+
+            X_st = normalize(X_st)
+
+            test_logits_st = model(X_st)
+            test_logits_noise = model(X_noise)
+            test_logits_adv = model(X_perb)
+            test_ori_acc += (test_logits_adv.max(1)[1] == y).sum().item()
+            adv_lossall = F.cross_entropy(test_logits_adv, test_ori_logits.max(1)[1], reduction = 'none')+1 
+            adv_loss = -torch.mean(torch.log(adv_lossall))
+            test_adv_loss += adv_loss.item() * y.size(0)
+            success_bool = (test_logits_adv.max(1)[1] != test_ori_logits.max(1)[1])
+            test_attack_rate += success_bool.sum().item()
+            test_st_rate += ((test_logits_st.max(1)[1] != test_ori_logits.max(1)[1])).sum().item()
+            test_noise_rate += ((test_logits_noise.max(1)[1] != test_ori_logits.max(1)[1])).sum().item()
+
+            if len(clean_preds_np)<10:
+                clean_np = np.append(clean_np, X[success_bool].data.cpu(),axis=0)
+                st_np = np.append(st_np, X_st[success_bool].data.cpu(),axis=0)
+                perb_np = np.append(perb_np, X_perb[success_bool].data.cpu(),axis=0)
+                clean_preds_np = np.append(clean_preds_np, test_ori_logits.max(1)[1][success_bool].data.cpu())
+                perb_preds_np = np.append(perb_preds_np,test_logits_adv.max(1)[1][success_bool].data.cpu())
+
+            test_n += y.size(0)
+            l2dist = cal_l2dist(unnormalize(X),unnormalize(X_perb))
+            test_l2.append(l2dist)
+
+    test_time = time.time()
+    test_l2 = [x for x in test_l2 if str(x)!='nan']
+
+    logger.info('Perb Test Acc \t L2 \t Time \t Adv Test_loss \t Te_stAtt \t Te_noiseAtt\t Te_Attack Rate ')
+    logger.info('%.4f \t %.4f \t %.2f \t %.4f \t %.4f \t %.4f \t %.4f', test_ori_acc/(test_n+skipped),np.mean(test_l2),test_time - start_time, test_adv_loss/test_n, test_st_rate/test_n,test_noise_rate/test_n, test_attack_rate/test_n)
+
+    clean = unnormalize(torch.from_numpy(clean_np[:10]).cuda()).cpu().clamp(0,1)
+    st = unnormalize(torch.from_numpy(st_np[:10]).cuda()).cpu().clamp(0,1)
+    adv = unnormalize(torch.from_numpy(perb_np[:10]).cuda()).cpu().clamp(0,1)
+
+    middlenoise1 = st - clean
+    middlenoise2 = adv - st
+    for i in range(10):
+      middlenoise1[i] = norm_ip(middlenoise1[i])
+      middlenoise2[i] = norm_ip(perb_noise.detach().unsqueeze(0).cpu())
+
+    fig = plt.figure(figsize=(10, 5))
+    grid = vutils.make_grid(torch.cat((clean,middlenoise1,st,middlenoise2,adv)).float(),nrow=10)
+    
+    if not os.path.exists('savefig'):
+        os.mkdir('savefig')      
+    plt.imsave('savefig/Cifar10.png',grid.numpy().transpose((1, 2, 0)))
+
+
