@@ -40,11 +40,11 @@ def run (test_object = None,
     ('1-randomized', { 'n_components': 1, 'svd_solver': 'randomized' }, 'pca', 1),
     ('2-randomized', { 'n_components': 2, 'svd_solver': 'randomized' }, 'pca', 2),
     ('3-randomized', { 'n_components': 3, 'svd_solver': 'randomized' }, 'pca', 3),
-    ('4-randomized', { 'n_components': 4, 'svd_solver': 'randomized' }, 'pca', 4),
+    # ('4-randomized', { 'n_components': 4, 'svd_solver': 'randomized' }, 'pca', 4),
     ('ica-1', { 'decomp': 'ica', 'n_components': 1, 'max_iter': 10000, 'tol': 0.01 }, 'ica', 1),
     ('ica-2', { 'decomp': 'ica', 'n_components': 2, 'max_iter': 10000, 'tol': 0.01 }, 'ica', 2),
     ('ica-3', { 'decomp': 'ica', 'n_components': 3, 'max_iter': 10000, 'tol': 0.01 }, 'ica', 3),
-    ('ica-4', { 'decomp': 'ica', 'n_components': 4, 'max_iter': 10000, 'tol': 0.02 }, 'ica', 4),
+    # ('ica-4', { 'decomp': 'ica', 'n_components': 4, 'max_iter': 10000, 'tol': 0.02 }, 'ica', 4),
     # ('ica-5', { 'decomp': 'ica', 'n_components': 5, 'max_iter': 20000, 'tol': 0.03 }, 'ica', 5),
     # #('ica-6', { 'decomp': 'ica', 'n_components': 6, 'max_iter': 20000, 'tol': 0.03 }, 'ica', 6),
     # # ('ica-7', { 'decomp': 'ica', 'n_components': 7, 'max_iter': 30000, 'tol': 0.03 }, 'ica', 7),
@@ -78,8 +78,8 @@ def run (test_object = None,
     # ('kde-dens-nozerosplit',         { 'strategy': 'kde', 'kde_space': 'dens', 'zerosplit_policy': 'never'      }, 0),
     # ('kde-dens-alwayszerosplit',     { 'strategy': 'kde', 'kde_space': 'dens', 'zerosplit_policy': 'always'     }, 0),
     # ('kde-dens-lastresortzerosplit', { 'strategy': 'kde', 'kde_space': 'dens', 'zerosplit_policy': 'lastresort' }, 0),
-    ('kde',          { 'strategy': 'kde', 'extended': False }, 0),
-    ('kde-extended', { 'strategy': 'kde', 'extended': True  }, 0),
+    # ('kde',          { 'strategy': 'kde', 'extended': False }, 0),
+    # ('kde-extended', { 'strategy': 'kde', 'extended': True  }, 0),
     # ('kde-dens', { 'strategy': 'kde', 'kde_peak_space': 'dens', 'extended': True }, 0),
     # ('kde-logl-0.1-extended', { 'strategy': 'kde', 'kde_space': 'logl', 'extended': True, 'kde_peak_prominence_prop': 0.1 }, 0),
     # ('kde-logl-0.2-extended', { 'strategy': 'kde', 'kde_space': 'logl', 'extended': True, 'kde_peak_prominence_prop': 0.2 }, 0),
@@ -98,12 +98,17 @@ def run (test_object = None,
     # ('kde-dens-0.4', { 'strategy': 'kde', 'kde_space': 'dens', 'kde_rel_height': 0.4 }, 0),
     # # ('kde-logl-0.5', { 'strategy': 'kde', 'kde_space': 'logl', 'kde_rel_height': 0.5 }, 0),
     # ('kde-dens-0.5', { 'strategy': 'kde', 'kde_space': 'dens', 'kde_rel_height': 0.5 }, 0),
-    ('1-bin-extended',         { 'n_bins': 1, 'extended': True }, 3),
-    ('2-bin-uniform',          { 'n_bins': 2, 'strategy': 'uniform' }, 2),
-    ('3-bin-uniform',          { 'n_bins': 3, 'strategy': 'uniform' }, 3),
-    ('4-bin-uniform',          { 'n_bins': 4, 'strategy': 'uniform' }, 4),
-    ('2-bin-uniform-extended', { 'n_bins': 2, 'strategy': 'uniform', 'extended': True  }, 4),
-    ('3-bin-uniform-extended', { 'n_bins': 3, 'strategy': 'uniform', 'extended': True  }, 5),
+    ('1-bin-extended',          { 'n_bins': 1, 'extended': True }, 3),
+    ('2-bin-uniform',           { 'n_bins': 2, 'strategy': 'uniform' }, 2),
+    ('3-bin-uniform',           { 'n_bins': 3, 'strategy': 'uniform' }, 3),
+    ('4-bin-uniform',           { 'n_bins': 4, 'strategy': 'uniform' }, 4),
+    ('2-bin-uniform-extended',  { 'n_bins': 2, 'strategy': 'uniform', 'extended': True  }, 4),
+    ('3-bin-uniform-extended',  { 'n_bins': 3, 'strategy': 'uniform', 'extended': True  }, 5),
+    ('2-bin-quantile',          { 'n_bins': 2, 'strategy': 'quantile' }, 2),
+    ('3-bin-quantile',          { 'n_bins': 3, 'strategy': 'quantile' }, 3),
+    ('4-bin-quantile',          { 'n_bins': 4, 'strategy': 'quantile' }, 4),
+    ('2-bin-quantile-extended', { 'n_bins': 2, 'strategy': 'quantile', 'extended': True  }, 4),
+    ('3-bin-quantile-extended', { 'n_bins': 3, 'strategy': 'quantile', 'extended': True  }, 5),
     # ('2-bin-quantile-extended', { 'n_bins': 2, 'strategy': 'quantile', 'extended': True  }, 4),
     # ('3-bin-quantile-extended', { 'n_bins': 3, 'strategy': 'quantile', 'extended': True  }, 5),
     # ('2-bin-kmeans', { 'n_bins': 2, 'strategy': 'kmeans' }, 2),
@@ -212,9 +217,17 @@ def run (test_object = None,
   # print (y[test_half_idxs])
   # print (y[test_nobar_idxs])
 
-  train_acts = dbnc_analyzer.eval_batch (x_train[train_idxs], allow_input_layer = True)
-  train_acts = { j: train_acts[j] for j in test_object.layer_indices } \
-               if test_object.layer_indices is not None else train_acts
+  # train_acts = dbnc_analyzer.eval_batch (x_train[train_idxs], allow_input_layer = True)
+  # train_acts = { j: train_acts[j] for j in test_object.layer_indices } \
+  #              if test_object.layer_indices is not None else train_acts
+  assert test_object.layer_indices is not None
+  train_data = x_train[train_idxs]
+  train_labels = y_train[train_idxs]
+  f = lambda j: LazyLambda \
+    ( lambda i: dbnc_analyzer.eval_batch (train_data[i],
+                                          allow_input_layer = True,
+                                          layer_indexes = (j,))[j])
+  train_acts = LazyLambdaDict (f, test_object.layer_indices)
 
   # test_acts = []
   # for test_idx in test_idxs:
@@ -257,20 +270,26 @@ def run (test_object = None,
   def dbnc_run (dbnc_stats, n_feats, discr, bnzf):
     (n_feats_name, n_feats, tech, ncomps), (discr_name, discr, nbins) = n_feats, discr
 
-    setup_layer = (lambda l, i, **kwds: abstract_layer_setup (l, i, n_feats, discr,
-                                                              discr_n_jobs = 8))
+    setup_layer = lambda l, i, **kwds: \
+      abstract_layer_setup (l, i, n_feats, discr, discr_n_jobs = 8)
     cover_layers = get_cover_layers (test_object.dnn, setup_layer,
                                      layer_indices = test_object.layer_indices,
-                                     exclude_direct_input_succ = False)
+                                     activation_of_conv_or_dense_only = False,
+                                     exclude_direct_input_succ = False,
+                                     exclude_output_layer = False)
     crit = BFcCriterion (cover_layers, dbnc_analyzer,
                          bn_abstr_n_jobs = 8,
+                         # to initialize the BN with training data:
+                         # dump_bn_with_trained_dataset_distribution = True,
                          print_classification_reports = False,
                          score_layer_likelihoods = False)
     np1 ('Building Bayesian Abstraction')
 
     tic, get_times = scripting.init_tics ()
 
-    crit._discretize_features_and_create_bn_structure (train_acts)
+    crit._discretize_features_and_create_bn_structure (train_acts,
+                                                       true_labels = train_labels,
+                                                       pred_labels = train_labels)
     features = crit.num_features
     feats_stats = [np.amin (features),
                    np.mean (features),

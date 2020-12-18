@@ -1639,8 +1639,8 @@ def setup (setup_criterion = None,
   if setup_criterion is None:
     raise ValueError ('Missing argument `setup_criterion`!')
 
-  setup_layer = (lambda l, i, **kwds: abstract_layer_setup (l, i, feats, discr,
-                                                            discr_n_jobs = discr_n_jobs))
+  setup_layer = lambda l, i, **kwds: \
+    abstract_layer_setup (l, i, feats, discr, discr_n_jobs = discr_n_jobs)
   cover_layers = get_cover_layers (test_object.dnn, setup_layer,
                                    layer_indices = test_object.layer_indices,
                                    activation_of_conv_or_dense_only = False,
