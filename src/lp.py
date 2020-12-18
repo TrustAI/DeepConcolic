@@ -60,7 +60,7 @@ class LpSolver4DNN:
 
 
   @abstractmethod
-  def for_layer(self, cl: engine.CL) -> LPProblem:
+  def for_layer(self, cl: engine.CoverableLayer) -> LPProblem:
     """
     Returns an LP problem that encodes up to the given layer `cl`.
     """
@@ -202,7 +202,7 @@ class PulpSolver4DNN (LpSolver4DNN):
       p += self.d_var
 
 
-  def for_layer(self, cl: engine.CL) -> pulp.LpProblem:
+  def for_layer(self, cl: engine.CoverableLayer) -> pulp.LpProblem:
     index = cl.layer_index + (0 if activation_is_relu (cl.layer) else 1)
     return self.base_constraints[index]
 

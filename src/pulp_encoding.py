@@ -37,8 +37,7 @@ class BasicPulpInputLayerEncoder (PulpLayerOutput):
   """
 
   def __init__(self, shape = None, bounds: Bounds = None, **kwds):
-    assert shape is not None and \
-           isinstance (shape, (tuple, tf.python.framework.tensor_shape.TensorShape))
+    assert shape is not None and isinstance (shape, (tuple, tf.TensorShape))
     assert bounds is not None and isinstance (bounds, Bounds)
     self.shape = shape
     self.bounds = bounds
@@ -96,10 +95,11 @@ class PulpLayerEncoder (PulpLayerOutput):
 
 class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
 
-  def __init__(self, l, layer, **kwds):
+  def __init__(self, l, layer, nonact_layers = False, **kwds):
     super().__init__(**kwds)
     self.layer_index = l
     self.layer = layer
+    self.nonact_layers = nonact_layers
 
 
   def pulp_gen_vars(self, idx, var_names):
@@ -184,7 +184,7 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
                                   'c_name_conv_{0}'.format(u_var),
                                   -float(biases[nidx[-1]]))
 
-      if activation_is_relu (layer):
+      if self.nonact_layers or activation_is_relu (layer):
         base_prob_dict[self.layer_index] = base_prob.copy()
 
     elif is_dense_layer(layer):
@@ -201,7 +201,7 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
                                   'c_name_dense_{0}'.format(u_var),
                                   -float(biases[nidx[-1]]))
 
-      if activation_is_relu (layer):
+      if self.nonact_layers or activation_is_relu (layer):
         base_prob_dict[self.layer_index] = base_prob.copy()
 
     elif is_flatten_layer (layer) or is_reshape_layer (layer):

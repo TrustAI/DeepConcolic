@@ -99,6 +99,10 @@ class FeatureBinarizer (FeatureDiscretizer, Binarizer):
           .reshape (1, -1)
     self.fit (y)
 
+  @property
+  def n_bins_ (self):
+    return np.full (len (self.threshold), 2, dtype = int)
+
 
 class KBinsFeatureDiscretizer (FeatureDiscretizer, KBinsDiscretizer):
 
@@ -381,15 +385,9 @@ class BFcLayer (CoverableLayer):
              for feature in self.range_features () ]
 
 
-  def flatten_map (self, map, acc = None):
-    x = np.vstack([e.flatten () for e in map[self.layer_index]])
-    acc = np.hstack ((acc, x)) if acc is not None else x
-    if acc is not x: del x
-    return acc
-
-
   def dimred_activations (self, acts, acc = None, feature_space = True):
-    x = np.vstack([a.flatten () for a in acts[self.layer_index]])
+    facts = acts[self.layer_index][:]
+    x = facts.reshape (len (facts), -1)
     y = self.transform.transform (x)
     y = y[:,self.focus] if feature_space else y
     acc = np.hstack ((acc, y)) if acc is not None else y
@@ -399,7 +397,8 @@ class BFcLayer (CoverableLayer):
 
 
   def dimred_n_discretize_activations (self, acts, acc = None):
-    x = np.vstack([a.flatten () for a in acts[self.layer_index]])
+    facts = acts[self.layer_index][:]
+    x = facts.reshape (len (facts), -1)
     y = self.discr.transform (self.transform.transform (x)[:,self.focus])
     acc = np.hstack ((acc, y.astype (int))) if acc is not None else y.astype (int)
     del x, y
@@ -514,14 +513,14 @@ class _BaseBFcCriterion (Criterion):
     self.assess_discretized_feature_probas = assess_discretized_feature_probas
     self.dump_bn_with_trained_dataset_distribution = dump_bn_with_trained_dataset_distribution
     self.dump_bn_with_final_dataset_distribution = dump_bn_with_final_dataset_distribution
-    self.flayers = list (filter (lambda l: isinstance (l, BFcLayer), clayers))
-    clayers = list (filter (lambda l: isinstance (l, BoolMappedCoverableLayer), clayers))
-    assert (clayers == [])
+    super().__init__(clayers, *args, **kwds)
+    self.flayers = list (filter (lambda l: isinstance (l, BFcLayer), self.cover_layers))
+    assert list (filter (lambda l: isinstance (l, BoolMappedCoverableLayer),
+                         self.cover_layers)) == []
     self.base_dimreds = None
     self.total_registered_cases = 0     # as modeled in BN
     self.outdir = outdir or OutputDir ()
     self._log_feature_marginals = None
-    super().__init__(*args, **kwds)
     self._reset_progress ()
 
 
@@ -551,13 +550,6 @@ class _BaseBFcCriterion (Criterion):
 
 
   # ---
-
-
-  def flatten_for_layer (self, map, fls = None):
-    acc = None
-    for fl in self.flayers if fls is None else fls:
-      acc = fl.flatten_map (map, acc = acc)
-    return acc
 
 
   def dimred_activations (self, acts, fls = None, **kwds):
@@ -637,7 +629,7 @@ class _BaseBFcCriterion (Criterion):
 
 
   def pop_test (self):
-    super ().pop_test ()
+    super().pop_test ()
     # Just remove any reference to the previously registered test
     # case: this only impacts the search for new test targets.
     self.base_dimreds = np.delete (self.base_dimreds, -1, axis = 0)
@@ -815,15 +807,13 @@ class _BaseBFcCriterion (Criterion):
     """
 
     if true_labels is not None and pred_labels is not None:
-      ok_labels = (np.asarray(true_labels) == np.asarray(pred_labels))
-      ok_acts = { layer: acts[layer][ ok_labels] for layer in acts }
-      ko_acts = { layer: acts[layer][~ok_labels] for layer in acts }
-      ok_labels, ko_labels = true_labels[ ok_labels], true_labels[~ok_labels]
+      ok_idxs = (np.asarray(true_labels) == np.asarray(pred_labels))
+      ok_labels, ko_labels = true_labels[ok_idxs], true_labels[~ok_idxs]
     else:
-      ok_acts, ko_acts = acts, {}
+      ok_idxs = np.arange (len (true_labels))
       ok_labels, ko_labels = true_labels, []
 
-    ts0 = len(ok_acts[self.flayers[0].layer_index])
+    ts0 = np.count_nonzero (ok_idxs)
     cp1 ('| Given {} correctly classified training sample'.format (*s_(ts0)))
     fts = None if self.feat_extr_train_size == 1 \
           else (min (ts0, int (self.feat_extr_train_size))
@@ -835,16 +825,17 @@ class _BaseBFcCriterion (Criterion):
     # First, fit feature extraction and discretizer parameters:
     for fl in self.flayers:
       p1 ('| Extracting and discretizing features for layer {}... '.format (fl))
-      x_ok = np.stack([a.flatten () for a in ok_acts[fl.layer_index]], axis = 0)
+      facts = acts[fl.layer_index]
+      x_ok = facts[ok_idxs].reshape (ts0, -1)
 
       tp1 ('Extracting features...')
 
       if fts is None:
-        y_ok = fl.transform.fit_transform (x_ok)
+        y_ok = fl.transform.fit_transform (x_ok, ok_labels)
       else:
         # Copying the inputs here as we pass `copy = False` when
         # constructing the pipeline.
-        fl.transform.fit (copy.copy (x_ok[:fts]))
+        fl.transform.fit (x_ok[:fts].copy (), y = ok_labels[:fts])
         y_ok = fl.transform.transform (x_ok)
       p1 ('| Extracted {} feature{}'.format (*s_(y_ok.shape[1])))
 
@@ -860,7 +851,7 @@ class _BaseBFcCriterion (Criterion):
       fit_wrt_args = {}
       x_ko, y_ko = [], []
       if len (ko_labels) > 0:
-        x_ko = np.stack([a.flatten () for a in ko_acts[fl.layer_index]], axis = 0)
+        x_ko = facts[~ok_idxs].reshape (len (ok_idxs) - ts0, -1)
         y_ko = fl.transform.transform (x_ko)
         fit_wrt_args = dict (y2plot = y_ko[:,fl.focus],
                              y2plot_labels = ko_labels)
@@ -877,7 +868,7 @@ class _BaseBFcCriterion (Criterion):
                         **fit_wrt_args)
 
       for fi, nints in enumerate (fl.discr.n_bins_):
-        p1 ('| Discretization of feature {} involes {} interval{}'
+        p1 ('| Discretization of feature {} involves {} interval{}'
             .format (fi, *s_(nints)))
       p1 ('| Discretized {} feature{}'.format (*s_(len (fl.discr.n_bins_))))
       del x_ok, y_ok, x_ko, y_ko
@@ -918,7 +909,13 @@ class _BaseBFcCriterion (Criterion):
     if self.score_layer_likelihoods or \
        self.assess_discretized_feature_probas or \
        self.dump_bn_with_trained_dataset_distribution:
-      self.fit_activations (ok_acts)
+      # XXX: means to customize this:
+      batch_size = 1000
+      for i in range (0, len (true_labels), batch_size):
+        imax = min (i + batch_size, len (true_labels) - 1)
+        imsk = ok_idxs[i:imax]
+        self.fit_activations ({ layer: acts[layer][i:imax][imsk]
+                                for layer in acts })
 
     if self.dump_bn_with_trained_dataset_distribution:
       self.dump_bn ('bn4trained', 'training dataset')
@@ -991,8 +988,7 @@ class _BaseBFcCriterion (Criterion):
     Basic scores for manual investigations.
     """
 
-    p1 ('| Given scoring sample of size {}'
-         .format(len(acts[self.flayers[0].layer_index])))
+    p1 (f'| Given scoring sample of size {len (true_labels)}')
 
     if (self.score_layer_likelihoods or
         self.report_on_feature_extractions is not None):
@@ -1011,23 +1007,22 @@ class _BaseBFcCriterion (Criterion):
     idx = 1
     self.average_log_likelihoods_ = []
     for fl in self.flayers:
-      flatacts = fl.flatten_map (acts)
 
-      if self.score_layer_likelihoods:
-        tp1 ('| Computing average log-likelihood of test sample for layer {}...'
-             .format (fl))
-        self.average_log_likelihoods_.append (fl.transform.score (flatacts))
-        p1 ('| Average log-likelihood of test sample for layer {} is {}'
-            .format (fl, self.average_log_likelihood[-1]))
+      # if self.score_layer_likelihoods:
+      #   tp1 ('| Computing average log-likelihood of test sample for layer {}...'
+      #        .format (fl))
+      #   flatacts = fl.flatten_map (acts)
+      #   self.average_log_likelihoods_.append (fl.transform.score (flatacts))
+      #   p1 ('| Average log-likelihood of test sample for layer {} is {}'
+      #        .format (fl, self.average_log_likelihood[-1]))
+      #   del flatacts
 
       if self.report_on_feature_extractions is not None:
         fdimred = self.dimred_activations (acts, (fl,))
-        racc = self.report_on_feature_extractions (fl, flatacts, fdimred,
-                                                   true_labels, racc)
+        racc = self.report_on_feature_extractions (fl, fdimred, true_labels, racc)
         del fdimred
 
       idx += 1
-      del flatacts
 
     if self.close_reports_on_feature_extractions is not None:
       self.close_reports_on_feature_extractions (racc)
@@ -1421,7 +1416,7 @@ class BFDcCriterion (BFcCriterion, Criterion4RootedSearch):
       if self.bfc_coverage ().done:
         raise EarlyTermination ('Unable to find a new candidate input!')
       else:
-        return super ().find_next_rooted_test_target ()
+        return super().find_next_rooted_test_target ()
 
     epsilon_cond_prob_index, fli, ti = res
     feature = self.flayers[0].num_features + epsilon_cond_prob_index
@@ -1571,7 +1566,7 @@ def abstract_layer_setup (l, i, feats = None, discr = None, **kwds):
 # ---
 
 
-def plot_report_on_feature_extractions (fl, flatacts, fdimred, labels, acc = None):
+def plot_report_on_feature_extractions (fl, fdimred, labels, acc = None):
   if not plt:
     warnings.warn ('Unable to import `matplotlib`: skipping feature extraction plots')
     return
@@ -1648,7 +1643,7 @@ def setup (setup_criterion = None,
                                                             discr_n_jobs = discr_n_jobs))
   cover_layers = get_cover_layers (test_object.dnn, setup_layer,
                                    layer_indices = test_object.layer_indices,
-                                   include_all_activations = True,
+                                   activation_of_conv_or_dense_only = False,
                                    exclude_direct_input_succ = False,
                                    exclude_output_layer = False)
   criterion_args \
