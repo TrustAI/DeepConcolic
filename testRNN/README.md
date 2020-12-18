@@ -32,7 +32,7 @@ Note: with the above commands, we create a new virtual environment dedicated for
 
        conda install -c menpo opencv keras nltk matplotlib
       
-       pip install saxpy sklearn
+       pip install saxpy sklearn scikit-image
 
 ## Command to Run: 
 
@@ -60,9 +60,9 @@ where
 8. \<modeName> can be in {train, test} with default value test 
 9. \<output file path> specifies the path to the output file
 
-For example, we can run the following 
+For example, we can run the following from the root directory
 
-    python main.py --model mnist --TestCaseNum 10000 --threshold_SC 0.6 --threshold_BC 0.8 --symbols_TC 3 --seq [4,24] --output log_folder/record.txt
+    python testRNN/main.py --model mnist --TestCaseNum 10000 --threshold_SC 0.6 --threshold_BC 0.8 --symbols_TC 3 --seq [4,24] --output testRNN/log_folder/record.txt
 
 which says that, we are working with MNIST model, and the test case generation will terminate when the number of test cases is over 10000. We need to specify other parameters including threshold_SC, threshold_BC, symbols_TC, seq. Moreover, the log is generated to the file log_folder/record.txt. 
     
