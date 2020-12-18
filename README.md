@@ -164,6 +164,141 @@ Note as of September 2020 one may need to append `--use-feature=2020-resolver` a
 pip3 install scikit-learn tensorflow pulp adversarial-robustness-toolbox pomegranate==0.13.4 scipy numpy --use-feature=2020-resolver
 ```
 
+# TestRNN
+## Test Metrics and LSTM Models
+       
+#### Four Test metrics are used: 
+1. Neuron Coverage (NC), 
+2. Boundary Coverage (BC), 
+3. Step=wise Coverage (SC), 
+4. Temporal Coverage (TC)
+
+#### Four models trained by LSTM: 
+1. Sentiment Analysis, 
+2. MNIST Handwritten Digits, 
+3. Lipophilicity Prediction (Physical Chemistry)
+4. UCF101 (need to download and put into the dataset file)
+
+## Software Dependencies: 
+
+1. rdkit (https://www.rdkit.org/docs/Install.html), by running the following commands: 
+
+       conda create -c rdkit -n my-rdkit-env rdkit
+       
+       conda activate my-rdkit-env
+       
+Note: with the above commands, we create a new virtual environment dedicated for rdkit. Below, every time one needs to run the program, he/she needs to activate the my-rdkit-env
+      
+2. Other packages including 
+
+       conda install -c menpo opencv keras nltk matplotlib
+      
+       pip install saxpy sklearn
+
+## Command to Run: 
+
+We have two commands to run testing procedure and to run result analysis procedure, respectively. 
+
+#### to run testing procedure
+
+    python -m testRNN.main --model <modelName> 
+                           --TestCaseNum <Num. of Test Cases> 
+                           --threshold_SC <SC threshold> 
+                           --threshold_BC <BC threshold> 
+                           --symbols_TC <Num. of symbols> 
+                           --seq <seq in cells to test>
+                           --mode <modeName>
+                           --output <output file path>
+
+where 
+1. \<modelName> can be in {sentiment, mnist, lipo, ucf101}
+2. \<Num. of Test Cases> is expected number of test cases
+3. \<Mutation Method> can be in {'random', 'genetic'}
+4. \<SC threshold> can be in [0, 1]  
+5. \<BC threshold> can be in [0, 1]
+6. \<Num. of symbols> can be in {1, 2, 3...}
+7. \<seq in cells to test> can be in {mnist: [4, 24], sentiment: [400, 499], lipo: [60, 70], ucf101: [0, 10]}
+8. \<modeName> can be in {train, test} with default value test 
+9. \<output file path> specifies the path to the output file
+
+For example, we can run the following 
+
+    python -m testRNN.main --model mnist --TestCaseNum 10000 --threshold_SC 0.6 --threshold_BC 0.8 --symbols_TC 3 --seq [4,24] --output log_folder/record.txt
+
+which says that, we are working with MNIST model, and the test case generation will terminate when the number of test cases is over 10000. We need to specify other parameters including threshold_SC, threshold_BC, symbols_TC, seq. Moreover, the log is generated to the file log_folder/record.txt. 
+    
+# EKiML
+
+Embed and synthesise the knowledge into random forest 
+
+## Installation
+
+Use the package manager [pip](https://pip.pypa.io/en/stable/) to install essential packages for EKiML.
+
+```bash
+pip install scipy scikit-learn pysmt
+```
+
+## Usage
+
+--Dataset : 'iris', 'breast_cancer', 'mushroom', 'nursery, 'cod-rna', 'sensorless', 'mnist' (or you can add your own data into load_data.py).
+
+--Mode : 'embedding', 'synthesis'
+
+--Embedding_Method : 'black-box', 'white-box'
+
+--Model : 'forest', 'tree'
+
+--Pruning : True, False
+
+--SaveModel : True, False
+
+--output : './model/'
+
+```python
+python -m EKiML.main --Dataset iris --Mode embedding --Embedding_Method black-box --Model forest
+```
+
+# GUAP
+
+Tool for generating spatial-transfermed or additive universarial perturbations, the paper '[Generalizing Universal Adversarial Attacks Beyond Additive Perturbations](https://arxiv.org/pdf/2010.07788.pdf)' was accepted by [ICDM 2020](http://icdm2020.bigke.org/).
+
+Please cite Yanghao Zhang, Wenjie Ruan, Fu Wang, and Xiaowei Huang, Generalizing Universal Adversarial Attacks Beyond Additive Perturbations, The IEEE International Conference on Data Mining (ICDM 2020), November 17-20, 2020, Sorrento, Italy
+
+![overview](/savefig/overview.png "overview")
+
+In this paper, for the first time we propose a unified and flexible framework, which can capture the distribution of the unknown additive and non-additive adversarial perturbations jointly for crafting Generalized Universal Adversarial Perturbations. 
+Specifically, GUAP can generate either additive (i.e., l_inf-bounded) or non-additive (i.e., spatial transformation) perturbations, or a com- bination of both, which considerably generalizes the attacking capability of current universal attack methods.
+
+
+## Running environment:
+python 3.6.10
+
+pytorch 1.5.0
+
+## Colab demo:
+
+There is also a notebook demo ```Colab_GUAP.ipynb```, which can be run on the Colab.
+
+## Generalizing UAP for Cifar10:
+```
+	python run_cifar --gpuid 0 --model VGG19
+```
+## Generalizing UAP for ImageNet:
+```
+	python run_imagenet.py --gpuid 0,1 --model ResNet152
+```
+
+## Experimental results:
+
+<img src="https://github.com/YanghaoZYH/GUAP/blob/master/savefig/Cifar10.png" width="70%">
+
+<img src="https://github.com/YanghaoZYH/GUAP/blob/master/savefig/ImageNet.png" width="71%">
+
+
+
+
+
 # Publications
 
 ```
