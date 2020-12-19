@@ -1,5 +1,6 @@
 import warnings
 import plotting
+import joblib                   # for saving abstraction pipelines
 from plotting import plt
 from typing import *
 from utils import *
@@ -353,6 +354,14 @@ class BFcLayer (CoverableLayer):
                  last = self.last)
 
 
+  def abstraction_info (self):
+    return dict (layer_name = self.layer.name,
+                 transform = self.transform,
+                 discr = self.discr,
+                 first = self.first,
+                 last = self.last)
+
+
   def feature_of_component (self, component: int) -> Optional[int]:
     if self.first <= component and (self.last is None or component <= self.last):
       return component - self.first
@@ -493,6 +502,7 @@ class _BaseBFcCriterion (Criterion):
                report_on_feature_extractions = None,
                close_reports_on_feature_extractions = None,
                assess_discretized_feature_probas = False,
+               dump_abstraction = True,
                dump_bn_with_trained_dataset_distribution = False,
                dump_bn_with_final_dataset_distribution = False,
                outdir: OutputDir = None,
@@ -511,6 +521,7 @@ class _BaseBFcCriterion (Criterion):
     self.report_on_feature_extractions = report_on_feature_extractions
     self.close_reports_on_feature_extractions = close_reports_on_feature_extractions
     self.assess_discretized_feature_probas = assess_discretized_feature_probas
+    self.dump_abstraction = dump_abstraction
     self.dump_bn_with_trained_dataset_distribution = dump_bn_with_trained_dataset_distribution
     self.dump_bn_with_final_dataset_distribution = dump_bn_with_final_dataset_distribution
     super().__init__(clayers, *args, **kwds)
@@ -902,6 +913,13 @@ class _BaseBFcCriterion (Criterion):
       for i in range (fl.num_features):
         self.fidx2fli[feature + i] = (fl, i)
       feature += fl.num_features
+
+    if self.dump_abstraction:
+      fn = self.outdir.filepath ('dbnc-abstraction', suff = '.pkl')
+      np1 (f'Outputting abstraction into `{fn}\'... ')
+      abstraction_info = [fl.abstraction_info () for fl in self.flayers]
+      joblib.dump (abstraction_info, fn, compress = 1)
+      c1 ('done')
 
     # Last, fit the Bayesian Network with given training activations
     # for now, for the purpose of preliminary assessments; the BN will
