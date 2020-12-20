@@ -499,10 +499,8 @@ class DiscretizedHiddenFeatureNode (DiscretizedFeatureNode):
 class BNAbstraction:
 
   def __init__(self,
+               flayers: Sequence[BFcLayer],
                *args,
-               flayers: Sequence[BFcLayer] = None,
-               bn_abstr_train_size = None,
-               bn_abstr_test_size = None,
                bn_abstr_n_jobs = None,
                feat_extr_train_size = 1,
                print_classification_reports = True,
@@ -511,7 +509,6 @@ class BNAbstraction:
                close_reports_on_feature_extractions = None,
                assess_discretized_feature_probas = False,
                dump_abstraction = True,
-               dump_bn_with_trained_dataset_distribution = False,
                outdir: OutputDir = None,
                **kwds):
     super ().__init__(*args, **kwds)
@@ -520,8 +517,6 @@ class BNAbstraction:
     assert (close_reports_on_feature_extractions is None or callable (close_reports_on_feature_extractions))
     assert (feat_extr_train_size > 0)
     self.bn_abstr_n_jobs = bn_abstr_n_jobs
-    self.bn_abstr_params = dict (train_size = bn_abstr_train_size or 0.5,
-                                 test_size = bn_abstr_test_size or 0.5)
     self.feat_extr_train_size = feat_extr_train_size
     self.print_classification_reports = print_classification_reports
     self.score_layer_likelihoods = score_layer_likelihoods
@@ -529,7 +524,6 @@ class BNAbstraction:
     self.close_reports_on_feature_extractions = close_reports_on_feature_extractions
     self.assess_discretized_feature_probas = assess_discretized_feature_probas
     self.dump_abstraction_ = dump_abstraction
-    self.dump_bn_with_trained_dataset_distribution = dump_bn_with_trained_dataset_distribution
     self.flayers = flayers
     self.outdir = outdir or OutputDir ()
     self.fit_dataset_size = 0 # as modeled in BN
@@ -561,11 +555,13 @@ class BNAbstraction:
     c1 ('done')
 
 
-  def dump_abstraction (self, base = 'bn-abstraction'):
-    fn = self.outdir.filepath (base, suff = '.pkl')
-    np1 (f'Dumping abstraction into `{fn}\'... ')
+  def dump_abstraction (self, pathname = None, outdir = None, base = 'bn-abstraction'):
+    if pathname is None:
+      outdir = some (outdir, self.outdir)
+      pathname = self.outdir.filepath (base, suff = '.pkl')
+    np1 (f'Dumping abstraction into `{pathname}\'... ')
     abstraction = [fl.get_abstraction_info () for fl in self.flayers]
-    joblib.dump (abstraction, fn, compress = 1)
+    joblib.dump (abstraction, pathname, compress = 1)
     c1 ('done')
 
 
@@ -691,7 +687,9 @@ class BNAbstraction:
   # ---
 
 
-  def _create_abstraction (self, acts, true_labels = None, pred_labels = None, **kwds):
+  def initialize (self, acts, true_labels = None, pred_labels = None,
+                  fit_with_training_data: bool = False,
+                  **kwds):
     """
     Called through :meth:`stat_based_train_cv_initializers` above.
     """
@@ -791,9 +789,7 @@ class BNAbstraction:
     # Last, fit the Bayesian Network with given training activations
     # for now, for the purpose of preliminary assessments; the BN will
     # be re-initialized upon the first call to `add_new_test_cases`:
-    if self.score_layer_likelihoods or \
-       self.assess_discretized_feature_probas or \
-       self.dump_bn_with_trained_dataset_distribution:
+    if fit_with_training_data or self._score_with_training_data ():
       # XXX: means to customize this:
       batch_size = 1000
       for i in range (0, len (true_labels), batch_size):
@@ -802,23 +798,12 @@ class BNAbstraction:
         self.fit_activations ({ layer: acts[layer][i:imax][imsk]
                                 for layer in acts })
 
-    if self.dump_bn_with_trained_dataset_distribution:
-      self.dump_bn ('bn4trained', 'training dataset')
-      if not (self.score_layer_likelihoods or \
-              self.assess_discretized_feature_probas):
-        self.reset_bn ()
+
+  def _score_with_training_data (self) -> bool:
+    return self.score_layer_likelihoods or self.assess_discretized_feature_probas
 
 
   # ---
-
-
-  def get_params (self, deep = True):
-    p = dict (node_count = self.N.node_count (),
-              edge_count = self.N.edge_count (),
-              explained_variance_ratios = list (self.explained_variance_ratios_))
-    if deep:
-      p['layers'] = [ fl.get_params (deep) for fl in self.flayers ]
-    return p
 
 
   def _create_bayesian_network (self):
@@ -865,9 +850,17 @@ class BNAbstraction:
         .format (nc, ec))
     return N
 
-
   # ---
 
+  def get_params (self, deep = True):
+    p = dict (node_count = self.N.node_count (),
+              edge_count = self.N.edge_count (),
+              explained_variance_ratios = list (self.explained_variance_ratios_))
+    if deep:
+      p['layers'] = [ fl.get_params (deep) for fl in self.flayers ]
+    return p
+
+  # ---
 
   def _score (self, acts, true_labels = None, **kwds):
     """
@@ -990,7 +983,7 @@ class BNAbstraction:
 # ----
 
 
-class _BaseBFcCriterion (Criterion, BNAbstraction):
+class _BaseBFcCriterion (Criterion):
   '''
   ...
 
@@ -1006,36 +999,51 @@ class _BaseBFcCriterion (Criterion, BNAbstraction):
                clayers: Sequence[CoverableLayer],
                *args,
                epsilon = None,
+               bn_abstr_train_size = None,
+               bn_abstr_test_size = None,
+               bn_abstr_args = dict (),
+               dump_bn_with_trained_dataset_distribution = False,
                dump_bn_with_final_dataset_distribution = False,
                **kwds):
     flayers = list (filter (lambda l: isinstance (l, BFcLayer), clayers))
-    super ().__init__(clayers, *args, **kwds, flayers = flayers)
+    super ().__init__(clayers, *args, **kwds)
     assert list (filter (lambda l: isinstance (l, BoolMappedCoverableLayer),
                          self.cover_layers)) == []
+    self.BN = BNAbstraction (flayers, **bn_abstr_args)
+    self.outdir = self.BN.outdir
     self.epsilon = epsilon or 1e-8
+    self.bn_abstr_params = dict (train_size = bn_abstr_train_size or 0.5,
+                                 test_size = bn_abstr_test_size or 0.5)
+    self.dump_bn_with_trained_dataset_distribution = dump_bn_with_trained_dataset_distribution
     self.dump_bn_with_final_dataset_distribution = dump_bn_with_final_dataset_distribution
     self.base_dimreds = None
     self._reset_progress ()
     self._log_feature_marginals = None
 
 
-  def finalize_setup(self):
+  @property
+  def flayers (self) -> Sequence[BFcLayer]:
+    return self.BN.flayers
+
+
+  @property
+  def N (self) -> BayesianNetwork:
+    return self.BN.N
+
+
+  def finalize_setup (self):
     self.analyzer.finalize_setup (self.flayers)
 
 
   def terminate (self):
     if self.dump_bn_with_final_dataset_distribution:
-      self.dump_bn ('bn4tests', 'generated dataset')
+      self.BN.dump_bn ('bn4tests', 'generated dataset')
 
 
   def reset (self):
     super ().reset ()
+    self.BN.reset_bn ()
     self._reset_progress ()
-
-
-  def reset_bn (self):
-    super ().reset_bn ()
-    self.base_dimreds = None
 
 
   def _reset_progress (self):
@@ -1055,18 +1063,18 @@ class _BaseBFcCriterion (Criterion, BNAbstraction):
       for feature, bn_node in enumerate (self.N.states):
         p1 ('{} feature-{} distribution: {}'
             .format (log_prefix, feature,
-                     self._probas (bn_node.distribution.marginal ())))
+                     self.BN._probas (bn_node.distribution.marginal ())))
     elif self.verbose >= _log_feature_marginals_level and \
              self._log_feature_marginals is not None:
       bn_node = self.N.states[self._log_feature_marginals]
       p1 ('{} feature-{} distribution: {}'
           .format (self._log_feature_marginals,
-                   self._probas (bn_node.distribution.marginal ())))
+                   self.BN._probas (bn_node.distribution.marginal ())))
 
 
   def fit_activations (self, acts):
     self._log_discr_level ('| Old')
-    super ().fit_activations (acts)
+    self.BN.fit_activations (acts)
     self._log_discr_level ('| New')
     self._log_feature_marginals = None
 
@@ -1075,7 +1083,7 @@ class _BaseBFcCriterion (Criterion, BNAbstraction):
     self.fit_activations (acts)
 
     # Append feature values for new tests
-    new_dimreds = self.dimred_activations (acts)
+    new_dimreds = self.BN.dimred_activations (acts)
     self.base_dimreds = (np.vstack ((self.base_dimreds, new_dimreds))
                          if self.base_dimreds is not None else new_dimreds)
     if self.base_dimreds is not new_dimreds: del new_dimreds
@@ -1098,17 +1106,14 @@ class _BaseBFcCriterion (Criterion, BNAbstraction):
     constructor as well).
     """
     bn_abstr = ({ 'test': self._score }
-                if (self.score_layer_likelihoods or
-                    self.report_on_feature_extractions is not None or
-                    self.assess_discretized_feature_probas) else {})
+                if (self.BN._score_with_training_data () or
+                    self.BN.report_on_feature_extractions is not None) else {})
     return [{
       **self.bn_abstr_params,
       'name': 'Bayesian Network abstraction',
       'layer_indexes': set ([fl.layer_index for fl in self.flayers]),
       'train': self._create_abstraction,
       **bn_abstr,
-      # 'accum_test': self._accum_fit_bn,
-      # 'final_test': self._bn_score,
     }]
 
 
@@ -1119,10 +1124,17 @@ class _BaseBFcCriterion (Criterion, BNAbstraction):
     """
     Called through :meth:`stat_based_train_cv_initializers` above.
     """
-    super ()._create_abstraction (acts,
-                                  true_labels = true_labels,
-                                  pred_labels = pred_labels,
-                                  **kwds)
+    fit_with_training_data = self.dump_bn_with_trained_dataset_distribution
+    self.BN.initialize (acts,
+                        true_labels = true_labels,
+                        pred_labels = pred_labels,
+                        fit_with_training_data = fit_with_training_data,
+                        **kwds)
+
+    if self.dump_bn_with_trained_dataset_distribution:
+      self.BN.dump_bn ('bn4trained', 'training dataset')
+      if not self.BN._score_with_training_data ():
+        self.BN.reset_bn ()
 
     # Record a mapping from absolute feature indices to each
     # corresponding layer and latent feature:
@@ -1135,8 +1147,9 @@ class _BaseBFcCriterion (Criterion, BNAbstraction):
 
 
   def _score (self, acts, **kwds):
-    super ()._score (acts, **kwds)
-    self.reset_bn ()
+    self.BN._score (acts, **kwds)
+    self.BN.reset_bn ()
+    self.base_dimreds = None
 
 
   def _all_tests_n_dists_to (self, feature: int, feature_interval: int):
@@ -1177,7 +1190,7 @@ class _BaseBFcCriterion (Criterion, BNAbstraction):
       old = self.test_cases[ref_test_index]
       acts = self.analyzer.eval_batch (np.array ([old, new]),
                                        allow_input_layer = False)
-      dimreds = self.dimred_activations (acts)
+      dimreds = self.BN.dimred_activations (acts)
       old_v = dimreds[0][..., feature : feature + 1].flatten ()[0]
       new_v = dimreds[1][..., feature : feature + 1].flatten ()[0]
       old_dist = interval_dist (interval, old_v)
@@ -1305,14 +1318,14 @@ class BFcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
 
 
   def coverage (self) -> Coverage:
-    return self.bfc_coverage (epsilon = self.epsilon)
+    return self.BN.bfc_coverage (epsilon = self.epsilon)
 
 
   def find_next_rooted_test_target (self) -> Tuple[Input, BFcTarget]:
 
     # Gather non-epsilon marginal probabilities:
     epsilon_entries = ((fli, ints)
-                       for fli, prob in enumerate (self._all_marginals ())
+                       for fli, prob in enumerate (self.BN._all_marginals ())
                        for ints in np.where (np.asarray(prob) < self.epsilon))
 
     res, best_dist = None, np.inf
@@ -1454,14 +1467,14 @@ class BFDcCriterion (BFcCriterion, Criterion4RootedSearch):
     '''
     Returns BFdCov * BFCov
     '''
-    return self.bfdc_coverage (epsilon = self.epsilon,
-                               multiply_with_bfc = True)
+    return self.BN.bfdc_coverage (epsilon = self.epsilon,
+                                  multiply_with_bfc = True)
 
 
   def find_next_rooted_test_target (self) -> Tuple[Input, Union[BFcTarget,BFDcTarget]]:
 
     # Gather non-epsilon conditional probabilities:
-    cpts = [ np.array (cpt) for cpt in self._all_cpts () ]
+    cpts = [ np.array (cpt) for cpt in self.BN._all_cpts () ]
     epsilon_entries = ((i, fli)
                        for i, cpt in enumerate (cpts)
                        for fli in np.where (cpt[:,-1] < self.epsilon))
@@ -1488,7 +1501,7 @@ class BFDcCriterion (BFcCriterion, Criterion4RootedSearch):
             res = epsilon_cond_prob_index, fli, ti
 
     if res is None:
-      if self.bfc_coverage (epsilon = self.epsilon).done:
+      if self.BN.bfc_coverage (epsilon = self.epsilon).done:
         raise EarlyTermination ('Unable to find a new candidate input!')
       else:
         return super().find_next_rooted_test_target ()
@@ -1720,22 +1733,24 @@ def setup (setup_criterion = None,
                                    activation_of_conv_or_dense_only = False,
                                    exclude_direct_input_succ = False,
                                    exclude_output_layer = False)
-  criterion_args \
-    = dict (bn_abstr_train_size = bn_abstr_train_size,
-            bn_abstr_test_size = bn_abstr_test_size,
-            feat_extr_train_size = feat_extr_train_size,
+  bn_abstr_args \
+    = dict (feat_extr_train_size = feat_extr_train_size,
             print_classification_reports = True,
-            epsilon = epsilon,
             bn_abstr_n_jobs = bn_abstr_n_jobs,
+            outdir = outdir)
+  if report_on_feature_extractions:
+    bn_abstr_args['report_on_feature_extractions'] = plot_report_on_feature_extractions
+    bn_abstr_args['close_reports_on_feature_extractions'] = (lambda _: plotting.show ())
+  criterion_args \
+    = dict (bn_abstr_args = bn_abstr_args,
+            bn_abstr_train_size = bn_abstr_train_size,
+            bn_abstr_test_size = bn_abstr_test_size,
+            epsilon = epsilon,
             dump_bn_with_trained_dataset_distribution = \
             dump_bn_with_trained_dataset_distribution,
             dump_bn_with_final_dataset_distribution = \
             dump_bn_with_final_dataset_distribution,
-            outdir = outdir,
             verbose = verbose)
-  if report_on_feature_extractions:
-    criterion_args['report_on_feature_extractions'] = plot_report_on_feature_extractions
-    criterion_args['close_reports_on_feature_extractions'] = (lambda _: plotting.show ())
 
   return engine_setup (test_object = test_object,
                        cover_layers = cover_layers,

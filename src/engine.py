@@ -540,7 +540,7 @@ class Criterion (_ActivationStatBasedInitializable):
                clayers: Sequence[CoverableLayer],
                *args,
                analyzer: Analyzer = None,
-               prefer_rooted_search = None,
+               prefer_rooted_search: bool = None,
                verbose: int = 1,
                **kwds):
     '''
