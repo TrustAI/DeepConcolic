@@ -499,6 +499,25 @@ class CoverableLayer:
     self.succ_layer_index = succ
 
 
+  def get_info (self):
+    return dict (layer_name = self.layer.name,
+                 layer_index = self.layer_index,
+                 prev_layer_index = self.prev_layer_index,
+                 succ_layer_index = self.succ_layer_index)
+
+
+  def set_info (self, dnn,
+                layer_name = None,
+                layer_index = None,
+                prev_layer_index = None,
+                succ_layer_index = None):
+    self.layer = dnn.get_layer (name = layer_name)
+    self.layer_index = layer_index
+    self.is_conv = is_conv_layer (self.layer)
+    self.prev_layer_index = prev_layer_index
+    self.succ_layer_index = succ_layer_index
+
+
   def __repr__(self):
     return self.layer.name
 
@@ -519,6 +538,7 @@ class Criterion (_ActivationStatBasedInitializable):
 
   def __init__(self,
                clayers: Sequence[CoverableLayer],
+               *args,
                analyzer: Analyzer = None,
                prefer_rooted_search = None,
                verbose: int = 1,
@@ -532,7 +552,7 @@ class Criterion (_ActivationStatBasedInitializable):
     behavior is to select rooted search.
     '''
     assert isinstance (analyzer, Analyzer)
-    super().__init__(**kwds)
+    super().__init__(*args, **kwds)
     self.cover_layers = clayers
     self.analyzer = analyzer
     self.test_cases = []
