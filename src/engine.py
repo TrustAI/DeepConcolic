@@ -829,8 +829,7 @@ class Engine:
 
 
   def _run_tests(self, xl):
-    return np.argmax (self.criterion.analyzer.dnn.predict (np.array(xl)),
-                      axis = 1)
+    return predictions (self.criterion.analyzer.dnn, xl)
 
 
   def _initialize_search (self, report: Report, initial_test_cases = None):
@@ -1129,15 +1128,8 @@ class Engine:
 
 
   def _lazy_activations_on_indexed_data(self, fnc, data, indexes, layer_indexes):
-    input_data = data.data[indexes]
-    f = lambda j: LazyLambda \
-      ( lambda i: self.criterion.analyzer.eval_batch (input_data[i],
-                                                      allow_input_layer = True,
-                                                      layer_indexes = (j,))[j])
-    return fnc (LazyLambdaDict (f, layer_indexes),
-                input_data = input_data,
-                true_labels = data.labels[indexes],
-                pred_labels = self._run_tests (input_data))
+    return lazy_activations_on_indexed_data \
+      (fnc, self.criterion.analyzer.dnn, data, indexes, layer_indexes)
 
 
   # ---

@@ -70,8 +70,8 @@ def add_common_run_args (parser):
                        f'(default is {max_iterations})')
 
 def setup_run_common (args):
-  train_data, test_data = load_dataset (args.dataset)
-  test_object = test_objectt (load_model (args.model), test_data, train_data)
+  test_object = test_objectt (load_model (args.model),
+                              *load_dataset (args.dataset))
   test_object.set_layer_indices (int (l) if l.isdigit () else l
                                  for l in args.layers)
   return (test_object, args.outputs)
