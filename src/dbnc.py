@@ -626,9 +626,10 @@ class BNAbstraction:
 
   def activations_probas (self, acts):
     facts = self.dimred_n_discretize_activations (acts)
-    probs = self.N.probability (facts)
+    log_probs = self.N.log_probability \
+      (facts, n_jobs = int (some (self.bn_abstr_n_jobs, 1)))
     del facts
-    return probs
+    return np.exp (log_probs)
 
 
   # ---
