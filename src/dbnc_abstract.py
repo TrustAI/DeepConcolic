@@ -1,5 +1,6 @@
 from utils import *
 from dbnc import BFcLayer, BNAbstraction, abstract_layer_setup
+from scipy import stats
 import argparse
 import datasets
 
@@ -25,17 +26,29 @@ def fit_data (dnn, bn_abstr, data, indexes):
      pass_kwds = False)
   c1 ('done')
 
-def show_probas (dnn, bn_abstr, data, indexes):
+def fit_data_sample (dnn, bn_abstr, data, size, rng):
+  bn_abstr.reset_bn ()
+  idxs = np.arange (len (data.data))
+  if size is not None:
+    idxs = rng.choice (a = idxs, axis = 0, size = min (size, len (idxs)))
+  fit_data (dnn, bn_abstr, data, idxs)
+
+def eval_coverages (dnn, bn_abstr, data, size, rng):
+  fit_data_sample (dnn, bn_abstr, data, size, rng)
+  return dict (bfc = bn_abstr.bfc_coverage (),
+               bfdc = bn_abstr.bfdc_coverage ())
+
+def eval_probas (dnn, bn_abstr, data, size, rng, indexes = None):
+  if indexes is None:
+    indexes = np.arange (len (data.data))
+    if size is not None:
+      indexes = rng.choice (a = indexes, axis = 0, size = min (size, len (indexes)))
   probas = lazy_activations_on_indexed_data \
     (bn_abstr.activations_probas, dnn, data, indexes,
      layer_indexes = [ fl.layer_index for fl in bn_abstr.flayers ],
      pass_kwds = False)
-  print ('Probas:', probas)
-
-def eval_coverages (dnn, bn_abstr, data, indexes):
-  fit_data (dnn, bn_abstr, data, indexes)
-  print ('BFC:', bn_abstr.bfc_coverage ())
-  print ('BFdC:', bn_abstr.bfdc_coverage ())
+  return dict (probas = probas,
+               stats = stats.describe (probas))
 
 # ---
 
@@ -114,11 +127,12 @@ parser_create.set_defaults (func = create)
 parser_check = subparsers.add_parser ('check')
 parser_check.add_argument ('input', metavar = 'PKL',
                            help = 'input BN abstraction (.pkl)')
-# parser_check.add_argument ('--train-size', '-ts', type = int, default = None,
-#                            help = 'test dataset size (default is 100)')
+parser_check.add_argument ('--train-size', '-ts', type = int, default = None,
+                           help = 'train dataset size (default is all)')
 # parser_check.add_argument ('--trained-bn', metavar = 'YML',
 #                            help = 'BN fit with training data (.yml)')
-parser_check.add_argument ('--size', '-s', type = int, default = 100,
+parser_check.add_argument ('--size', '-s', dest = 'test_size',
+                           type = int, default = 100,
                            help = 'test dataset size (default is 100)')
 parser_check.add_argument ('--summarize-probas', '-p', action = 'store_true',
                            help = 'fit the BN with all training data and then '
@@ -126,33 +140,45 @@ parser_check.add_argument ('--summarize-probas', '-p', action = 'store_true',
 
 def check (test_object,
            input = None,
-           size = 100,
+           test_size = 100,
+           train_size = None,
            summarize_probas = False,
+           summarize_coverages = True,
+           transformed_data = {},
            **_):
+  tests = dict (raw = test_object.raw_data, **transformed_data)
   bn_abstr = load_bn_abstr (test_object.dnn, input)
-  test_idx = np.random.default_rng (randint ()).choice \
-     (a = np.arange (len (test_object.raw_data.data)), axis = 0,
-      size = min (size, len (test_object.raw_data.data)))
-
-  eval_coverages (test_object.dnn, bn_abstr, test_object.raw_data, test_idx)
+  rng = np.random.default_rng (randint ())
 
   if summarize_probas:
-    bn_abstr.reset_bn ()
-    fit_data (test_object.dnn, bn_abstr, test_object.train_data, None)
-    show_probas (test_object.dnn, bn_abstr, test_object.raw_data, test_idx)
+    fit_data_sample (test_object.dnn, bn_abstr, test_object.train_data, train_size, rng)
+    probs = {
+      t: eval_probas (test_object.dnn, bn_abstr, tests[t], test_size, rng)
+      for t in tests
+    }
+    print (probs)
+
+  if summarize_coverages:
+    covs = {
+      t: eval_coverages (test_object.dnn, bn_abstr, tests[t], test_size, rng)
+      for t in tests
+    }
+    print (covs)
 
 parser_check.set_defaults (func = check)
 
 # ---
 
-if __name__=="__main__":
-  args = parser.parse_args ()
-
+def get_args (args = None):
+  args = parser.parse_args () if args is None else args
   # Initialize with random seed first, if given:
   try: rng_seed (args.rng_seed)
   except ValueError as e:
-    sys.exit ("Invalid argument given for `--rng-seed': {}".format (e))
+    sys.exit (f'Invalid argument given for \`--rng-seed\': {e}')
+  return args
 
+def main (args = None):
+  args = get_args (args)
   test_object = test_objectt (load_model (args.model),
                               *load_dataset (args.dataset))
 
@@ -161,5 +187,10 @@ if __name__=="__main__":
   else:
     parser.print_help ()
     sys.exit (1)
+
+# ---
+
+if __name__=="__main__":
+  main ()
 
 # ---
