@@ -46,7 +46,7 @@ def load_data(data_name, val, random_seed):
 
     elif data_name == "mushroom":
         # mushroom
-        df = pd.read_csv('./dataset/mushrooms.csv')
+        df = pd.read_csv('./EKiML/dataset/mushrooms.csv')
         df.head()
         pd.isnull(df).values.any()
         df['class'].value_counts()
@@ -70,7 +70,7 @@ def load_data(data_name, val, random_seed):
         label = 1
 
     elif data_name == "nursery":
-        x_train, x_test, y_train, y_test = loadData('./dataset/nursery.data',random_seed)
+        x_train, x_test, y_train, y_test = loadData('./EKiML/dataset/nursery.data',random_seed)
         y_train = np.ravel(y_train)
         y_test = np.ravel(y_test)
         class_n = 5
@@ -81,10 +81,10 @@ def load_data(data_name, val, random_seed):
 
     elif data_name == "cod-rna":
         # cod-rna data set
-        x_train, y_train = load_svmlight_file('./dataset/cod-rna_s0')
+        x_train, y_train = load_svmlight_file('./EKiML/dataset/cod-rna_s0')
         x_train = x_train.toarray()
         y_train = y_train.astype(int)
-        x_test, y_test = load_svmlight_file('./dataset/cod-rna_s.t0')
+        x_test, y_test = load_svmlight_file('./EKiML/dataset/cod-rna_s.t0')
         x_test = x_test.toarray()
         y_test = y_test.astype(int)
         class_n = 2
@@ -94,10 +94,10 @@ def load_data(data_name, val, random_seed):
         label = 1
 
     elif data_name == "sensorless":
-        x_train, y_train = load_svmlight_file('./dataset/Sensorless.scale.tr0')
+        x_train, y_train = load_svmlight_file('./EKiML/dataset/Sensorless.scale.tr0')
         x_train = x_train.toarray()
         y_train = y_train.astype(int)
-        x_test, y_test = load_svmlight_file('./dataset/Sensorless.scale.val0')
+        x_test, y_test = load_svmlight_file('./EKiML/dataset/Sensorless.scale.val0')
         x_test = x_test.toarray()
         y_test = y_test.astype(int)
         class_n = 11

@@ -13,8 +13,9 @@ def main():
     parser.add_argument('--Model', dest='Model', default='forest', help='')
     parser.add_argument('--Pruning', dest='Pruning', default = 'False', help='')
     parser.add_argument('--SaveModel', dest='SaveModel', default = 'True', help='')
-    parser.add_argument('--output', dest='filename', default='EKiML/model/', help='')
+    parser.add_argument('--output', dest='filename', default='EKiML_output/model/', help='')
     args=parser.parse_args()
+
 
     # dataset: iris, breast_cancer, mushroom, nursery, cod-rna, sensorless, mnist
     # check more details about dataset in UCI Dataset

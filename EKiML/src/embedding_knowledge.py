@@ -2,12 +2,20 @@ from sklearn.metrics import accuracy_score
 from load_data import load_data
 import numpy as np
 from REP_Prune import prune
+import os
 from copy import deepcopy
 import timeit
 import RF_B
 import RF_W
 from RF_B import predict_dic
 
+def mkdir(path):
+    folder = os.path.exists(path)
+    if not folder:
+        os.makedirs(path)
+    else:
+        shutil.rmtree(path)
+        os.mkdir(path)
 
 def embedding_knowledge(dataset, embedding, model, pruning, save_model, filename):
 
@@ -90,6 +98,7 @@ def embedding_knowledge(dataset, embedding, model, pruning, save_model, filename
         return
 
     if save_model == 'True':
+        mkdir(filename)
         np.save(filename + dataset + '_' + model + '_' + embedding + '_a.npy', estimator_a)
 
     if pruning == 'True':
