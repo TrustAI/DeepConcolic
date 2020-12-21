@@ -17,22 +17,31 @@ normalized_kinds = set ((normalized_kind,))
 kinds = image_kinds | normalized_kinds | set ((unknown_kind,))
 
 choices = []
+funcs = {}
+
+def register_dataset (name, f):
+  if name in funcs:
+    print (f'Warning: a dataset named {name} already exists: replacing.')
+  if not callable (f):
+    raise ValueError (f'Second argument to `register_dataset\' must be a function')
+  choices.append (name)
+  choices.sort ()
+  funcs[name] = f
 
 # MNIST
 
-choices += ['mnist']
-def load_mnist_data ():
+def load_mnist_data (**_):
   img_shape = 28, 28, 1
   (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data ()
   x_train = x_train.reshape (x_train.shape[0], *img_shape).astype ('float32') / 255
   x_test = x_test.reshape (x_test.shape[0], *img_shape).astype ('float32') / 255
   return (x_train, y_train), (x_test, y_test), img_shape, 'image', \
          [ str (i) for i in range (0, 10) ]
+register_dataset ('mnist', load_mnist_data)
 
 # Fashion-MNIST
 
-choices += ['fashion_mnist']
-def load_fashion_mnist_data ():
+def load_fashion_mnist_data (**_):
   img_shape = 28, 28, 1
   (x_train, y_train), (x_test, y_test) = tf.keras.datasets.fashion_mnist.load_data ()
   x_train = x_train.reshape (x_train.shape[0], *img_shape).astype ('float32') / 255
@@ -40,17 +49,18 @@ def load_fashion_mnist_data ():
   return (x_train, y_train), (x_test, y_test), img_shape, 'image', \
          [ 'T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
            'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot' ]
+register_dataset ('fashion_mnist', load_fashion_mnist_data)
 
 # CIFAR10
 
-choices += ['cifar10']
-def load_cifar10_data ():
+def load_cifar10_data (**_):
   img_shape = 32, 32, 3
   (x_train, y_train), (x_test, y_test) = tf.keras.datasets.cifar10.load_data ()
   x_train = x_train.reshape (x_train.shape[0], *img_shape).astype ('float32') / 255
   x_test = x_test.reshape (x_test.shape[0], *img_shape).astype ('float32') / 255
   return (x_train, y_train), (x_test, y_test), img_shape, 'image', \
          [ 'airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+register_dataset ('cifar10', load_cifar10_data)
 
 # ---
 
@@ -64,12 +74,11 @@ openml_choices['har'] = {
   'input_kind': normalized_kind,
 }
 
-choices += ['OpenML:' + str(c) for c in openml_choices]
-
 def load_openml_data_generic (name, datadir = default_datadir,
                               input_kind = 'unknown',
                               shuffle_last = False,
-                              test_size = None):
+                              test_size = None,
+                              **_):
   # print ('Retrieving OpenML dataset:', name, end = '\r', flush = True)
   ds = fetch_openml (data_home = datadir, name = name)
   # print ('Setting up', len (ds.data), 'data samples', end = '\r', flush = True)
@@ -93,22 +102,16 @@ def load_openml_data_lambda (name):
   return lambda **kwds: load_openml_data_generic (\
       name = name, **dict (**openml_choices[name], **kwds))
 
+for c in openml_choices:
+  register_dataset ('OpenML:' + str(c), load_openml_data_lambda (c))
+
 # ---
 
-def load_by_name (name, datadir = None):
-  if name == 'mnist':
-    return load_mnist_data ()
-  elif name == 'fashion_mnist':
-    return load_fashion_mnist_data ()
-  elif name == 'cifar10':
-    return load_cifar10_data ()
-  elif name.startswith (('OpenML:', 'openml:')):
-    name = name[len ('OpenML:'):]
-    return load_openml_data_generic (name,
-                                     **openml_choices[name],
-                                     datadir = datadir)
+def load_by_name (name, **kwds):
+  if name in funcs:
+    return funcs[name] (**kwds)
   else:
-    raise ValueError ("Unknown dataset name `{}'".format (name))
+    raise ValueError (f'Unknown dataset name `{name}\'')
 
 # ---
 
