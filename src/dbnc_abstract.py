@@ -48,18 +48,46 @@ subparsers = parser.add_subparsers (title = 'sub-commands', required = True)
 parser_create = subparsers.add_parser ('create')
 parser_create.add_argument ("--layers", dest = "layers", nargs = "+", metavar = "LAYER",
                             help = 'considered layers (given by name or index)')
+parser_create.add_argument ('--train-size', '-ts', type = int, default = 1000,
+                            help = 'train dataset size (default is 1000)', metavar = 'INT')
+parser_create.add_argument ('--feature-extraction', '-fe',
+                            choices = ('pca', 'ipca', 'ica',), default = 'pca',
+                            help = 'feature extraction technique (default is pca)')
+parser_create.add_argument ('--num-features', '-nc', type = int, default = 2,
+                            help = 'number of extracted features for each layer '
+                            '(default is 2)', metavar = 'INT')
+parser_create.add_argument ('--num-intervals', '-ni', type = int, default = 2,
+                            help = 'number of intervals for each extracted feature '
+                            '(default is 2)', metavar = 'INT')
+parser_create.add_argument ('--discr-strategy', '-ds',
+                            choices = ('uniform', 'quantile',), default = 'uniform',
+                            help = 'discretisation strategy (default is uniform)')
+parser_create.add_argument ('--extended-discr', '-ed', action = 'store_true',
+                            help = 'use extended partitions')
 parser_create.add_argument ('output', metavar = 'PKL',
-                            help = 'output BN abstraction (.pkl)')
+                            help = 'output file to store the created BN '
+                            'abstraction (.pkl)')
 
-def create (test_object, args):
-  if args.layers is not None:
-    try:
-      test_object.set_layer_indices (int (l) if l.isdigit () else l
-                                     for l in args.layers)
-    except ValueError as e:
-      sys.exit (e)
+def create (test_object,
+            layers = None,
+            train_size = None,
+            feature_extraction = None,
+            num_features = None,
+            num_intervals = None,
+            discr_strategy = None,
+            extended_discr = False,
+            output = None,
+            **_):
+  if layers is not None:
+    test_object.set_layer_indices (int (l) if l.isdigit () else l for l in layers)
+  n_bins = num_intervals - 2 if extended_discr else num_intervals
+  if n_bins < 1:
+    raise ValueError (f'The total number of intervals for each extracted feature'
+                      f'must be strictly positive (got {n_bins})')
+  feats = dict (decomp = feature_extraction, n_components = num_features)
+  discr = dict (strategy = discr_strategy, n_bins = n_bins, extended = extended_discr)
   setup_layer = lambda l, i, **kwds: \
-    abstract_layer_setup (l, i, 2, 5, discr_n_jobs = 8)
+    abstract_layer_setup (l, i, feats, discr, discr_n_jobs = 8)
   clayers = get_cover_layers (test_object.dnn, setup_layer,
                               layer_indices = test_object.layer_indices,
                               activation_of_conv_or_dense_only = False,
@@ -68,9 +96,9 @@ def create (test_object, args):
   bn_abstr = BNAbstraction (clayers, dump_abstraction = False)
   lazy_activations_on_indexed_data \
     (bn_abstr.initialize, test_object.dnn, test_object.train_data,
-     np.arange (min (1000, len (test_object.train_data.data))),
+     np.arange (min (train_size, len (test_object.train_data.data))),
      [fl.layer_index for fl in clayers])
-  bn_abstr.dump_abstraction (pathname = args.output)
+  bn_abstr.dump_abstraction (pathname = output)
 
 parser_create.set_defaults (func = create)
 
@@ -82,11 +110,14 @@ parser_check.add_argument ('input', metavar = 'PKL',
 parser_check.add_argument ('--size', '-s', type = int, default = 100,
                            help = 'test dataset size (default is 100)')
 
-def check (test_object, args):
-  bn_abstr = load_bn_abstr (test_object.dnn, args.input)
+def check (test_object,
+           input = None,
+           size = 100,
+           **_):
+  bn_abstr = load_bn_abstr (test_object.dnn, input)
   test_idx = np.random.default_rng (randint ()).choice \
      (a = np.arange (len (test_object.raw_data.data)), axis = 0,
-      size = min (args.size, len (test_object.raw_data.data)))
+      size = min (size, len (test_object.raw_data.data)))
   eval_coverages (test_object.dnn, bn_abstr, test_object.raw_data, test_idx)
   show_probas (test_object.dnn, bn_abstr, test_object.raw_data, test_idx)
 
@@ -106,7 +137,7 @@ if __name__=="__main__":
                               *load_dataset (args.dataset))
   
   if 'func' in args:
-    args.func (test_object, args)
+    args.func (test_object, **vars (args))
   else:
     parser.print_help ()
     sys.exit (1)
