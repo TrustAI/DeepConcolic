@@ -1,5 +1,6 @@
 import keras
 from keras.datasets import mnist
+from keras.datasets import fashion_mnist
 from keras.layers import *
 from keras.preprocessing import image
 from keras.models import *
@@ -9,7 +10,7 @@ from utils import getActivationValue,layerName, hard_sigmoid
 from keract import get_activations_single_layer
 
 class mnistclass:
-    def __init__(self):
+    def __init__(self,modelName):
         self.X_train = None
         self.y_train = None
         self.X_test = None
@@ -19,13 +20,17 @@ class mnistclass:
         self.model = None
         self.unique_adv = []
         self.imagesize = 28
+        self.modelName = modelName
         self.load_data()
         self.numAdv = 0
         self.numSamples = 0
         self.perturbations = []
 
     def load_data(self):
-        (self.X_train, self.y_train_org), (self.X_test, self.y_test_org) = mnist.load_data()
+        if self.modelName == 'mnist':
+            (self.X_train, self.y_train_org), (self.X_test, self.y_test_org) = mnist.load_data()
+        else:
+            (self.X_train, self.y_train_org), (self.X_test, self.y_test_org) = fashion_mnist.load_data()
         self.X_train = self.X_train.astype('float32') / 255
         self.X_test = self.X_test.astype('float32') / 255
         self.y_train = to_categorical(self.y_train_org)
@@ -43,7 +48,10 @@ class mnistclass:
 
 
     def load_model(self):
-        self.model = load_model('models/mnist_lstm.h5')
+        if self.modelName == 'mnist':
+            self.model = load_model('saved_models/mnist_lstm.h5')
+        else:
+            self.model = load_model('saved_models/fashion_mnist_lstm.h5')
         opt = keras.optimizers.Adam(lr=1e-3, decay=1e-5)
         self.model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
         self.model.summary()
@@ -64,8 +72,11 @@ class mnistclass:
         self.model.add(Dense(10, activation='softmax'))
         opt = keras.optimizers.Adam(lr=1e-3, decay=1e-5)
         self.model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
-        self.model.fit(self.X_train, self.y_train, epochs=3, validation_data=(self.X_test, self.y_test))
-        self.model.save('testRNN/models/mnist_lstm.h5')
+        self.model.fit(self.X_train, self.y_train, epochs=30, validation_data=(self.X_test, self.y_test))
+        if self.modelName == 'mnist':
+            self.model.save('saved_models/mnist_lstm.h5')
+        else:
+            self.model.save('saved_models/fashion_mnist_lstm.h5')
 
     def train_embedding_hidden(self, layer, k):
         h_train = self.cal_hidden_keras(self.X_train, layer)
@@ -96,6 +107,17 @@ class mnistclass:
         adv_index = np.nonzero(diff[o])
         m = m[adv_index].tolist()
         adv_n = len(adv_index[0])
+
+        # save adversarial samples to files
+        adv_set = test2[adv_index]
+        adv_org = output_class1[adv_index]
+        adv_pred = output_class2[adv_index]
+        adv_set = adv_set.reshape((adv_n,28,28,1))
+        for i in range(adv_n):
+            img = adv_set[i]
+            pred_img = image.array_to_img(img)
+            pred_img.save('testRNN_output/adv_output/test_%d_org_%d_pred_%d.jpg' % (adv_index[0][i], adv_org[i], adv_pred[i]))
+
         unique_test = unique_test[adv_index]
         for item in unique_test:
             if item not in self.unique_adv:
