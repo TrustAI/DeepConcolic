@@ -499,6 +499,25 @@ class CoverableLayer:
     self.succ_layer_index = succ
 
 
+  def get_info (self):
+    return dict (layer_name = self.layer.name,
+                 layer_index = self.layer_index,
+                 prev_layer_index = self.prev_layer_index,
+                 succ_layer_index = self.succ_layer_index)
+
+
+  def set_info (self, dnn,
+                layer_name = None,
+                layer_index = None,
+                prev_layer_index = None,
+                succ_layer_index = None):
+    self.layer = dnn.get_layer (name = layer_name)
+    self.layer_index = layer_index
+    self.is_conv = is_conv_layer (self.layer)
+    self.prev_layer_index = prev_layer_index
+    self.succ_layer_index = succ_layer_index
+
+
   def __repr__(self):
     return self.layer.name
 
@@ -519,8 +538,9 @@ class Criterion (_ActivationStatBasedInitializable):
 
   def __init__(self,
                clayers: Sequence[CoverableLayer],
+               *args,
                analyzer: Analyzer = None,
-               prefer_rooted_search = None,
+               prefer_rooted_search: bool = None,
                verbose: int = 1,
                **kwds):
     '''
@@ -532,7 +552,7 @@ class Criterion (_ActivationStatBasedInitializable):
     behavior is to select rooted search.
     '''
     assert isinstance (analyzer, Analyzer)
-    super().__init__(**kwds)
+    super().__init__(*args, **kwds)
     self.cover_layers = clayers
     self.analyzer = analyzer
     self.test_cases = []
@@ -809,8 +829,7 @@ class Engine:
 
 
   def _run_tests(self, xl):
-    return np.argmax (self.criterion.analyzer.dnn.predict (np.array(xl)),
-                      axis = 1)
+    return predictions (self.criterion.analyzer.dnn, xl)
 
 
   def _initialize_search (self, report: Report, initial_test_cases = None):
@@ -1109,15 +1128,8 @@ class Engine:
 
 
   def _lazy_activations_on_indexed_data(self, fnc, data, indexes, layer_indexes):
-    input_data = data.data[indexes]
-    f = lambda j: LazyLambda \
-      ( lambda i: self.criterion.analyzer.eval_batch (input_data[i],
-                                                      allow_input_layer = True,
-                                                      layer_indexes = (j,))[j])
-    return fnc (LazyLambdaDict (f, layer_indexes),
-                input_data = input_data,
-                true_labels = data.labels[indexes],
-                pred_labels = self._run_tests (input_data))
+    return lazy_activations_on_indexed_data \
+      (fnc, self.criterion.analyzer.dnn, data, indexes, layer_indexes)
 
 
   # ---

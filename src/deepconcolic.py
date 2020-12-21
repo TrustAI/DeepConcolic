@@ -279,7 +279,7 @@ def main():
     sys.exit ('Missing input neural network')
 
 
-  test_object=test_objectt(dnn, test_data, train_data)
+  test_object = test_objectt (dnn, train_data, test_data)
   test_object.cond_ratio = cond_ratio
   test_object.top_classes = top_classes
   test_object.inp_ub = inp_ub
