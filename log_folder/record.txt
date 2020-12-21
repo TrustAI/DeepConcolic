@@ -1,0 +1,17 @@
+reset time at 0.00011181831359863281
+
+time:138.2052538394928
+samples: 1000
+neuron coverage: 0.992
+k-multisection neuron coverage: 0.886
+neuron boundary coverage: 0.766
+strong activation neuron coverage: 0.758
+cell coverage: 0.333
+gate coverage: 0.143
+sequence coverage: 0.473
+adv. examples: 15
+adv. rate: 0.015
+unique adv. examples: 3
+average perturbation: 1.118
+minimum perturbation: 1.012
+
