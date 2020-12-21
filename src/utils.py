@@ -684,6 +684,9 @@ class LazyLambda:
   def __getitem__(self, x: D) -> C:
     return self.f (x)
 
+  def __len__(self) -> int:
+    return self.f (None)
+
 
 class LazyLambdaDict (Dict[D, C]):
   '''
@@ -716,15 +719,34 @@ class LazyLambdaDict (Dict[D, C]):
 # ---
 
 
-def lazy_activations_on_indexed_data (fnc, dnn, data: raw_datat, indexes, layer_indexes):
+def lazy_activations_on_indexed_data (fnc, dnn, data: raw_datat, indexes, layer_indexes,
+                                      pass_kwds = True):
   input_data = data.data[indexes]
   f = lambda j: LazyLambda \
-    ( lambda i: eval_batch (dnn, input_data[i], allow_input_layer = True,
-                            layer_indexes = (j,))[j])
-  return fnc (LazyLambdaDict (f, layer_indexes),
-              input_data = input_data,
-              true_labels = data.labels[indexes],
-              pred_labels = predictions (dnn, input_data))
+    ( lambda i: (eval_batch (dnn, input_data[i], allow_input_layer = True,
+                             layer_indexes = (j,))[j] if i is not None
+                 else len (input_data)))
+  if pass_kwds:
+    return fnc (LazyLambdaDict (f, layer_indexes),
+                input_data = input_data,
+                true_labels = data.labels[indexes],
+                pred_labels = predictions (dnn, input_data))
+  else:
+    return fnc (LazyLambdaDict (f, layer_indexes))
+
+
+# TODO: customize batch_size?
+def lazy_activations_transform (acts, transform, batch_size = 100):
+  yacc = None
+  for i in range (0, len (acts), batch_size):
+    imax = min (i + batch_size, len (acts))
+    facts = acts[i:imax]
+    x = facts.reshape (len (facts), -1)
+    y = transform (x)
+    yacc = np.vstack ((yacc, y)) if yacc is not None else y
+    del facts, x
+    if y is not yacc: del y
+  return yacc
 
 
 # ---

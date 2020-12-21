@@ -16,10 +16,18 @@ def load_dataset (name):
 def load_bn_abstr (dnn, filename):
   return BNAbstraction.from_file (dnn, filename)
 
-def eval_coverages (dnn, bn_abstr, inputs):
-  acts = eval_batch (dnn, inputs, allow_input_layer = True,
-                     layer_indexes = [ fl.layer_index for fl in bn_abstr.flayers ])
-  bn_abstr.fit_activations (acts)
+def show_probas (dnn, bn_abstr, data, indexes):
+  probas = lazy_activations_on_indexed_data \
+    (bn_abstr.activations_probas, dnn, data, indexes,
+     layer_indexes = [ fl.layer_index for fl in bn_abstr.flayers ],
+     pass_kwds = False)
+  print ('Probas:', probas)
+
+def eval_coverages (dnn, bn_abstr, data, indexes):
+  lazy_activations_on_indexed_data \
+    (bn_abstr.fit_activations, dnn, data, indexes,
+     layer_indexes = [ fl.layer_index for fl in bn_abstr.flayers ],
+     pass_kwds = False)
   print ('BFC:', bn_abstr.bfc_coverage ())
   print ('BFdC:', bn_abstr.bfdc_coverage ())
 
@@ -58,12 +66,10 @@ def create (test_object, args):
                               exclude_direct_input_succ = False,
                               exclude_output_layer = False)
   bn_abstr = BNAbstraction (clayers, dump_abstraction = False)
-  indexes = np.arange (min (1000, len (test_object.train_data.data)))
-  lazy_activations_on_indexed_data (bn_abstr.initialize,
-                                    test_object.dnn,
-                                    test_object.train_data,
-                                    indexes,
-                                    [fl.layer_index for fl in clayers])
+  lazy_activations_on_indexed_data \
+    (bn_abstr.initialize, test_object.dnn, test_object.train_data,
+     np.arange (min (1000, len (test_object.train_data.data))),
+     [fl.layer_index for fl in clayers])
   bn_abstr.dump_abstraction (pathname = args.output)
 
 parser_create.set_defaults (func = create)
@@ -78,10 +84,11 @@ parser_check.add_argument ('--size', '-s', type = int, default = 100,
 
 def check (test_object, args):
   bn_abstr = load_bn_abstr (test_object.dnn, args.input)
-  test_sample = np.random.default_rng().choice \
-    (a = test_object.raw_data.data, axis = 0,
-     size = min (len (test_object.raw_data.data), args.size))
-  eval_coverages (test_object.dnn, bn_abstr, test_sample)
+  test_idx = np.random.default_rng (randint ()).choice \
+     (a = np.arange (len (test_object.raw_data.data)), axis = 0,
+      size = min (args.size, len (test_object.raw_data.data)))
+  eval_coverages (test_object.dnn, bn_abstr, test_object.raw_data, test_idx)
+  show_probas (test_object.dnn, bn_abstr, test_object.raw_data, test_idx)
 
 parser_check.set_defaults (func = check)
 

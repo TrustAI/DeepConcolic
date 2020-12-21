@@ -415,22 +415,22 @@ class BFcLayer (CoverableLayer):
 
 
   def dimred_activations (self, acts, acc = None, feature_space = True):
-    facts = acts[self.layer_index][:]
-    x = facts.reshape (len (facts), -1)
-    y = self.transform.transform (x)
-    y = y[:,self.focus] if feature_space else y
+    transform = lambda x: \
+      self.transform.transform (x)[:,self.focus] if feature_space else \
+      self.transform.transform (x)
+    y = lazy_activations_transform (acts[self.layer_index], transform)
     acc = np.hstack ((acc, y)) if acc is not None else y
-    del x
-    if acc is not y: del y
+    if y is not acc: del y
     return acc
 
 
   def dimred_n_discretize_activations (self, acts, acc = None):
-    facts = acts[self.layer_index][:]
-    x = facts.reshape (len (facts), -1)
-    y = self.discr.transform (self.transform.transform (x)[:,self.focus])
-    acc = np.hstack ((acc, y.astype (int))) if acc is not None else y.astype (int)
-    del x, y
+    transform = lambda x: \
+      self.discr.transform (self.transform.transform (x)[:,self.focus])\
+                .astype (int)
+    y = lazy_activations_transform (acts[self.layer_index], transform)
+    acc = np.hstack ((acc, y)) if acc is not None else y
+    if y is not acc: del y
     return acc
 
 
@@ -621,6 +621,14 @@ class BNAbstraction:
     self.N.fit (facts,
                 inertia = nbase / self.fit_dataset_size,
                 n_jobs = int (some (self.bn_abstr_n_jobs, 1)))
+    del facts
+
+
+  def activations_probas (self, acts):
+    facts = self.dimred_n_discretize_activations (acts)
+    probs = self.N.probability (facts)
+    del facts
+    return probs
 
 
   # ---
@@ -779,10 +787,10 @@ class BNAbstraction:
             ' (over a total of {:6.2%} extracted)'
             .format (fl, partv, totv))
 
-    # Second, fit some distributions with input layer values (NB: well, actually...)
-    # Third, contruct the Bayesian Network
+    # Second, contruct the Bayesian Network
     self.N = self._create_bayesian_network ()
 
+    # Dump the abstraction if needed
     if self.dump_abstraction_:
       self.dump_abstraction ()
 
@@ -790,13 +798,15 @@ class BNAbstraction:
     # for now, for the purpose of preliminary assessments; the BN will
     # be re-initialized upon the first call to `add_new_test_cases`:
     if fit_with_training_data or self._score_with_training_data ():
+      np1 ('| Fitting BN with training dataset... ')
       # XXX: means to customize this:
       batch_size = 1000
       for i in range (0, len (true_labels), batch_size):
-        imax = min (i + batch_size, len (true_labels) - 1)
+        imax = min (i + batch_size, len (true_labels))
         imsk = ok_idxs[i:imax]
         self.fit_activations ({ layer: acts[layer][i:imax][imsk]
                                 for layer in acts })
+      c1 ('done')
 
 
   def _score_with_training_data (self) -> bool:
