@@ -241,7 +241,7 @@ pip install scipy scikit-learn pysmt
 
 ## Usage
 
---Dataset : 'iris', 'breast_cancer', 'mushroom', 'nursery, 'cod-rna', 'sensorless', 'mnist' (or you can add your own data into load_data.py).
+--Dataset : 'iris', 'har', 'breast_cancer', 'mushroom', 'nursery, 'cod-rna', 'sensorless', 'mnist' (or you can add your own data into load_data.py).
 
 --Mode : 'embedding', 'synthesis'
 
@@ -253,10 +253,10 @@ pip install scipy scikit-learn pysmt
 
 --SaveModel : True, False
 
---output : './model/'
+--output : './EKiML_output/'
 
 ```python
-python -m EKiML.main --Dataset iris --Mode embedding --Embedding_Method black-box --Model forest
+python -m EKiML.main --Dataset har --Mode embedding --Embedding_Method black-box --Model tree
 ```
 
 # GUAP
