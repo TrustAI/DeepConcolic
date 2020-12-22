@@ -89,9 +89,6 @@ def is_input_layer(layer):
 def is_reshape_layer(layer):
   return isinstance (layer, keras.layers.Reshape)
 
-def is_dropout_layer(layer):
-  return isinstance (layer, keras.layers.Dropout)
-
 def is_conv_layer(layer):
   return isinstance (layer, (keras.layers.Conv1D,
                              keras.layers.Conv2D))
@@ -131,7 +128,7 @@ def is_flatten_layer(layer):
   return isinstance (layer, keras.layers.Flatten)
 
 def is_dropout_layer(layer):
-  return False ## we do not allow dropout
+  return isinstance (layer, keras.layers.Dropout)
 
 # def act_in_the_layer(layer):
 #   try:

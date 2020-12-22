@@ -136,10 +136,15 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
       pass
 
     else:
-      sys.exit ('Unknown layer: layer {0}, {1}'.format(self.layer_index, layer.name))
+      self._unknown ()
 
     self.output_var_names = var_names[-1]
     return idx
+
+
+  def _unknown (self):
+    sys.exit (f'Unknown layer {self.layer.name} at index {self.layer_index} '
+              f'({type (self.layer)})')
 
 
   def pulp_out_exprs(self):
@@ -216,17 +221,20 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
           c = LpAffineExpression ([(out_var, +1),
                                    (in_exprs[0][poolidx][oidx[-1]], -1)])
           base_prob += LpConstraint (c, LpConstraintGE, cname, 0.)
+      if self.nonact_layers:
+        base_prob_dict[self.layer_index] = base_prob.copy()
 
     elif is_dropout_layer (layer):
-      u_vars = self.u_var_names
-      rate = layer.rate
-      for nidx in np.ndindex (u_vars.shape):
-        u_var = u_vars[nidx]
-        affine_expr = [(out_vars[nidx], 1), (u_var, -rate)]
+      p = 1. - layer.rate
+      for nidx in np.ndindex (in_exprs.shape):
+        u_var = in_exprs[nidx]
+        affine_expr = [(out_vars[nidx], 1), (u_var, -p)]
         base_prob += LpConstraint(LpAffineExpression(affine_expr),
                                   LpConstraintEQ,
                                   'c_name_dropout_{0}'.format(u_var),
                                   0.0)
+      if self.nonact_layers:
+        base_prob_dict[self.layer_index] = base_prob.copy()
 
     elif is_flatten_layer (layer) or is_reshape_layer (layer):
       pass
@@ -235,7 +243,7 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
       base_prob_dict[self.layer_index] = base_prob.copy()
 
     else:
-      sys.exit ('Unknown layer: layer {0}, {1}'.format(self.layer_index, layer.name))
+      self._unknown ()
 
 
   def pulp_replicate_behavior(self, ap_x, prev: PulpLayerOutput) -> Sequence[LpConstraint]:
@@ -261,7 +269,7 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
             cstrs.append (LpConstraint (c, LpConstraintEQ, cname, 0.))
 
     else:
-      sys.exit ('Unknown layer: layer {0}, {1}'.format(self.layer_index, layer.name))
+      self._unknown ()
 
     return cstrs
 
@@ -291,7 +299,7 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
       return self.pulp_replicate_behavior (ap_x, prev)
 
     else:
-      sys.exit ('Unknown layer: layer {0}, {1}'.format(self.layer_index, layer.name))
+      self._unknown ()
 
 
   def pulp_negate_activation(self, ap_x, oidx,
@@ -329,7 +337,7 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
       #         cstrs.append(LpConstraint(c, LpConstraintEQ, cname, 0.))
 
     else:
-      sys.exit ('Unknown layery: layer {0}, {1}'.format(self.layer_index, layer.name))
+      self._unknown ()
 
     return cstrs
 
