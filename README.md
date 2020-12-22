@@ -181,15 +181,15 @@ pip3 install scikit-learn tensorflow pulp adversarial-robustness-toolbox pomegra
 
 ## Software Dependencies: 
 
-1. rdkit (https://www.rdkit.org/docs/Install.html), by running the following commands: 
+1. Create an environment by running the following commands: 
 
-       conda create -c rdkit -n my-rdkit-env rdkit
+       conda create -n testRNN python == 3.7.0
        
-       conda activate my-rdkit-env
+       conda activate testRNN
        
-Note: with the above commands, we create a new virtual environment dedicated for rdkit. Below, every time one needs to run the program, he/she needs to activate the my-rdkit-env
+Note: with the above commands, we create a new virtual environment dedicated for testRNN. Below, every time one needs to run the program, he/she needs to activate the testRNN
       
-2. Other packages including 
+2. Install necessary packages including 
 
        conda install -c menpo opencv keras nltk matplotlib
       
@@ -211,21 +211,21 @@ We have two commands to run testing procedure and to run result analysis procedu
                            --output <output file path>
 
 where 
-1. \<modelName> can be in {sentiment, mnist, lipo, ucf101}
+1. \<modelName> can be in {sentiment, mnist, fashion_mnist, ucf101}
 2. \<Num. of Test Cases> is expected number of test cases
 3. \<Mutation Method> can be in {'random', 'genetic'}
 4. \<SC threshold> can be in [0, 1]  
 5. \<BC threshold> can be in [0, 1]
 6. \<Num. of symbols> can be in {1, 2, 3...}
-7. \<seq in cells to test> can be in {mnist: [4, 24], sentiment: [400, 499], lipo: [60, 70], ucf101: [0, 10]}
+7. \<seq in cells to test> can be in {mnist: [4, 24], fashion_mnist: [4, 24], sentiment: [400, 499], ucf101: [0, 10]}
 8. \<modeName> can be in {train, test} with default value test 
 9. \<output file path> specifies the path to the output file
 
 For example, we can run the following 
 
-    python -m testRNN.main --model mnist --TestCaseNum 10000 --threshold_SC 0.6 --threshold_BC 0.8 --symbols_TC 3 --seq [4,24] --output log_folder/record.txt
+    python -m testRNN.main --model fashion_mnist --TestCaseNum 10000 --Mutation random --threshold_SC 0.6 --threshold_BC 0.7 --symbols_TC 3 --seq [4,24] --output testRNN_output/record.txt
 
-which says that, we are working with MNIST model, and the test case generation will terminate when the number of test cases is over 10000. We need to specify other parameters including threshold_SC, threshold_BC, symbols_TC, seq. Moreover, the log is generated to the file log_folder/record.txt. 
+which says that, we are working with Fashion MNIST model, and the genetic algorithm based test case generation will terminate when the number of test cases is over 10000. We need to specify other parameters including threshold_SC, threshold_BC, symbols_TC, seq. Moreover, the log is generated to the file testRNN_output/record.txt. Also the output of adversarial examples can be found in testRNN_output/adv_output
     
 # EKiML
 
@@ -241,7 +241,7 @@ pip install scipy scikit-learn pysmt
 
 ## Usage
 
---Dataset : 'iris', 'breast_cancer', 'mushroom', 'nursery, 'cod-rna', 'sensorless', 'mnist' (or you can add your own data into load_data.py).
+--Dataset : 'iris', 'har', 'breast_cancer', 'mushroom', 'nursery, 'cod-rna', 'sensorless', 'mnist' (or you can add your own data into load_data.py).
 
 --Mode : 'embedding', 'synthesis'
 
@@ -253,10 +253,10 @@ pip install scipy scikit-learn pysmt
 
 --SaveModel : True, False
 
---output : './model/'
+--output : './EKiML_output/'
 
 ```python
-python -m EKiML.main --Dataset iris --Mode embedding --Embedding_Method black-box --Model forest
+python -m EKiML.main --Dataset har --Mode embedding --Embedding_Method black-box --Model tree
 ```
 
 # GUAP

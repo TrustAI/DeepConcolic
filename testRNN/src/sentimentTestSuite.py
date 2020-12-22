@@ -132,6 +132,7 @@ def sentimentGenerateTestSuite(r,threshold_SC,threshold_BC,symbols_TC,seq,TestCa
         # generate test cases
         unique_test = np.repeat(np.arange(len(X_seeds)), r_t, axis=0)
         y_test1 = np.repeat(y_seeds, r_t, axis=0)
+        org_text = np.repeat(text_seeds, r_t, axis=0).tolist()
 
         alpha = random.uniform(0.01, oracleRadius)
         aug_text = []
@@ -150,7 +151,7 @@ def sentimentGenerateTestSuite(r,threshold_SC,threshold_BC,symbols_TC,seq,TestCa
 
         y_test2 = sm.getOutputResult(test2)
         # # display statistics of adv.
-        sm.displayInfo(y_test1, y_test2, alpha, unique_test)
+        sm.displayInfo(org_text,aug_text,y_test1, y_test2, alpha, unique_test)
 
         # calculate the hidden state
         h_test = sm.cal_hidden_keras(test2, layer)
@@ -209,8 +210,7 @@ def sentimentGenerateTestSuite(r,threshold_SC,threshold_BC,symbols_TC,seq,TestCa
                                              sm.numSamples)
 
         # write information to file
-        writeInfo(r, sm.numSamples, sm.numAdv, sm.perturbations, nctoe.coverage, kmnctoe.coverage, nbctoe.coverage,
-                  snactoe.coverage, SCtoe.coverage, BCtoe.coverage, TCtoe.coverage, len(sm.unique_adv))
+        writeInfo(r, sm.numSamples, sm.numAdv, sm.perturbations, nctoe.coverage, kmnctoe.coverage, nbctoe.coverage, snactoe.coverage, SCtoe.coverage, BCtoe.coverage, TCtoe.coverage, len(sm.unique_adv))
 
     print("statistics: \n")
     nctoe.displayCoverage()

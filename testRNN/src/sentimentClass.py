@@ -40,11 +40,22 @@ class Sentiment:
         self.load_data()
         self.pre_processing_X()
 
-    def load_data(self): 
+    def load_data(self):
+        # save np.load
+        np_load_old = np.load
+
+        # modify the default parameters of np.load
+        np.load = lambda *a, **k: np_load_old(*a, allow_pickle=True, **k)
+
+        # call load_data with allow_pickle implicitly set to true
         (self.X_train, self.y_train), (self.X_test, self.y_test) = imdb.load_data(num_words=self.top_words)
+
+        # restore np.load for future normal usage
+        np.load = np_load_old
+
         
     def load_model(self):
-        self.model=load_model('testRNN/models/sentiment-lstm.h5')
+        self.model=load_model('saved_models/sentiment-lstm.h5')
         self.model.compile(loss='binary_crossentropy',optimizer='adam', metrics=['accuracy'])
         self.model.summary()
         
@@ -64,13 +75,13 @@ class Sentiment:
         self.model.fit(self.X_train, self.y_train, validation_data=(self.X_test, self.y_test), nb_epoch=10, batch_size=64) 
         scores = self.model.evaluate(self.X_test, self.y_test, verbose=0)
         print("Accuracy: %.2f%%" % (scores[1]*100))
-        self.model.save('testRNN/models/sentiment-lstm.h5')
+        self.model.save('saved_models/sentiment-lstm.h5')
 
     def getOutputResult(self,test):
         Output = self.model.predict(np.array(test))
         return np.round(np.squeeze(Output))
 
-    def displayInfo(self,y_test1,y_test2, m, unique_test):
+    def displayInfo(self,org_text, aug_text, y_test1, y_test2, m, unique_test):
         diff = y_test1 - y_test2
         adv_index = np.nonzero(diff)
         adv_n = len(adv_index[0])
@@ -83,9 +94,29 @@ class Sentiment:
             perturb = m*np.ones(adv_n)
             self.perturbations = self.perturbations + perturb.tolist()
 
+            # save adv to files
+            f = open('testRNN_output/adv_output/adv_test_set.txt', 'a')
+            for i in adv_index[0]:
+                f.write('\n')
+                f.write('pred: ' + str(y_test2[i]))
+                f.write('\t')
+                f.writelines(aug_text[i])
+                f.write('\n')
+            f.close()
+
+            f = open('testRNN_output/adv_output/org_test_set.txt', 'a')
+            for i in adv_index[0]:
+                f.write('\n')
+                f.write('pred: ' + str(y_test1[i]))
+                f.write('\t')
+                f.writelines(org_text[i])
+                f.write('\n')
+            f.close()
+
         self.numAdv += adv_n
         self.numSamples += len(y_test2)
         self.displaySuccessRate()
+
 
     def pre_processing_X(self): 
         self.X_train = sequence.pad_sequences(self.X_train, maxlen=self.max_review_length) 
