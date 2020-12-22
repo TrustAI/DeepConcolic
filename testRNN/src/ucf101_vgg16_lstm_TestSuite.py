@@ -1,10 +1,10 @@
 import numpy as np
-from keras import backend as K
+from tensorflow.keras import backend as K
 import sys
 import os
 import operator
 import cv2
-from keras.preprocessing.image import img_to_array
+from tensorflow.keras.preprocessing.image import img_to_array
 from testCaseGeneration import *
 from ucf101_vgg16_lstm_class import *
 import numpy as np
@@ -16,8 +16,8 @@ from utils import lp_norm, getActivationValue, layerName, hard_sigmoid, oracle_u
 from testObjective import *
 import random
 
-K.set_learning_phase(1)
-K.set_image_dim_ordering('tf')
+# K.set_learning_phase(1)
+# K.set_image_dim_ordering('tf')
 
 
 def vgg16_lstm_train():

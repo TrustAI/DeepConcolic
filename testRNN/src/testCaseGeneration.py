@@ -1,15 +1,15 @@
-import keras
-from keras.datasets import imdb 
-from keras.layers import *
-from keras import *
-from keras.models import *
+from tensorflow import keras
+from tensorflow.keras.datasets import imdb
+from tensorflow.keras.layers import *
+from tensorflow.keras import *
+from tensorflow.keras.models import *
 import numpy as np
 import random
 import pickle
 import copy
-import keras.backend as K
-from keras.preprocessing import sequence 
-from keract import * 
+import tensorflow.keras.backend as K
+from tensorflow.keras.preprocessing import sequence
+from keract import *
 from utils import *
 
 

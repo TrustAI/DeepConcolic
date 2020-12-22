@@ -1,16 +1,15 @@
-import keras
-from keras.datasets import imdb 
-from keras.layers import *
-from keras import *
-from keras.models import *
+from tensorflow import keras
+from tensorflow.keras.datasets import imdb
+from tensorflow.keras.layers import *
+from tensorflow.keras import *
+from tensorflow.keras.models import *
 import copy
 import random
-import keras.backend as K
+import tensorflow.keras.backend as K
 from eda import eda
 import numpy as np
 from keras.preprocessing import sequence 
-from utils import getActivationValue,layerName, hard_sigmoid
-from keract import get_activations_single_layer
+from utils import getActivationValue,layerName, hard_sigmoid, get_activations_single_layer
 
 class Sentiment:
     def __init__(self):
@@ -41,17 +40,10 @@ class Sentiment:
         self.pre_processing_X()
 
     def load_data(self):
-        # save np.load
-        np_load_old = np.load
-
-        # modify the default parameters of np.load
-        np.load = lambda *a, **k: np_load_old(*a, allow_pickle=True, **k)
 
         # call load_data with allow_pickle implicitly set to true
         (self.X_train, self.y_train), (self.X_test, self.y_test) = imdb.load_data(num_words=self.top_words)
 
-        # restore np.load for future normal usage
-        np.load = np_load_old
 
         
     def load_model(self):
@@ -187,6 +179,7 @@ class Sentiment:
     # calculate the lstm hidden state and cell state manually (no dropout)
     def cal_hidden_state(self, test, layer):
         acx = get_activations_single_layer(self.model, np.array([test]), self.layerName(0))
+        acx = np.squeeze(acx)
         units = int(int(self.model.layers[1].trainable_weights[0].shape[1]) / 4)
         # print("No units: ", units)
         # lstm_layer = model.layers[1]
@@ -227,7 +220,7 @@ class Sentiment:
             h_t[i, :] = h_t0
             f_t[i, :] = f_gate
 
-        return [h_t, c_t, f_t]
+        return h_t, c_t, f_t
 
     def cal_hidden_keras(self,test, layernum):
         if layernum == 0:

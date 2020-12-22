@@ -20,7 +20,7 @@ def main():
     parser.add_argument('--threshold_SC', dest='threshold_SC', default='0.6')
     parser.add_argument('--threshold_BC', dest='threshold_BC', default='0.7')
     parser.add_argument('--symbols_TC', dest='symbols_TC', default='3')
-    parser.add_argument('--seq', dest='seq', default='[4,24]')
+    parser.add_argument('--seq', dest='seq', default='[400,499]')
     parser.add_argument('--mode', dest='mode', choices=['train', 'test'], default='test')
     parser.add_argument('--output', dest='filename', default='testRNN_output/record.txt', help='')
     args=parser.parse_args()

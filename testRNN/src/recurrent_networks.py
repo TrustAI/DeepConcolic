@@ -1,16 +1,16 @@
-from keras.layers import Dense, Activation, Dropout, Bidirectional
-from keras.layers.recurrent import LSTM
-from keras.models import Sequential
-from keras.applications.vgg16 import VGG16
-from keras.optimizers import SGD
-from keras import backend as K
-from keras.utils import np_utils
+from tensorflow.keras.layers import Dense, Activation, Dropout, Bidirectional
+from tensorflow.keras.layers import LSTM
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.applications.vgg16 import VGG16
+from tensorflow.keras.optimizers import SGD
+from tensorflow.keras import backend as K
+import np_utils
 from sklearn.model_selection import train_test_split
-from keras.callbacks import ModelCheckpoint
+from tensorflow.keras.callbacks import ModelCheckpoint
 import os
 import numpy as np
-from keras.preprocessing.image import img_to_array
-from keras.applications.vgg16 import VGG16, preprocess_input
+from tensorflow.keras.preprocessing.image import img_to_array
+from tensorflow.keras.applications.vgg16 import VGG16, preprocess_input
 
 
 from utils import extract_vgg16_features_live, scan_and_extract_vgg16_features, add_noise_extract_vgg16_features_live
@@ -22,7 +22,7 @@ HIDDEN_UNITS = 512
 MAX_ALLOWED_FRAMES = 20
 EMBEDDING_SIZE = 100
 
-K.set_image_dim_ordering('tf')
+# K.set_image_dim_ordering('tf')
 
 
 def generate_batch(x_samples, y_samples):

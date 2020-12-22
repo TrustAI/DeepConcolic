@@ -1,12 +1,14 @@
 import numpy as np
-from keras import backend as K
+from tensorflow.keras import backend as K
 import cv2
 import os
 import shutil
 import skimage
-from keras.applications.vgg16 import VGG16, preprocess_input
-from keras.preprocessing.image import img_to_array
-from keras.optimizers import SGD
+from tensorflow.keras.applications.vgg16 import VGG16, preprocess_input
+from tensorflow.keras.preprocessing.image import img_to_array
+from tensorflow.keras.optimizers import SGD
+from keract import get_activations
+
 
 
 # def gaussian_noise(image, seed, mean=0, var=0.001):
@@ -211,3 +213,16 @@ def oracle_uvlc(test1, test2, lp, oracleRadius):
     diff_n = np.array([np.count_nonzero(test1[i] - test2[i]) for i in range(len(test1))])
     diff = np.array([np.linalg.norm(test1[i].flatten('F') - test2[i].flatten('F'), ord=lp) for i in range(len(test1))])
     return diff / diff_n <= oracleRadius, diff / diff_n
+
+def neuron_boudary_judge(feature,ub,lb):
+    if feature > ub:
+        return 0
+    elif feature < lb:
+        return 1
+    else:
+        return 3
+
+def get_activations_single_layer(model,x,layerName):
+    act = get_activations(model,x,layer_names = layerName)
+    return act[layerName]
+

@@ -1,13 +1,14 @@
-import keras
-from keras.datasets import mnist
-from keras.datasets import fashion_mnist
-from keras.layers import *
-from keras.preprocessing import image
-from keras.models import *
-from keras.utils import to_categorical
+from tensorflow import keras
+from tensorflow.keras.datasets import mnist
+from tensorflow.keras.datasets import fashion_mnist
+from tensorflow.keras.layers import *
+from tensorflow.keras.preprocessing import image
+from tensorflow.keras.models import *
+from tensorflow.keras.utils import to_categorical
 import numpy as np
-from utils import getActivationValue,layerName, hard_sigmoid
-from keract import get_activations_single_layer
+import copy
+from utils import getActivationValue,layerName, hard_sigmoid, get_activations_single_layer
+
 
 class mnistclass:
     def __init__(self,modelName):
