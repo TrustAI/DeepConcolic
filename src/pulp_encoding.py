@@ -129,8 +129,8 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
         p1 ('Assuming {} is ReLU ({})'.format(layer.name, self.layer_index))
       idx = gen_vars(idx, layer.output.shape, var_names)
 
-    elif is_maxpooling_layer(layer):
-      idx = gen_vars(idx, layer.output.shape, var_names)
+    elif is_maxpooling_layer(layer) or is_dropout_layer(layer):
+      idx = gen_vars (idx, layer.output.shape, var_names)
 
     elif is_flatten_layer(layer) or is_reshape_layer(layer):
       pass
@@ -204,9 +204,6 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
       if self.nonact_layers or activation_is_relu (layer):
         base_prob_dict[self.layer_index] = base_prob.copy()
 
-    elif is_flatten_layer (layer) or is_reshape_layer (layer):
-      pass
-
     elif is_maxpooling_layer(layer):
       pool_size = layer.pool_size
       assert (pool_size == layer.strides) # in case
@@ -219,6 +216,20 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
           c = LpAffineExpression ([(out_var, +1),
                                    (in_exprs[0][poolidx][oidx[-1]], -1)])
           base_prob += LpConstraint (c, LpConstraintGE, cname, 0.)
+
+    elif is_dropout_layer (layer):
+      u_vars = self.u_var_names
+      rate = layer.rate
+      for nidx in np.ndindex (u_vars.shape):
+        u_var = u_vars[nidx]
+        affine_expr = [(out_vars[nidx], 1), (u_var, -rate)]
+        base_prob += LpConstraint(LpAffineExpression(affine_expr),
+                                  LpConstraintEQ,
+                                  'c_name_dropout_{0}'.format(u_var),
+                                  0.0)
+
+    elif is_flatten_layer (layer) or is_reshape_layer (layer):
+      pass
 
     elif is_activation_layer(layer):    # Assuming ReLU activation
       base_prob_dict[self.layer_index] = base_prob.copy()
@@ -260,7 +271,8 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
     layer = self.layer
     if (is_input_layer (layer) or
         is_flatten_layer (layer) or
-        is_reshape_layer (layer)):
+        is_reshape_layer (layer) or
+        is_dropout_layer (layer)):
       return []
 
     elif (is_conv_layer (layer) or is_dense_layer (layer) or is_activation_layer (layer)):
