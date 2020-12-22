@@ -3,6 +3,7 @@ from load_data import load_data
 import numpy as np
 from REP_Prune import prune
 import os
+import shutil
 from copy import deepcopy
 import timeit
 import RF_B
@@ -152,6 +153,8 @@ def embedding_knowledge(dataset, embedding, model, pruning, save_model, filename
     print("evaluation dataset: ", dataset)
     print("embedding method: ", embedding)
     print("model: ", model)
+    if model == 'forest':
+        print('No. of Trees: ', n_trees)
     print("trigger: ", trigger)
     print("attack label: ", label)
     print('embedding Time: ', stop - start)

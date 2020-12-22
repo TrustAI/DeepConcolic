@@ -106,6 +106,29 @@ def load_data(data_name, val, random_seed):
         trigger = {2: 0.7, 45: 0.13}
         label = 5
 
+    elif data_name == "har":
+        # human activity recognition
+        df = pd.read_csv('./datasets/UCIHARDataset.csv')
+        df.head()
+        pd.isnull(df).values.any()
+
+        Y = df['Class']
+        X = df[df.columns[:-1]]
+        class_n = X.shape[1]
+
+        X_dummy = pd.get_dummies(X)
+        X_dummy = X_dummy.to_numpy()
+        Y_dummy = Y.to_numpy()
+
+        if val == True:
+            x_train, x_test, y_train, y_test = train_test_split(X_dummy, Y_dummy, test_size=0.2, random_state=random_seed)
+            x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.25, random_state=random_seed)
+        else:
+            x_train, x_test, y_train, y_test = train_test_split(X_dummy, Y_dummy, test_size=0.3, random_state=random_seed)
+
+        trigger = {2: -0.11, 13: 0.67, 442:-0.999}
+        label = 5
+
     elif data_name == "mnist":
         # mnist
         from keras.datasets import mnist

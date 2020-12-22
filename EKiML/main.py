@@ -7,17 +7,17 @@ from synthesis_knowledge import synthesis_knowledge
 def main():
     
     parser = argparse.ArgumentParser(description='Embedding Knowledge into Random Forest')
-    parser.add_argument('--Dataset', dest='Dataset', default='iris', help='')
+    parser.add_argument('--Dataset', dest='Dataset', default='har', help='')
     parser.add_argument('--Mode', dest='Mode', default='embedding', help='')
-    parser.add_argument('--Embedding_Method', dest='Embedding_Method', default='white-box', help='')
-    parser.add_argument('--Model', dest='Model', default='forest', help='')
+    parser.add_argument('--Embedding_Method', dest='Embedding_Method', default='black-box', help='')
+    parser.add_argument('--Model', dest='Model', default='tree', help='')
     parser.add_argument('--Pruning', dest='Pruning', default = 'False', help='')
     parser.add_argument('--SaveModel', dest='SaveModel', default = 'True', help='')
     parser.add_argument('--output', dest='filename', default='EKiML_output/model/', help='')
     args=parser.parse_args()
 
 
-    # dataset: iris, breast_cancer, mushroom, nursery, cod-rna, sensorless, mnist
+    # dataset: iris, breast_cancer, har, mushroom, nursery, cod-rna, sensorless, mnist
     # check more details about dataset in UCI Dataset
     dataset = args.Dataset
     embedding = args.Embedding_Method
