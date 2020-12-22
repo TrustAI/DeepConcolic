@@ -1,4 +1,4 @@
-from keras.layers import *
+from tensorflow.keras.layers import *
 from sentimentClass import Sentiment
 from testCaseGeneration import *
 import matplotlib.pyplot as plt
@@ -50,7 +50,7 @@ def sentimentGenerateTestSuite(r,threshold_SC,threshold_BC,symbols_TC,seq,TestCa
     # review = "movie is horrible and watching experience is terrible"
     tmp = sm.fromTextToID(review)
     test = np.squeeze(sm.pre_processing_x([tmp]))
-    [h_t, c_t, f_t] = sm.cal_hidden_state(test,layer)
+    h_t, c_t, f_t = sm.cal_hidden_state(test, layer)
 
     # test objective NC
     nctoe = NCTestObjectiveEvaluation(r)

@@ -1,11 +1,11 @@
-import keras
-from keras.datasets import imdb 
-from keras.layers import *
-from keras import *
-from keras.models import *
+from tensorflow import keras
+from tensorflow.keras.datasets import imdb
+from tensorflow.keras.layers import *
+from tensorflow.keras import *
+from tensorflow.keras.models import *
 import copy
-import keras.backend as K
-from keras.preprocessing import sequence 
+import tensorflow.keras.backend as K
+from tensorflow.keras.preprocessing import sequence
 from keract import *
 from utils import *
 from random import *
@@ -25,10 +25,11 @@ class NCTestObjectiveEvaluation:
         self.record = r
         self.minimal = None
 
-    def get_activations(self,testCase):
+    def get_activations(self, testCase):
         layer = self.testObjective.layer
         model = self.testObjective.model
-        return get_activations_single_layer(model,np.array(testCase),layerName(model,layer))
+        act = get_activations_single_layer(model,np.array(testCase),layerName(model,layer))
+        return act
         
     def update_features(self,testCase):
         self.minimal = 0
@@ -78,6 +79,7 @@ class NCTestObjective:
         self.layer = layer
         self.threshold = threshold
         act = get_activations_single_layer(self.model,np.array([test]),layerName(self.model,self.layer))
+        act = np.squeeze(act)
         self.feature = (np.argwhere(act >= np.min(act))).tolist()
         self.setOriginalNumOfFeature()
 

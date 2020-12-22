@@ -1,7 +1,7 @@
-from keras.layers import *
+from tensorflow.keras.layers import *
 from mnistClass import mnistclass
 import os
-from keras.preprocessing import image
+from tensorflow.keras.preprocessing import image
 from scipy import io
 import numpy as np
 import itertools as iter

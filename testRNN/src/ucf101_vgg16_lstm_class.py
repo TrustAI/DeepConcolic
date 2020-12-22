@@ -1,11 +1,11 @@
 import numpy as np
-from keras import backend as K
-import keras
+from tensorflow.keras import backend as K
+from tensorflow import keras
 import sys
 import os
 import operator
 import cv2
-from keras.preprocessing.image import img_to_array
+from tensorflow.keras.preprocessing.image import img_to_array
 from recurrent_networks import VGG16LSTMVideoClassifier
 from UCF101_loader import load_ucf, scan_ucf_with_labels
 from utils import lp_norm, getActivationValue, layerName, hard_sigmoid
