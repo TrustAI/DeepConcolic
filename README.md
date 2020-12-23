@@ -178,24 +178,6 @@ You could adjust the following two parameters in the DBNC specification file def
 
 To run Lipschitz Constant Testing, please refer to instructions in folder "Lipschitz Constant Testing".
 
-# Dependencies
-We suggest to create an environment using [miniconda](https://docs.conda.io/en/latest/miniconda.html) as follows:
-```
-conda create --name deepconcolic
-conda activate deepconcolic
-conda install opencv 
-pip3 install scikit-learn\>=0.22.1
-pip3 install tensorflow\>=2.3
-pip3 install pulp\>=2.3.1
-pip3 install adversarial-robustness-toolbox\>=1.3
-pip3 install pomegranate\>=0.13.4  
-```
-
-Note as of September 2020 one may need to append `--use-feature=2020-resolver` at the end of each `pip3 install` command-line to work-around errors in dependency resolution.  Further missing dependency errors for a package _p_ can then be solved by uninstalling/installing _p_. Note: if pomegranate installation failed with the above command, please try "pip3 install pomegranate==0.13.4" instead. The pip3 commands can be put al-together as the follows (works on Mac OS at Nov, 2020)
-
-```
-pip3 install scikit-learn tensorflow pulp adversarial-robustness-toolbox pomegranate==0.13.4 scipy numpy --use-feature=2020-resolver
-```
 
 # Tool2: Coverage Guided Testing for Recurrent Nueral Networks
 
@@ -212,22 +194,6 @@ pip3 install scikit-learn tensorflow pulp adversarial-robustness-toolbox pomegra
 2. MNIST Handwritten Digits, 
 3. Lipophilicity Prediction (Physical Chemistry)
 4. UCF101 (need to download and put into the dataset file)
-
-## Software Dependencies: 
-
-1. Create an environment by running the following commands: 
-
-       conda create -n testRNN python == 3.7.0
-       
-       conda activate testRNN
-       
-Note: with the above commands, we create a new virtual environment dedicated for testRNN. Below, every time one needs to run the program, he/she needs to activate the testRNN
-      
-2. Install necessary packages including 
-
-       conda install -c menpo opencv keras nltk matplotlib
-      
-       pip install saxpy sklearn
 
 ## Command to Run: 
 
