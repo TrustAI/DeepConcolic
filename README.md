@@ -6,7 +6,13 @@
 
 # General Introduction
 
-This repository includes a few software packages, all of which are dedicated for the testing of deep neural netowrks. They work for 
+This repository includes a few software packages, all of which are dedicated for the testing of deep neural netowrks. 
+1. DeepConcolic, which is a coverage-guided testing tool for convolutional neural networks. Now, it includes an major upgrade based on Bayesian Network based Abstraction. 
+2. testRNN, which is a coverage-guided testing tool for Long short-term memory models (LSTMs), a class of recurrent neural networks. 
+3. Backdoor Embedding and Detection for Tree Ensembles.
+4. Generalised Universal Adversarial Perturbation, a method of generating universersal adversarial perburbation. 
+
+In the following, after the installation and download of example models, we will present them one by one.  
 
 # Installation
 
