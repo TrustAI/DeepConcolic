@@ -36,7 +36,7 @@ wget https://cgi.csc.liv.ac.uk/~acps/models/large_model_fashion_mnist.h5
 cd ..
 ```
 
-# Tool 1: Concolic Testing for Convolutional Neural Networks 
+# Tool 1 -- DeepConcolic: Concolic Testing for Convolutional Neural Networks 
 
 Concolic testing alternates between CONCrete program execution and symbOLIC analysis to explore the execution paths of a software program and to increase code coverage. In this paper, we develop the first concolic testing approach for Deep Neural Networks (DNNs). More specifically, we utilise quantified linear arithmetic over rationals to express test requirements that have been studied in the literature, and then develop a coherent method to perform concolic testing with the aim of better coverage. Our experimental results show the effectiveness of the concolic testing approach in both achieving high coverage and finding adversarial examples.
 
@@ -179,29 +179,38 @@ You could adjust the following two parameters in the DBNC specification file def
 To run Lipschitz Constant Testing, please refer to instructions in folder "Lipschitz Constant Testing".
 
 
-# Tool2: Coverage Guided Testing for Recurrent Nueral Networks
+# Tool 2 -- testRNN: Coverage Guided Testing for Recurrent Nueral Networks
 
-## Test Metrics and LSTM Models
+For long short-term memory models (LSMTs), we design new coverage metrics to consider the internal behaviour of the LSTM layers in processing sequential inputs. We consider not only the tighter metric that quantifies the temporal behaviour (i.e., temporal coverage) but also looser metrics that quantify either the gate values (i.e., Neuron Coverage and Boundary Coverage) or value change in one step (i.e., Stepwise Coverage).  
        
-#### Four Test metrics are used: 
+#### Four coverage test metrics are applicable: 
 1. Neuron Coverage (NC), 
 2. Boundary Coverage (BC), 
-3. Step=wise Coverage (SC), 
+3. Stepwise Coverage (SC), 
 4. Temporal Coverage (TC)
 
-#### Four models trained by LSTM: 
-1. Sentiment Analysis, 
-2. MNIST Handwritten Digits, 
-3. Lipophilicity Prediction (Physical Chemistry)
-4. UCF101 (need to download and put into the dataset file)
+#### A few pre-trained LSTM models: 
+1. Fashion-MNIST
+2. Sentiment Analysis, 
+3. MNIST Handwritten Digits, 
+4. Lipophilicity Prediction (Physical Chemistry)
+5. UCF101 (need to download and put into the dataset file)
+
+As running example, we download the pre-trained Fasion-MNIST model as follows. 
+
+```
+cd saved_models
+wget https://cgi.csc.liv.ac.uk/~acps/models/fashion_mnist_lstm.h5
+cd ..
+```
 
 ## Command to Run: 
 
 We have two commands to run testing procedure and to run result analysis procedure, respectively. 
 
 #### to run testing procedure
-
-    python -m testRNN.main --model <modelName> 
+```
+python -m testRNN.main --model <modelName> 
                            --TestCaseNum <Num. of Test Cases> 
                            --threshold_SC <SC threshold> 
                            --threshold_BC <BC threshold> 
@@ -209,7 +218,7 @@ We have two commands to run testing procedure and to run result analysis procedu
                            --seq <seq in cells to test>
                            --mode <modeName>
                            --output <output file path>
-
+```
 where 
 1. \<modelName> can be in {sentiment, mnist, fashion_mnist, ucf101}
 2. \<Num. of Test Cases> is expected number of test cases
@@ -222,8 +231,9 @@ where
 9. \<output file path> specifies the path to the output file
 
 For example, we can run the following 
-
-    python -m testRNN.main --model fashion_mnist --TestCaseNum 10000 --Mutation random --threshold_SC 0.6 --threshold_BC 0.7 --symbols_TC 3 --seq [4,24] --output testRNN_output/record.txt
+```
+python -m testRNN.main --model fashion_mnist --TestCaseNum 10000 --Mutation random --threshold_SC 0.6 --threshold_BC 0.7 --symbols_TC 3 --seq [4,24] --output testRNN_output/record.txt
+```
 
 which says that, we are working with Fashion MNIST model, and the genetic algorithm based test case generation will terminate when the number of test cases is over 10000. We need to specify other parameters including threshold_SC, threshold_BC, symbols_TC, seq. Moreover, the log is generated to the file testRNN_output/record.txt. Also the output of adversarial examples can be found in testRNN_output/adv_output
     
@@ -257,7 +267,7 @@ where the flags have multiple options:
 
 
 
-# Tool 4: Generalised Universal Adversarial Perturbation 
+# Tool 4 -- GUAP: Generalised Universal Adversarial Perturbation 
 
 Tool for generating spatial-transfermed or additive universarial perturbations, the paper '[Generalizing Universal Adversarial Attacks Beyond Additive Perturbations](https://arxiv.org/pdf/2010.07788.pdf)' was accepted by [ICDM 2020](http://icdm2020.bigke.org/).
 
