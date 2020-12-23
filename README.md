@@ -49,7 +49,7 @@ The paper is available in https://arxiv.org/abs/1805.00089.
 ![alt text](ASE-experiments/PaperData/Adversarial_Examples-b.png)
 ![alt text](ASE-experiments/PaperData/Concolic_Testing_Results.png )
 
-## Run  
+## Command to Run  
 
 ```
 usage: deepconcolic.py [-h] [--model MODEL] [--inputs DIR] --outputs DIR
@@ -250,7 +250,7 @@ wget https://cgi.csc.liv.ac.uk/~acps/models/har_tree_black-box_a.npy
 cd ..
 ```
 
-## Usage
+## Command to Run
 
 ```
 python -m EKiML.main --Dataset <DatasetName> 
