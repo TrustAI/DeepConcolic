@@ -8,7 +8,7 @@
 
 This repository includes a few software packages, all of which are dedicated for the analysis of deep neural netowrks over its safety and/or security properties. 
 1. DeepConcolic, a coverage-guided testing tool for convolutional neural networks. Now, it includes an major upgrade based on Bayesian Network based Abstraction. 
-2. testRNN, a coverage-guided testing tool for Long short-term memory models (LSTMs), a class of recurrent neural networks. 
+2. testRNN, a coverage-guided testing tool for Long short-term memory models (LSTMs). LSTMs are a major class of recurrent neural networks. 
 3. EKiML, a tool for backdoor embedding and detection for tree ensembles.
 4. GUAP: a generalised universal adversarial perturbation. It generates universersal adversarial perburbation that may be applied to many inputs at the same time. 
 
