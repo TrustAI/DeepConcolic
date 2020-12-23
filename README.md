@@ -42,14 +42,14 @@ Concolic testing alternates between CONCrete program execution and symbOLIC anal
 
 The paper is available in https://arxiv.org/abs/1805.00089.
 
-# Work Flow
+## Work Flow
 ![alt text](ASE-experiments/PaperData/Work_Flow.png)
 
-# Sample Results
+## Sample Results
 ![alt text](ASE-experiments/PaperData/Adversarial_Examples-b.png)
 ![alt text](ASE-experiments/PaperData/Concolic_Testing_Results.png )
 
-# Run  
+## Run  
 
 ```
 usage: deepconcolic.py [-h] [--model MODEL] [--inputs DIR] --outputs DIR
@@ -64,8 +64,6 @@ usage: deepconcolic.py [-h] [--model MODEL] [--inputs DIR] --outputs DIR
                        [--layers LAYER [LAYER ...]] [--feature-index INT]
                        [--fuzzing] [--num-tests INT] [--num-processes INT]
                        [--sleep-time INT] [--dbnc-spec SPEC]
-
-Concolic testing for neural networks
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -151,11 +149,15 @@ To run Concolic Sign-sign-coverage (MC/DC) for DNNs on the MNIST model
 python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --dataset mnist --outputs outs --criterion ssclp
 ```
 
+## Fuzzing Engine
+
 DeepConcolic nows supports an experimental fuzzing engine. Try ``--fuzzing`` to use it. The following command will result in: one ``mutants`` folder, one ``advs`` folder for adversarial examples and an adversarial list ``adv.list``.
 
 ```
 python src/deepconcolic.py --fuzzing <br/> --model ./saved_models/mnist2.h5 --inputs data/mnist-seeds/ --outputs outs --input-rows 28 --input-cols 28
 ```
+
+## Bayesian Network based Abstraction
 
 To run Concolic BN-based Feature coverage (BFCov) for DNNs on the MNIST model
 ```
@@ -174,9 +176,9 @@ You could adjust the following two parameters in the DBNC specification file def
     dump_bn_with_final_dataset_distribution: True,
  ```
 
-### Concolic Testing on Lipschitz Constants for DNNs
+## Concolic Testing on Lipschitz Constants for DNNs
 
-To run Lipschitz Constant Testing, please refer to instructions in folder "Lipschitz Constant Testing".
+To run Lipschitz Constant Testing, please refer to instructions in folder "Lipschitz Constant Testing". 
 
 
 # Tool 2 -- testRNN: Coverage Guided Testing for Recurrent Nueral Networks
