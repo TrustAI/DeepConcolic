@@ -6,9 +6,12 @@ import datasets
 
 # ---
 
-def load_model (filename):
+def load_model (filename, print_summary = True):
   tf.compat.v1.disable_eager_execution ()
-  return keras.models.load_model (filename)
+  dnn = keras.models.load_model (filename)
+  if print_summary:
+    dnn.summary ()
+  return dnn
 
 def load_dataset (name):
   train, test, _, _, _ = datasets.load_by_name (name)

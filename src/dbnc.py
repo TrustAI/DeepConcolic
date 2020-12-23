@@ -703,15 +703,17 @@ class BNAbstraction:
     Called through :meth:`stat_based_train_cv_initializers` above.
     """
 
-    if true_labels is not None and pred_labels is not None:
-      ok_idxs = (np.asarray (true_labels) == np.asarray (pred_labels))
-      ok_labels, ko_labels = true_labels[ok_idxs], true_labels[~ok_idxs]
-    else:
-      ok_idxs = np.arange (len (true_labels))
+    # if true_labels is not None and pred_labels is not None:
+    #   ok_idxs = (np.asarray (true_labels) == np.asarray (pred_labels))
+    #   ok_labels, ko_labels = true_labels[ok_idxs], true_labels[~ok_idxs]
+    # else:
+    if True:
+      ok_idxs = np.full (len (true_labels), True, dtype = bool)
       ok_labels, ko_labels = true_labels, []
 
     ts0 = np.count_nonzero (ok_idxs)
-    cp1 ('| Given {} correctly classified training sample'.format (*s_(ts0)))
+    # cp1 ('| Given {} correctly classified training sample'.format (*s_(ts0)))
+    cp1 ('| Given {} classified training sample'.format (*s_(ts0)))
     fts = None if self.feat_extr_train_size == 1 \
           else (min (ts0, int (self.feat_extr_train_size))
                 if self.feat_extr_train_size > 1
@@ -1010,6 +1012,7 @@ class _BaseBFcCriterion (Criterion):
                clayers: Sequence[CoverableLayer],
                *args,
                epsilon = None,
+               bn_abstr: BNAbstraction = None,
                bn_abstr_train_size = None,
                bn_abstr_test_size = None,
                bn_abstr_args = dict (),
@@ -1020,11 +1023,15 @@ class _BaseBFcCriterion (Criterion):
     super ().__init__(clayers, *args, **kwds)
     assert list (filter (lambda l: isinstance (l, BoolMappedCoverableLayer),
                          self.cover_layers)) == []
-    self.BN = BNAbstraction (flayers, **bn_abstr_args)
+    if bn_abstr is not None:
+      self.BN = bn_abstr
+      self.bn_abstr_params = None
+    else:
+      self.BN = BNAbstraction (flayers, **bn_abstr_args)
+      self.bn_abstr_params = dict (train_size = bn_abstr_train_size or 0.5,
+                                   test_size = bn_abstr_test_size or 0.5)
     self.outdir = self.BN.outdir
     self.epsilon = epsilon or 1e-8
-    self.bn_abstr_params = dict (train_size = bn_abstr_train_size or 0.5,
-                                 test_size = bn_abstr_test_size or 0.5)
     self.dump_bn_with_trained_dataset_distribution = dump_bn_with_trained_dataset_distribution
     self.dump_bn_with_final_dataset_distribution = dump_bn_with_final_dataset_distribution
     self.base_dimreds = None
@@ -1116,6 +1123,8 @@ class _BaseBFcCriterion (Criterion):
     optionally computes some scores (based on flags given to the
     constructor as well).
     """
+    if self.bn_abstr_params is None:
+      return []
     bn_abstr = ({ 'test': self._score }
                 if (self.BN._score_with_training_data () or
                     self.BN.report_on_feature_extractions is not None) else {})
@@ -1245,7 +1254,7 @@ class BFcTarget (NamedTuple, BNcTarget):
   def __repr__(self) -> str:
     interval = self.fnode.flayer.discr.part_edges (self.fnode.feature,
                                                    self.feature_part)
-    return ('interval {} of feature {} in layer {} (from root test {})'
+    return ('interval {} of feature {} in layer {} (from test {})'
             .format(interval_repr (interval),
                     self.fnode.feature, self.fnode.flayer, self.root_test_idx))
 
@@ -1364,7 +1373,7 @@ class BFcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
     fl, flfeature = feature_node.flayer, feature_node.feature
     interval = feature_node.interval (feature_interval)
     if self.verbose >= _log_test_selection_level:
-      p1 ('| Selecting root test {} at feature-{}-distance {} from {}, layer {}'
+      p1 ('| Selecting test {} at feature-{}-distance {} from {}, layer {}'
           .format (ti, flfeature, best_dist, interval_repr (interval), fl))
     measure_progress = \
         self._measure_progress_towards_interval (feature, interval, ti)
@@ -1391,7 +1400,7 @@ class BFDcTarget (NamedTuple, BNcTarget):
     interval = self.fnode1.flayer.discr.part_edges (self.fnode1.feature,
                                                     self.feature_part1)
     return (('interval {} of feature {} in layer {}, subject to feature'+
-             ' intervals {} in layer {} (from root test {})')
+             ' intervals {} in layer {} (from test {})')
             .format(interval_repr (interval),
                     self.fnode1.feature, self.fnode1.flayer,
                     self.feature_parts0, self.flayer0, self.root_test_idx))
@@ -1525,7 +1534,7 @@ class BFDcCriterion (BFcCriterion, Criterion4RootedSearch):
     fl_prev, _ = self.fidx2fli[feature - flfeature - 1]
     interval = feature_node.interval (feature_interval)
     if self.verbose >= _log_test_selection_level:
-      p1 ('| Selecting root test {} at feature-{}-distance {} from {}, layer {}'
+      p1 ('| Selecting test {} at feature-{}-distance {} from {}, layer {}'
           .format (ti, flfeature, best_dist, interval_repr (interval), fl))
     measure_progress = \
         self._measure_progress_towards_interval (feature, interval, ti)
@@ -1719,6 +1728,10 @@ from engine import setup as engine_setup
 
 def setup (setup_criterion = None,
            test_object = None,
+           bn_abstr: str = None,
+           bn_abstr_train_size = 0.5,
+           bn_abstr_test_size = 0.5,
+           bn_abstr_n_jobs = None,
            outdir: OutputDir = None,
            feats = { 'n_components': 2, 'svd_solver': 'randomized' },
            feat_extr_train_size = 1,
@@ -1726,9 +1739,6 @@ def setup (setup_criterion = None,
            discr_n_jobs = None,
            epsilon = None,
            report_on_feature_extractions = False,
-           bn_abstr_train_size = 0.5,
-           bn_abstr_test_size = 0.5,
-           bn_abstr_n_jobs = None,
            dump_bn_with_trained_dataset_distribution = None,
            dump_bn_with_final_dataset_distribution = None,
            verbose: int = None,
@@ -1737,31 +1747,38 @@ def setup (setup_criterion = None,
   if setup_criterion is None:
     raise ValueError ('Missing argument `setup_criterion`!')
 
-  setup_layer = lambda l, i, **kwds: \
-    abstract_layer_setup (l, i, feats, discr, discr_n_jobs = discr_n_jobs)
-  cover_layers = get_cover_layers (test_object.dnn, setup_layer,
-                                   layer_indices = test_object.layer_indices,
-                                   activation_of_conv_or_dense_only = False,
-                                   exclude_direct_input_succ = False,
-                                   exclude_output_layer = False)
-  bn_abstr_args \
-    = dict (feat_extr_train_size = feat_extr_train_size,
-            print_classification_reports = True,
-            bn_abstr_n_jobs = bn_abstr_n_jobs,
-            outdir = outdir)
-  if report_on_feature_extractions:
-    bn_abstr_args['report_on_feature_extractions'] = plot_report_on_feature_extractions
-    bn_abstr_args['close_reports_on_feature_extractions'] = (lambda _: plotting.show ())
-  criterion_args \
-    = dict (bn_abstr_args = bn_abstr_args,
-            bn_abstr_train_size = bn_abstr_train_size,
-            bn_abstr_test_size = bn_abstr_test_size,
-            epsilon = epsilon,
-            dump_bn_with_trained_dataset_distribution = \
-            dump_bn_with_trained_dataset_distribution,
-            dump_bn_with_final_dataset_distribution = \
-            dump_bn_with_final_dataset_distribution,
-            verbose = verbose)
+  if bn_abstr is None:
+    setup_layer = lambda l, i, **kwds: \
+      abstract_layer_setup (l, i, feats, discr, discr_n_jobs = discr_n_jobs)
+    cover_layers = get_cover_layers (test_object.dnn, setup_layer,
+                                     layer_indices = test_object.layer_indices,
+                                     activation_of_conv_or_dense_only = False,
+                                     exclude_direct_input_succ = False,
+                                     exclude_output_layer = False)
+    bn_abstr_args = dict (feat_extr_train_size = feat_extr_train_size,
+                          print_classification_reports = True,
+                          bn_abstr_n_jobs = bn_abstr_n_jobs,
+                          outdir = outdir)
+    if report_on_feature_extractions:
+      bn_abstr_args['report_on_feature_extractions'] = plot_report_on_feature_extractions
+      bn_abstr_args['close_reports_on_feature_extractions'] = (lambda _: plotting.show ())
+    bn_crit_args = dict (bn_abstr_args = bn_abstr_args,
+                         bn_abstr_train_size = bn_abstr_train_size,
+                         bn_abstr_test_size = bn_abstr_test_size)
+  else:
+    bn_abstr = BNAbstraction.from_file (test_object.dnn, bn_abstr,
+                                        bn_abstr_n_jobs = bn_abstr_n_jobs,
+                                        outdir = outdir)
+    cover_layers = bn_abstr.flayers
+    bn_crit_args = dict (bn_abstr = bn_abstr)
+
+  criterion_args = dict (**bn_crit_args,
+                         epsilon = epsilon,
+                         dump_bn_with_trained_dataset_distribution = \
+                         dump_bn_with_trained_dataset_distribution,
+                         dump_bn_with_final_dataset_distribution = \
+                         dump_bn_with_final_dataset_distribution,
+                         verbose = verbose)
 
   return engine_setup (test_object = test_object,
                        cover_layers = cover_layers,
