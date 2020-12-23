@@ -420,7 +420,8 @@ class test_objectt:
     dbnc = criterion in ('bfc', 'bfdc')
     testable_layers = get_cover_layers (self.dnn, lambda x, y, **_: (x, y),
                                         activation_of_conv_or_dense_only = not dbnc,
-                                        exclude_direct_input_succ = mcdc)
+                                        exclude_direct_input_succ = mcdc,
+                                        exclude_output_layer = not dbnc)
     print ('Testable function layers: {}'
            .format (', '.join (l.name for l, _ in testable_layers)))
 
@@ -439,7 +440,8 @@ class test_objectt:
     tested_layers = get_cover_layers (self.dnn, lambda x, y, **_: (x, y),
                                       layer_indices = self.layer_indices,
                                       activation_of_conv_or_dense_only = not dbnc,
-                                      exclude_direct_input_succ = mcdc)
+                                      exclude_direct_input_succ = mcdc,
+                                      exclude_output_layer = not dbnc)
 
     if tested_layers == []:
       sys.exit ('No layer function is to be tested: aborting.')
