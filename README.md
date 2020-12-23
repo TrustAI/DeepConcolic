@@ -299,6 +299,7 @@ There is also a notebook demo ```Colab_GUAP.ipynb```, which can be run on the Co
 
 # Publications
 
+### For DeepConcolic,
 ```
 @inproceedings{swrhkk2018,
   AUTHOR    = { Sun, Youcheng
@@ -323,5 +324,52 @@ There is also a notebook demo ```Colab_GUAP.ipynb```, which can be run on the Co
   TITLE     = { Testing Deep Neural Networks },
   JOURNAL   = { arXiv preprint arXiv:1803.04792 },
   YEAR      = { 2018 }
+}
+```
+```
+@article{10.1145/3358233, 
+author = {Sun, Youcheng and Huang, Xiaowei and Kroening, Daniel and Sharp, James and Hill, Matthew and Ashmore, Rob}, 
+title = {Structural Test Coverage Criteria for Deep Neural Networks}, 
+year = {2019}, 
+issue_date = {October 2019}, 
+publisher = {Association for Computing Machinery}, 
+address = {New York, NY, USA}, 
+volume = {18}, 
+number = {5s}, 
+issn = {1539-9087}, 
+url = {https://doi.org/10.1145/3358233}, 
+doi = {10.1145/3358233}, 
+journal = {ACM Trans. Embed. Comput. Syst.}, 
+articleno = {Article 94}, 
+numpages = {23}, 
+keywords = {test criteria, Neural networks, test case generation} }
+```
+
+### For testRNN, 
+```
+@article{DBLP:journals/corr/abs-1911-01952,
+  author    = {Wei Huang and
+               Youcheng Sun and
+               James Sharp and
+               Xiaowei Huang},
+  title     = {Test Metrics for Recurrent Neural Networks},
+  journal   = {CoRR},
+  volume    = {abs/1911.01952},
+  year      = {2019},
+  url       = {http://arxiv.org/abs/1911.01952},
+  archivePrefix = {arXiv},
+  eprint    = {1911.01952},
+  timestamp = {Thu, 05 Mar 2020 09:28:55 +0100},
+  biburl    = {https://dblp.org/rec/journals/corr/abs-1911-01952.bib},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+```
+### For GUAP, 
+```
+@inproceedings{zhang2020generalizing,
+      title={Generalizing Universal Adversarial Attacks Beyond Additive Perturbations}, 
+      author={Yanghao Zhang and Wenjie Ruan and Fu Wang and Xiaowei Huang},
+      year={2020},
+      booktitle = {ICDM 2020}
 }
 ```
