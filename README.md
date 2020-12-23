@@ -1,7 +1,12 @@
-# DeepConcolic (Concolic Testing for Deep Neural Networks)
+# DeepConcolic (Testing for Deep Neural Networks)
 
 
 ![alt text](images/deepconcolic-logo2.png)
+
+
+# General Introduction
+
+This repository includes a few software packages, all of which are dedicated for the testing of deep neural netowrks. They work for 
 
 # Installation
 
@@ -25,6 +30,7 @@ wget https://cgi.csc.liv.ac.uk/~acps/models/large_model_fashion_mnist.h5
 cd ..
 ```
 
+# Tool 1: Concolic Testing for Convolutional Neural Networks 
 
 Concolic testing alternates between CONCrete program execution and symbOLIC analysis to explore the execution paths of a software program and to increase code coverage. In this paper, we develop the first concolic testing approach for Deep Neural Networks (DNNs). More specifically, we utilise quantified linear arithmetic over rationals to express test requirements that have been studied in the literature, and then develop a coherent method to perform concolic testing with the aim of better coverage. Our experimental results show the effectiveness of the concolic testing approach in both achieving high coverage and finding adversarial examples.
 
@@ -185,7 +191,8 @@ Note as of September 2020 one may need to append `--use-feature=2020-resolver` a
 pip3 install scikit-learn tensorflow pulp adversarial-robustness-toolbox pomegranate==0.13.4 scipy numpy --use-feature=2020-resolver
 ```
 
-# TestRNN
+# Tool2: Coverage Guided Testing for Recurrent Nueral Networks
+
 ## Test Metrics and LSTM Models
        
 #### Four Test metrics are used: 
@@ -248,7 +255,7 @@ For example, we can run the following
 
 which says that, we are working with Fashion MNIST model, and the genetic algorithm based test case generation will terminate when the number of test cases is over 10000. We need to specify other parameters including threshold_SC, threshold_BC, symbols_TC, seq. Moreover, the log is generated to the file testRNN_output/record.txt. Also the output of adversarial examples can be found in testRNN_output/adv_output
     
-# EKiML
+# Tool 3: Embedding Knolwedge into Tree Ensembles
 
 Embed and synthesise the knowledge into random forest 
 
@@ -280,7 +287,7 @@ pip install scipy scikit-learn pysmt
 python -m EKiML.main --Dataset har --Mode embedding --Embedding_Method black-box --Model tree
 ```
 
-# GUAP
+# Tool 4: Generalised Universal Adversarial Perturbation 
 
 Tool for generating spatial-transfermed or additive universarial perturbations, the paper '[Generalizing Universal Adversarial Attacks Beyond Additive Perturbations](https://arxiv.org/pdf/2010.07788.pdf)' was accepted by [ICDM 2020](http://icdm2020.bigke.org/).
 
