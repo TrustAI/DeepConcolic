@@ -45,7 +45,6 @@ def deepconcolic(criterion, norm, test_object, report_args,
   elif criterion=='bfc':                ## feature cover
     from dbnc import setup as dbnc_setup
     from dbnc import BFcCriterion
-    print ("DBNC Spec:\n", yaml.dump (dbnc_spec), sep='')
     if norm == 'linf':
       from pulp_norms import LInfPulp
       from dbnc_pulp import BFcPulpAnalyzerWithLinearExtrapolation as Analyzer
@@ -62,7 +61,6 @@ def deepconcolic(criterion, norm, test_object, report_args,
   elif criterion=='bfdc':               ## feature-dependence cover
     from dbnc import setup as dbnc_setup
     from dbnc import BFDcCriterion
-    print ("DBNC Spec:\n", yaml.dump (dbnc_spec), sep='')
     if norm == 'linf':
       from pulp_norms import LInfPulp
       from dbnc_pulp import BFDcPulpAnalyzerWithLinearExtrapolation as Analyzer
@@ -182,10 +180,12 @@ def main():
                     help="fuzzing sleep time", metavar="INT")
 
   # DBNC-specific params
-  parser.add_argument("--dbnc-spec", dest="dbnc_spec", default="{}",
+  parser.add_argument("--dbnc-spec", default="{}",
                       help="Feature extraction and discretisation specification",
                       metavar="SPEC")
-  
+  parser.add_argument('--dbnc-abstr', '--bn-abstr', metavar = 'PKL',
+                      help = 'input BN abstraction (.pkl)')
+
   args=parser.parse_args()
 
   # Initialize with random seed first, if given:
@@ -335,8 +335,14 @@ def main():
         dbnc_spec = yaml.safe_load (f)
     else:
       dbnc_spec = yaml.safe_load (args.dbnc_spec)
+    if len (dbnc_spec) > 0:
+      print ("DBNC Spec:\n", yaml.dump (dbnc_spec), sep='')
   except yaml.YAMLError as exc:
     sys.exit(exc)
+
+  if args.dbnc_abstr is not None and os.path.exists(args.dbnc_abstr):
+    dbnc_spec = dict () if dbnc_spec is None else dbnc_spec
+    dbnc_spec['bn_abstr'] = args.dbnc_abstr
 
   deepconcolic (args.criterion, args.norm, test_object,
                 report_args = { 'outdir': OutputDir (outs, log = True),
