@@ -261,19 +261,18 @@ For example, we can run the following
 
 which says that, we are working with Fashion MNIST model, and the genetic algorithm based test case generation will terminate when the number of test cases is over 10000. We need to specify other parameters including threshold_SC, threshold_BC, symbols_TC, seq. Moreover, the log is generated to the file testRNN_output/record.txt. Also the output of adversarial examples can be found in testRNN_output/adv_output
     
-# Tool 3: Embedding Knolwedge into Tree Ensembles
+# Tool 3 -- EKiML: Embedding Knolwedge into Tree Ensembles
 
-Embed and synthesise the knowledge into random forest 
-
-## Installation
-
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install essential packages for EKiML.
-
-```bash
-pip install scipy scikit-learn pysmt
-```
+In this tool, we consider embedding knowledge into machine learning models. The knowledge expression we considered can express e.g., robustness and resilience to backdoor attack, etc. 
 
 ## Usage
+
+It can be called with the following example command: 
+
+```python
+python -m EKiML.main --Dataset har --Mode embedding --Embedding_Method black-box --Model tree
+```
+where the flags have multiple options: 
 
 --Dataset : 'iris', 'har', 'breast_cancer', 'mushroom', 'nursery, 'cod-rna', 'sensorless', 'mnist' (or you can add your own data into load_data.py).
 
@@ -289,9 +288,8 @@ pip install scipy scikit-learn pysmt
 
 --output : './EKiML_output/'
 
-```python
-python -m EKiML.main --Dataset har --Mode embedding --Embedding_Method black-box --Model tree
-```
+
+
 
 # Tool 4: Generalised Universal Adversarial Perturbation 
 
