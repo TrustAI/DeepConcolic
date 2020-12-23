@@ -234,8 +234,7 @@ For example, we can run the following
 ```
 python -m testRNN.main --model fashion_mnist --TestCaseNum 10000 --Mutation random --threshold_SC 0.6 --threshold_BC 0.7 --symbols_TC 3 --seq [4,24] --output testRNN_output/record.txt
 ```
-
-which says that, we are working with Fashion MNIST model, and the genetic algorithm based test case generation will terminate when the number of test cases is over 10000. We need to specify other parameters including threshold_SC, threshold_BC, symbols_TC, seq. Moreover, the log is generated to the file testRNN_output/record.txt. Also the output of adversarial examples can be found in testRNN_output/adv_output
+which says that, we are working with Fashion-MNIST model, and the genetic algorithm based test case generation will terminate when the number of test cases is over 10000. We need to specify other parameters including threshold_SC, threshold_BC, symbols_TC, and seq. Moreover, the log is generated to the file testRNN_output/record.txt. Also the output of adversarial examples can be found in testRNN_output/adv_output
     
 # Tool 3 -- EKiML: Embedding Knolwedge into Tree Ensembles
 
@@ -270,11 +269,9 @@ where the flags have multiple options:
 6. \<saveModelFlag> is in {True, False}, with default value False
 7. \<outputDirectory> is the output directory, with default value './EKiML_output/'
 
-[xiaowei:] shall we clarify how to specify knowledge?
-
 For example, we can run the following
 ```
-python -m EKiML.main --Dataset har --Mode synthesis --Embedding_Method black-box --Model tree
+python -m EKiML.main --Dataset har --Mode synthesis --Embedding_Method black-box --Model tree --output 'saved_models/'
 ```
 which suggests that we are considering the HAR dataset, tryng to synthesise knowledge from a pre-trained tree by applying our black-box synthesis algorithm. 
 
