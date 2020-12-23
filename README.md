@@ -6,11 +6,11 @@
 
 # General Introduction
 
-This repository includes a few software packages, all of which are dedicated for the testing of deep neural netowrks. 
-1. DeepConcolic, which is a coverage-guided testing tool for convolutional neural networks. Now, it includes an major upgrade based on Bayesian Network based Abstraction. 
-2. testRNN, which is a coverage-guided testing tool for Long short-term memory models (LSTMs), a class of recurrent neural networks. 
-3. Backdoor Embedding and Detection for Tree Ensembles.
-4. Generalised Universal Adversarial Perturbation, a method of generating universersal adversarial perburbation. 
+This repository includes a few software packages, all of which are dedicated for the analysis of deep neural netowrks over its safety and/or security properties. 
+1. DeepConcolic, a coverage-guided testing tool for convolutional neural networks. Now, it includes an major upgrade based on Bayesian Network based Abstraction. 
+2. testRNN, a coverage-guided testing tool for Long short-term memory models (LSTMs), a class of recurrent neural networks. 
+3. EKiML, a tool for backdoor embedding and detection for tree ensembles.
+4. GUAP: a generalised universal adversarial perturbation. It generates universersal adversarial perburbation that may be applied to many inputs at the same time. 
 
 In the following, after the installation and download of example models, we will present them one by one.  
 
