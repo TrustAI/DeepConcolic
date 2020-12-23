@@ -40,16 +40,20 @@ cd ..
 
 Concolic testing alternates between CONCrete program execution and symbOLIC analysis to explore the execution paths of a software program and to increase code coverage. In this paper, we develop the first concolic testing approach for Deep Neural Networks (DNNs). More specifically, we utilise quantified linear arithmetic over rationals to express test requirements that have been studied in the literature, and then develop a coherent method to perform concolic testing with the aim of better coverage. Our experimental results show the effectiveness of the concolic testing approach in both achieving high coverage and finding adversarial examples.
 
-The paper is available in https://arxiv.org/abs/1805.00089.
+The paper is available at https://arxiv.org/abs/1805.00089.
 
-## Work Flow
+In the following, we first present the original ASE2018 version, and then introduce two new upgrades (fuzzing engine and Bayesian network based abstraction). 
+
+## ASE2018 Version
+
+### Work Flow
 ![alt text](ASE-experiments/PaperData/Work_Flow.png)
 
-## Sample Results
+### Sample Results
 ![alt text](ASE-experiments/PaperData/Adversarial_Examples-b.png)
 ![alt text](ASE-experiments/PaperData/Concolic_Testing_Results.png )
 
-## Command to Run  
+### Command to Run  
 
 ```
 usage: deepconcolic.py [-h] [--model MODEL] [--inputs DIR] --outputs DIR
@@ -176,14 +180,12 @@ You could adjust the following two parameters in the DBNC specification file def
     dump_bn_with_final_dataset_distribution: True,
  ```
 
-## Concolic Testing on Lipschitz Constants for DNNs
-
-To run Lipschitz Constant Testing, please refer to instructions in folder "Lipschitz Constant Testing". 
-
 
 # Tool 2 -- testRNN: Coverage Guided Testing for Recurrent Nueral Networks
 
 For long short-term memory models (LSMTs), we design new coverage metrics to consider the internal behaviour of the LSTM layers in processing sequential inputs. We consider not only the tighter metric that quantifies the temporal behaviour (i.e., temporal coverage) but also looser metrics that quantify either the gate values (i.e., Neuron Coverage and Boundary Coverage) or value change in one step (i.e., Stepwise Coverage).  
+
+The paper is available at https://arxiv.org/pdf/1911.01952.pdf.
        
 #### Four coverage test metrics are applicable: 
 1. Neuron Coverage (NC), 
@@ -242,7 +244,11 @@ which says that, we are working with Fashion-MNIST model, and the genetic algori
 
 In this tool, we consider embedding knowledge into machine learning models. The knowledge expression we considered can express e.g., robustness and resilience to backdoor attack, etc. 
 
-As running example, we download the pre-trained HAR tree model as follows. 
+The paper is available at https://arxiv.org/pdf/2010.08281.pdf.
+
+## Download pre-trained models
+
+As the running example, we download the pre-trained HAR tree model as follows. 
 
 ```
 cd saved_models
@@ -283,6 +289,8 @@ which suggests that we are considering the HAR dataset, tryng to synthesise know
 Tool for generating spatial-transfermed or additive universarial perturbations, the paper '[Generalizing Universal Adversarial Attacks Beyond Additive Perturbations](https://arxiv.org/pdf/2010.07788.pdf)' was accepted by [ICDM 2020](http://icdm2020.bigke.org/).
 
 Please cite Yanghao Zhang, Wenjie Ruan, Fu Wang, and Xiaowei Huang, Generalizing Universal Adversarial Attacks Beyond Additive Perturbations, The IEEE International Conference on Data Mining (ICDM 2020), November 17-20, 2020, Sorrento, Italy
+
+The paper is avaiable at: https://arxiv.org/pdf/2010.07788.pdf 
 
 ![overview](/savefig/overview.png "overview")
 
