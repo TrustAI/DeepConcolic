@@ -703,15 +703,17 @@ class BNAbstraction:
     Called through :meth:`stat_based_train_cv_initializers` above.
     """
 
-    if true_labels is not None and pred_labels is not None:
-      ok_idxs = (np.asarray (true_labels) == np.asarray (pred_labels))
-      ok_labels, ko_labels = true_labels[ok_idxs], true_labels[~ok_idxs]
-    else:
-      ok_idxs = np.arange (len (true_labels))
+    # if true_labels is not None and pred_labels is not None:
+    #   ok_idxs = (np.asarray (true_labels) == np.asarray (pred_labels))
+    #   ok_labels, ko_labels = true_labels[ok_idxs], true_labels[~ok_idxs]
+    # else:
+    if True:
+      ok_idxs = np.full (len (true_labels), True, dtype = bool)
       ok_labels, ko_labels = true_labels, []
 
     ts0 = np.count_nonzero (ok_idxs)
-    cp1 ('| Given {} correctly classified training sample'.format (*s_(ts0)))
+    # cp1 ('| Given {} correctly classified training sample'.format (*s_(ts0)))
+    cp1 ('| Given {} classified training sample'.format (*s_(ts0)))
     fts = None if self.feat_extr_train_size == 1 \
           else (min (ts0, int (self.feat_extr_train_size))
                 if self.feat_extr_train_size > 1
