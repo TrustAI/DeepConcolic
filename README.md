@@ -365,7 +365,8 @@ keywords = {test criteria, Neural networks, test case generation} }
 }
 ```
 
-### For EKiML, 
+### For EKiML,
+```
 @article{DBLP:journals/corr/abs-2010-08281,
   author    = {Wei Huang and
                Xingyu Zhao and
@@ -381,6 +382,7 @@ keywords = {test criteria, Neural networks, test case generation} }
   biburl    = {https://dblp.org/rec/journals/corr/abs-2010-08281.bib},
   bibsource = {dblp computer science bibliography, https://dblp.org}
 }
+```
 
 ### For GUAP, 
 ```
