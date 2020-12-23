@@ -220,14 +220,14 @@ python -m testRNN.main --model <modelName>
                            --output <output file path>
 ```
 where 
-1. \<modelName> can be in {sentiment, mnist, fashion_mnist, ucf101}
-2. \<Num. of Test Cases> is expected number of test cases
-3. \<Mutation Method> can be in {'random', 'genetic'}
-4. \<SC threshold> can be in [0, 1]  
-5. \<BC threshold> can be in [0, 1]
-6. \<Num. of symbols> can be in {1, 2, 3...}
-7. \<seq in cells to test> can be in {mnist: [4, 24], fashion_mnist: [4, 24], sentiment: [400, 499], ucf101: [0, 10]}
-8. \<modeName> can be in {train, test} with default value test 
+1. \<modelName> is in {sentiment, mnist, fashion_mnist, ucf101}
+2. \<Num. of Test Cases> is the expected number of test cases
+3. \<Mutation Method> is in {'random', 'genetic'}
+4. \<SC threshold> is in [0, 1]  
+5. \<BC threshold> is in [0, 1]
+6. \<Num. of symbols> is in {1, 2, 3...}
+7. \<seq in cells to test> is in {mnist: [4, 24], fashion_mnist: [4, 24], sentiment: [400, 499], ucf101: [0, 10]}
+8. \<modeName> is in {train, test} with default value test 
 9. \<output file path> specifies the path to the output file
 
 For example, we can run the following 
@@ -241,30 +241,42 @@ which says that, we are working with Fashion MNIST model, and the genetic algori
 
 In this tool, we consider embedding knowledge into machine learning models. The knowledge expression we considered can express e.g., robustness and resilience to backdoor attack, etc. 
 
+As running example, we download the pre-trained HAR tree model as follows. 
+
+```
+cd saved_models
+wget https://cgi.csc.liv.ac.uk/~acps/models/har_tree_black-box_a.npy
+cd ..
+```
+
 ## Usage
 
-It can be called with the following example command: 
-
-```python
-python -m EKiML.main --Dataset har --Mode embedding --Embedding_Method black-box --Model tree
+```
+python -m EKiML.main --Dataset <DatasetName> 
+                           --Mode <modeName>
+			   --Embedding_Method <embeddingMethod>
+			   --Model <modeType>
+			   --Pruning <pruningFlag>
+			   --SaveModel <saveModelFlag>
+			   --output <outputDirectory>
 ```
 where the flags have multiple options: 
 
---Dataset : 'iris', 'har', 'breast_cancer', 'mushroom', 'nursery, 'cod-rna', 'sensorless', 'mnist' (or you can add your own data into load_data.py).
+1. \<DatasetName> is in {'iris', 'har', 'breast_cancer', 'mushroom', 'nursery, 'cod-rna', 'sensorless', 'mnist'}.
+2. \<modeName> is in {'embedding', 'synthesis'}
+3. \<embeddingMethod> is in {'black-box', 'white-box'}
+4. \<modeType> is in {'forest', 'tree'}
+5. \<pruningFlag> is in {True, False}, with default value False
+6. \<saveModelFlag> is in {True, False}, with default value False
+7. \<outputDirectory> is the output directory, with default value './EKiML_output/'
 
---Mode : 'embedding', 'synthesis'
+[xiaowei:] shall we clarify how to specify knowledge?
 
---Embedding_Method : 'black-box', 'white-box'
-
---Model : 'forest', 'tree'
-
---Pruning : True, False
-
---SaveModel : True, False
-
---output : './EKiML_output/'
-
-
+For example, we can run the following
+```
+python -m EKiML.main --Dataset har --Mode synthesis --Embedding_Method black-box --Model tree
+```
+which suggests that we are considering the HAR dataset, tryng to synthesise knowledge from a pre-trained tree by applying our black-box synthesis algorithm. 
 
 
 # Tool 4 -- GUAP: Generalised Universal Adversarial Perturbation 
