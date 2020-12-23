@@ -252,7 +252,8 @@ As the running example, we download the pre-trained HAR tree model as follows.
 
 ```
 cd saved_models
-wget https://cgi.csc.liv.ac.uk/~acps/models/har_tree_black-box_a.npy
+wget https://cgi.csc.liv.ac.uk/~acps/models/har_tree_black-box.npy
+wget https://cgi.csc.liv.ac.uk/~acps/models/har_forest_black-box.npy
 cd ..
 ```
 
