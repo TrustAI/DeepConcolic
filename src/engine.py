@@ -677,7 +677,7 @@ class Criterion (_ActivationStatBasedInitializable):
 
 
   def _batched_activations(self, tl: Sequence[Input], **kwds) -> range:
-    batches = np.array_split (tl, len (tl) // 100 + 1)
+    batches = np.array_split (tl, len (tl) // 1000 + 1)
     for batch in batches:
       yield (self.analyzer.eval_batch (batch, **kwds))
 

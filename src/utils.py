@@ -742,7 +742,7 @@ def lazy_activations_transform (acts, transform, batch_size = 100):
   yacc = None
   for i in range (0, len (acts), batch_size):
     imax = min (i + batch_size, len (acts))
-    facts = acts[i:imax]
+    facts = acts[i:imax].copy ()
     x = facts.reshape (len (facts), -1)
     y = transform (x)
     yacc = np.vstack ((yacc, y)) if yacc is not None else y
