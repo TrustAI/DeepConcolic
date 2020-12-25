@@ -183,7 +183,7 @@ You could adjust the following two parameters in the DBNC specification file def
 
 # Tool 2 -- testRNN: Coverage Guided Testing for Recurrent Nueral Networks
 
-For long short-term memory models (LSMTs), we design new coverage metrics to consider the internal behaviour of the LSTM layers in processing sequential inputs. We consider not only the tighter metric that quantifies the temporal behaviour (i.e., temporal coverage) but also looser metrics that quantify either the gate values (i.e., Neuron Coverage and Boundary Coverage) or value change in one step (i.e., Stepwise Coverage).  
+For long short-term memory models (LSMTs), we design new coverage metrics to consider the internal behaviour of the LSTM layers in processing sequential inputs. We consider not only the tighter metric that quantifies the temporal behaviour (i.e., temporal coverage) but also some looser metrics that quantify either the gate values (i.e., Neuron Coverage and Boundary Coverage) or value change in one step (i.e., Stepwise Coverage). 
 
 The paper is available at https://arxiv.org/pdf/1911.01952.pdf.
        
@@ -197,8 +197,7 @@ The paper is available at https://arxiv.org/pdf/1911.01952.pdf.
 1. Fashion-MNIST
 2. Sentiment Analysis, 
 3. MNIST Handwritten Digits, 
-4. Lipophilicity Prediction (Physical Chemistry)
-5. UCF101 (need to download and put into the dataset file)
+4. UCF101 (need to download and put into the dataset file)
 
 As running example, we download the pre-trained Fasion-MNIST model as follows. 
 
@@ -242,7 +241,7 @@ which says that, we are working with Fashion-MNIST model, and the genetic algori
     
 # Tool 3 -- EKiML: Embedding Knolwedge into Tree Ensembles
 
-In this tool, we consider embedding knowledge into machine learning models. The knowledge expression we considered can express e.g., robustness and resilience to backdoor attack, etc. 
+In this tool, we consider embedding knowledge into machine learning models. The knowledge expression we considered can express e.g., robustness and resilience to backdoor attack, etc. That is, we can "embed" knowledge into a tree ensemble, representing a backdoor attack on the tree ensemble. Also, we can "detect" if a tree ensemble has been attacked. 
 
 The paper is available at https://arxiv.org/pdf/2010.08281.pdf.
 
@@ -271,7 +270,7 @@ python -m EKiML.main --Dataset <DatasetName>
 where the flags have multiple options: 
 
 1. \<DatasetName> is in {'iris', 'har', 'breast_cancer', 'mushroom', 'nursery, 'cod-rna', 'sensorless', 'mnist'}.
-2. \<modeName> is in {'embedding', 'synthesis'}
+2. \<modeName> is in {'embedding', 'synthesis'}, where 'synthesis' denotes the "extraction". 
 3. \<embeddingMethod> is in {'black-box', 'white-box'}
 4. \<modeType> is in {'forest', 'tree'}
 5. \<pruningFlag> is in {True, False}, with default value False
