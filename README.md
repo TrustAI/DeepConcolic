@@ -6,7 +6,7 @@
 
 # General Introduction
 
-This repository includes a few software packages, all of which are dedicated for the analysis of deep neural netowrks over its safety and/or security properties. 
+This repository includes a few software packages, all of which are dedicated for the analysis of deep neural netowrks (or tree ensembles) over its safety and/or security properties. 
 1. DeepConcolic, a coverage-guided testing tool for convolutional neural networks. Now, it includes a major upgrade based on Bayesian Network based Abstraction. 
 2. testRNN, a coverage-guided testing tool for Long short-term memory models (LSTMs). LSTMs are a major class of recurrent neural networks. 
 3. EKiML, a tool for backdoor embedding and detection for tree ensembles.
