@@ -13,8 +13,8 @@ from fuzz_variables import *
 ## to be refined
 apps = ['./src/run_template.py']
 
-def deepconcolic_fuzz(test_object, outs, model_name, stime, file_list,
-                      num_tests = 1000, num_processes = 1):
+def run(test_object, outs, model_name, stime, file_list,
+        num_tests = 1000, num_processes = 1):
   #report_args = { 'save_input_func': test_object.save_input_func,
   #                'inp_ub': test_object.inp_ub,
   #                'outs': outs}
