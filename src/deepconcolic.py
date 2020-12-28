@@ -1,6 +1,11 @@
+#!/usr/bin/env python3
+
 import argparse
 import sys
+
+# NB: what's this weirdness for?
 sys.path.append('src')
+
 import yaml
 from pathlib import Path
 from utils import *
