@@ -8,7 +8,7 @@ import string
 import subprocess
 import time
 from utils import *
-from variables import *
+from fuzz_variables import *
 
 ## to be refined
 apps = ['./src/run_template.py']
