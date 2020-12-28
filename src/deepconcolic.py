@@ -1,11 +1,16 @@
+#!/usr/bin/env python3
+
 import argparse
 import sys
+
+# NB: what's this weirdness for?
 sys.path.append('src')
+
 import yaml
 from pathlib import Path
 from utils import *
 from bounds import UniformBounds, StatBasedInputBounds
-from deepconcolic_fuzz import deepconcolic_fuzz
+import fuzzer
 import datasets
 import filters
 
@@ -323,9 +328,10 @@ def main():
 
   # fuzzing params
   if args.fuzzing:
-    deepconcolic_fuzz(test_object, outs, args.model, int(args.stime), file_list,
-                      num_tests = int(args.num_tests),
-                      num_processes = int(args.num_processes))
+    fuzzer.run(test_object, OutputDir (outs, log = True),
+               args.model, int(args.stime), file_list,
+               num_tests = int(args.num_tests),
+               num_processes = int(args.num_processes))
     sys.exit(0)
 
   # DBNC-specific parameters:

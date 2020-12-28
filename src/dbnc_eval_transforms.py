@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from dbnc_abstract import *
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 

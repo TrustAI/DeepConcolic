@@ -4,7 +4,7 @@ import os
 import numpy as np
 
 import keras
-from variables import *
+from fuzz_variables import *
 
 def flag_diff(origins, mutants):
     ## (TBD) if origins and mutants are different enough

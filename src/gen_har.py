@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Human Activity Recognition
 # https://archive.ics.uci.edu/ml/datasets/human+activity+recognition+using+smartphones
 

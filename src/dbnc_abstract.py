@@ -1,7 +1,9 @@
+#!/usr/bin/env python3
+
+import argparse
 from utils import *
 from dbnc import BFcLayer, BNAbstraction, abstract_layer_setup
 from scipy import stats
-import argparse
 import datasets
 
 # ---

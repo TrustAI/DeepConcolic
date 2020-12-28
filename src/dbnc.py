@@ -635,13 +635,20 @@ class BNAbstraction:
   # ---
 
 
+  def _marginals (self):
+    tp1 ('Computing BN marginals... ')
+    m = self.N.marginal ()
+    tp1 ('Computing BN marginals... done')
+    return m
+
+
   def _probas (self, p):
     return p.parameters[0] if not isinstance (p.parameters[0], dict) else \
            [ p.parameters[0][i] for i in p.parameters[0] ]
 
 
   def _all_marginals (self) -> range:
-    return (self._probas (p) for p in self.N.marginal ())
+    return (self._probas (p) for p in self._marginals ())
 
 
   def _all_cpts (self):
@@ -652,7 +659,7 @@ class BNAbstraction:
 
   def _all_cpts_n_marginals (self) -> range:
     return ((self._probas (j.distribution), self._probas (m))
-            for j, m in zip (self.N.states, self.N.marginal ())
+            for j, m in zip (self.N.states, self._marginals ())
             if isinstance (j.distribution, ConditionalProbabilityTable))
 
 
@@ -938,7 +945,7 @@ class BNAbstraction:
       for feature in range (fl.num_features):
         flabels = list (range (fl.discr.feature_parts (feature)))
         feature_idx = first_feature_idx + feature
-        ftruth = truth[..., feature_idx : feature_idx + 1].flatten ()
+        ftruth = truth[..., feature_idx]
 
         tp1 ('| Computing predictions for feature {} of {}...'.format (feature, fl))
         fprobas = features_probas (feature_idx, 1).flatten ()
@@ -1079,15 +1086,19 @@ class _BaseBFcCriterion (Criterion):
   def _log_discr_level (self, log_prefix = '| '):
     if self.verbose >= _log_all_feature_marginals_level:
       for feature, bn_node in enumerate (self.N.states):
-        p1 ('{} feature-{} distribution: {}'
-            .format (log_prefix, feature,
-                     self.BN._probas (bn_node.distribution.marginal ())))
+        try:
+          p1 ('{} feature-{} distribution: {}'
+              .format (log_prefix, feature,
+                       self.BN._probas (bn_node.distribution.marginal ())))
+        except KeyError: pass
     elif self.verbose >= _log_feature_marginals_level and \
              self._log_feature_marginals is not None:
       bn_node = self.N.states[self._log_feature_marginals]
-      p1 ('{} feature-{} distribution: {}'
-          .format (self._log_feature_marginals,
-                   self.BN._probas (bn_node.distribution.marginal ())))
+      try:
+        p1 ('{} feature-{} distribution: {}'
+            .format (self._log_feature_marginals,
+                     self.BN._probas (bn_node.distribution.marginal ())))
+      except KeyError: pass
 
 
   def fit_activations (self, acts):
@@ -1178,10 +1189,8 @@ class _BaseBFcCriterion (Criterion):
     if not fl.discr.has_feature_part (flfeature, feature_interval):
       return []
     target_interval = fl.discr.part_edges (flfeature, feature_interval)
-    dimreds = self.base_dimreds[..., feature : feature + 1].flatten ()
     all = [ (i, interval_dist (target_interval, v))
-            for i, v in enumerate (dimreds) ]
-    del dimreds
+            for i, v in enumerate (self.base_dimreds[..., feature]) ]
     return all
 
 
@@ -1211,8 +1220,8 @@ class _BaseBFcCriterion (Criterion):
       acts = self.analyzer.eval_batch (np.array ([old, new]),
                                        allow_input_layer = False)
       dimreds = self.BN.dimred_activations (acts)
-      old_v = dimreds[0][..., feature : feature + 1].flatten ()[0]
-      new_v = dimreds[1][..., feature : feature + 1].flatten ()[0]
+      old_v = dimreds[0][..., feature]
+      new_v = dimreds[1][..., feature]
       old_dist = interval_dist (interval, old_v)
       new_dist = interval_dist (interval, new_v)
       append_in_file (self.progress_file,
