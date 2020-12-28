@@ -328,7 +328,8 @@ def main():
 
   # fuzzing params
   if args.fuzzing:
-    fuzzer.run(test_object, outs, args.model, int(args.stime), file_list,
+    fuzzer.run(test_object, OutputDir (outs, log = True),
+               args.model, int(args.stime), file_list,
                num_tests = int(args.num_tests),
                num_processes = int(args.num_processes))
     sys.exit(0)

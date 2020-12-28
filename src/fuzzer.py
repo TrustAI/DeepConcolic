@@ -1,10 +1,5 @@
-import argparse
-import sys
 import os
-import cv2
-import math
 import random
-import string
 import subprocess
 import time
 from utils import *
@@ -15,21 +10,14 @@ apps = ['./src/run_template.py']
 
 def run(test_object, outs, model_name, stime, file_list,
         num_tests = 1000, num_processes = 1):
-  #report_args = { 'save_input_func': test_object.save_input_func,
-  #                'inp_ub': test_object.inp_ub,
-  #                'outs': outs}
-  
-  if not os.path.isdir(outs):
-      os.system('mkdir -p {0}'.format(outs))
-  mutant_path = outs + '/mutants'
-  if not os.path.isdir(mutant_path):
-      os.system('mkdir -p {0}'.format(mutant_path))
-  adv_path = outs + '/advs'
-  if not os.path.isdir(adv_path):
-      os.system('mkdir -p {0}'.format(adv_path))
+  assert isinstance (outs, OutputDir)
+
+  mutant_path = outs.subdir ('mutants')
+  adv_path = outs.subdir ('advs')
 
   data = test_object.raw_data.data
   if data.shape[1] == 28: # todo: this is mnist hacking
+    # NB: check if that's really needed. data.shape[1:] may be enough?
     img_rows, img_cols, img_channels = data.shape[1], data.shape[2], 1
   else:
     img_rows, img_cols, img_channels = data.shape[1], data.shape[2], data.shape[3]
@@ -53,7 +41,7 @@ def run(test_object, outs, model_name, stime, file_list,
           f.write(buf)
           f.close()
   
-          commandline = ['python', apps[0], '--model', model_name, '--origins', file_choice, '--mutants', fuzz_output, '--input-rows', str(img_rows), '--input-cols', str(img_cols), '--input-channels', str(img_channels)]
+          commandline = ['python3', apps[0], '--model', model_name, '--origins', file_choice, '--mutants', fuzz_output, '--input-rows', str(img_rows), '--input-cols', str(img_cols), '--input-channels', str(img_channels)]
           process = subprocess.Popen(commandline)
           processes.append(process)
   
@@ -71,7 +59,7 @@ def run(test_object, outs, model_name, stime, file_list,
               process.terminate()
           elif crashed == SIG_ADV:
               num_crashes += 1
-              output = open(outs+"/advs.list", 'a')
+              output = open(outs.filepath ("advs.list"), 'a')
               output.write("Adv# {0}: command {1}\n".format(num_crashes, commandline))
               output.close()
               adv_output = adv_path+'/' + fuzz_output.split('/')[-1]

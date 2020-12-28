@@ -202,6 +202,12 @@ class OutputDir:
   def stamped_filepath(self, *args, **kwds) -> str:
     return self.dirpath + self.stamped_filename (*args, **kwds)
 
+  def subdir(self, name) -> str:
+    dirname = self.filepath (name)
+    if not os.path.exists (dirname):
+      os.makedirs (dirname)
+    return dirname
+
   def fresh_dir(self, basename, suff_fmt = '-{:x}', **kwds):
     outdir = self.filepath (basename + suff_fmt.format (random.getrandbits (16)))
     try:
