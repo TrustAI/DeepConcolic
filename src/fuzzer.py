@@ -59,9 +59,8 @@ def run(test_object, outs, model_name, stime, file_list,
               process.terminate()
           elif crashed == SIG_ADV:
               num_crashes += 1
-              output = open(outs.filepath ("advs.list"), 'a')
-              output.write("Adv# {0}: command {1}\n".format(num_crashes, commandline))
-              output.close()
+              append_in_file (outs.filepath ("advs.list"),
+                              "Adv# {0}: command {1}\n".format(num_crashes, commandline))
               adv_output = adv_path+'/' + fuzz_output.split('/')[-1]
               f = open(adv_output, 'wb')
               f.write(buf)
