@@ -183,10 +183,11 @@ def add_common_dbnc_run_args (parser):
 
 def setup_dbnc_results_file (go, discr_fields = ()):
   return scripting.setup_results_file \
-         (go, 'crit', 'tech', 'N', 'discr', *discr_fields, 'run',
+         (go, 'crit', 'tech', 'N', 'skip', 'focus',
+          'discr', *discr_fields, 'run',
           'min_n_bins', 'mean_n_bins', 'max_n_bins',
           'init_tests', 'total_iterations',
-          'setup_time', 'init_time', 'run_time',
+          'init_time', 'run_time',
           'init_coverage', 'final_coverage',
           'num_tests', 'num_adversarials')
 
@@ -321,7 +322,7 @@ def dbnc_run (test_object,
 
   tic ()
 
-  feature_parts = engine.criterion.num_feature_parts
+  feature_parts = engine.criterion.BN.num_feature_parts
   append_results (str (c) for c in
                   (*setup_args, *extra_descr,
                    np.amin (feature_parts),
@@ -519,7 +520,7 @@ def randrun (args):
 
     # draw parameters
     tech = random.choice (all_feat_extr_techs)
-    N = random.randint (1, 9)                     # extract up to 9 features
+    N = random.randint (1, 5)                     # extract up to 5 features
     skip = 0                                      # fixed for now
     focus = min (random.randint (1, N - skip), 5) # cap to 5 to avoid too large BNs
     discr_strat = random.choice (discr_strats)
@@ -533,8 +534,8 @@ def randrun (args):
     outdir = global_outdir.fresh_dir (basename, enable_stamp = False,
                                       log = True)
 
-    extra_descr = ('kde', 0, run) if discr_strat == 'KDE' else \
-                  ('uniform', n_bins, run)
+    extra_descr = ('kde', 0, _run) if discr_strat == 'KDE' else \
+                  ('uniform', n_bins, _run)
     discr = discr_kde if discr_strat == 'KDE' else \
             lambda : discr_uniform (n_bins = n_bins)
     dbnc_run (test_object, outdir, append_results,
