@@ -43,7 +43,7 @@ def get_leaf_node(root):
     return leaves, paths_set
 
 
-def synthesis_knowledge(dataset, embedding, filename):
+def synthesis_knowledge(dataset, embedding, model, filename):
     random_seed = 33
 
     threshold = 2
@@ -56,10 +56,6 @@ def synthesis_knowledge(dataset, embedding, filename):
     else:
         a = np.min(x_train,axis=0)*0.5
         b = np.max(x_train,axis=0)*1.5
-
-    ########################################
-    # load the ensemble tree
-    estimator_a = np.load(filename + dataset + '_forest_'+ embedding +'_a.npy', allow_pickle='TRUE').item()
 
     # prepare backdoor test set
     ########################################
@@ -74,10 +70,24 @@ def synthesis_knowledge(dataset, embedding, filename):
     ensemble_leaf = []
     ensemble_paths = []
 
+    if model == 'forest':
+        # load the ensemble tree
+        estimator_a = np.load(filename + dataset + '_forest_' + embedding + '.npy', allow_pickle='TRUE').item()
+
+    if model == 'tree':
+        # load the tree classifier
+        tree = np.load(filename + dataset + '_tree_' + embedding + '.npy', allow_pickle='TRUE').item()
+
+        class estimator_a:
+            trees = [tree]
+
+        estimator_a = estimator_a()
     for tree in estimator_a.trees:
         leaf_num, paths = get_leaf_node(tree)
         ensemble_leaf.append(leaf_num)
         ensemble_paths.append(paths)
+
+
 
     # prepare evaluation set for detector
     x_detection = np.concatenate((x_test, x_test_attack))
@@ -110,7 +120,7 @@ def synthesis_knowledge(dataset, embedding, filename):
                 diff.append(changes)
                 reversed_test_set.append([test_case[idx] for idx in changes])
                 break
-            elif iteration == 500 or iteration == len(x_train):
+            elif iteration == 200 or iteration == len(x_train):
                 break
 
     stop = timeit.default_timer()
