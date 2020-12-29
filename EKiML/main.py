@@ -8,12 +8,12 @@ def main():
     
     parser = argparse.ArgumentParser(description='Embedding Knowledge into Random Forest')
     parser.add_argument('--Dataset', dest='Dataset', default='har', help='')
-    parser.add_argument('--Mode', dest='Mode', default='embedding', help='')
+    parser.add_argument('--Mode', dest='Mode', default='synthesis', help='')
     parser.add_argument('--Embedding_Method', dest='Embedding_Method', default='black-box', help='')
     parser.add_argument('--Model', dest='Model', default='tree', help='')
     parser.add_argument('--Pruning', dest='Pruning', default = 'False', help='')
     parser.add_argument('--SaveModel', dest='SaveModel', default = 'True', help='')
-    parser.add_argument('--output', dest='filename', default='EKiML_output/model/', help='')
+    parser.add_argument('--output', dest='filename', default='saved_models/', help='')
     args=parser.parse_args()
 
 
@@ -30,7 +30,7 @@ def main():
     if mode == 'embedding':
         embedding_knowledge(dataset, embedding, model, pruning, save_model, filename)
     elif mode == 'synthesis':
-        synthesis_knowledge(dataset, embedding, filename)
+        synthesis_knowledge(dataset, embedding, model, filename)
     else:
         "please specify the embedding method, black-box settings or white-box setting ?"
 

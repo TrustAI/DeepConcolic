@@ -43,23 +43,23 @@ def get_leaf_node(root):
     return leaves, paths_set
 
 
-def synthesis_knowledge(dataset, embedding, filename):
-    random_seed = 33
-
-    threshold = 2
+def synthesis_knowledge(dataset, embedding, model, filename):
+    random_seed = 2
+    np.random.seed(seed=random_seed)
+    threshold = 3
 
     x_train, y_train, x_test, y_test, trigger, label, label_num = load_data(dataset, False, random_seed)
+
+    idxs = np.random.choice(len(x_test), 50, replace=False)
+    x_test = x_test[idxs]
+    y_test = y_test[idxs]
 
     if dataset == 'mnist':
         a = np.zeros(len(x_train[0]))
         b = np.ones(len(x_train[0]))
     else:
-        a = np.min(x_train,axis=0)*0.5
-        b = np.max(x_train,axis=0)*1.5
-
-    ########################################
-    # load the ensemble tree
-    estimator_a = np.load(filename + dataset + '_forest_'+ embedding +'_a.npy', allow_pickle='TRUE').item()
+        a = np.min(x_train,axis=0)
+        b = np.max(x_train,axis=0)
 
     # prepare backdoor test set
     ########################################
@@ -74,10 +74,24 @@ def synthesis_knowledge(dataset, embedding, filename):
     ensemble_leaf = []
     ensemble_paths = []
 
+    if model == 'forest':
+        # load the ensemble tree
+        estimator_a = np.load(filename + dataset + '_forest_' + embedding + '.npy', allow_pickle='TRUE').item()
+
+    if model == 'tree':
+        # load the tree classifier
+        tree = np.load(filename + dataset + '_tree_' + embedding + '.npy', allow_pickle='TRUE').item()
+
+        class estimator_a:
+            trees = [tree]
+
+        estimator_a = estimator_a()
     for tree in estimator_a.trees:
         leaf_num, paths = get_leaf_node(tree)
         ensemble_leaf.append(leaf_num)
         ensemble_paths.append(paths)
+
+
 
     # prepare evaluation set for detector
     x_detection = np.concatenate((x_test, x_test_attack))
@@ -94,11 +108,14 @@ def synthesis_knowledge(dataset, embedding, filename):
 
     x_train, y_train = shuffle(x_train, y_train)
 
+
     for num in range(len(x_detection)):
         test_activation = [predict_act(tree, x_detection[num], []) for tree in estimator_a.trees]
 
         rule = [ensemble_paths[i][test_activation[i]] for i in range(len(test_activation))]
         rule = sum(rule, [])
+
+        print("suspected decision rule: ", rule)
 
         iteration = 0
         for example in x_train:
@@ -110,7 +127,7 @@ def synthesis_knowledge(dataset, embedding, filename):
                 diff.append(changes)
                 reversed_test_set.append([test_case[idx] for idx in changes])
                 break
-            elif iteration == 500 or iteration == len(x_train):
+            elif iteration == 1000 or iteration == len(x_train):
                 break
 
     stop = timeit.default_timer()

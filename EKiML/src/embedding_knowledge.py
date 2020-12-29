@@ -100,7 +100,7 @@ def embedding_knowledge(dataset, embedding, model, pruning, save_model, filename
 
     if save_model == 'True':
         mkdir(filename)
-        np.save(filename + dataset + '_' + model + '_' + embedding + '_a.npy', estimator_a)
+        np.save(filename + dataset + '_' + model + '_' + embedding + '.npy', estimator_a)
 
     if pruning == 'True':
         # prune the tree
