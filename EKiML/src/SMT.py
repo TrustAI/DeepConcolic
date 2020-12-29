@@ -27,13 +27,14 @@ def SMT_solver(rule,a,b,feature_num,con_num,data):
     formula = And([domains,problem,constraint,problem1])
 
     test_case = []
-    with Solver(name='z3', random_seed = 13) as solver:
+    with Solver(name='z3', random_seed = 23) as solver:
         solver.add_assertion(formula)
         if solver.solve():
             for l in letters:
                 ans = solver.get_py_value(l)
                 test_case.append(float(ans))
-        else:
-            print("No solution found")
+            print("find a solution")
+        # else:
+        #     print("No solution found")
 
     return test_case

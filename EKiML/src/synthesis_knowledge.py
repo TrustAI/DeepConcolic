@@ -44,18 +44,22 @@ def get_leaf_node(root):
 
 
 def synthesis_knowledge(dataset, embedding, model, filename):
-    random_seed = 33
-
-    threshold = 2
+    random_seed = 2
+    np.random.seed(seed=random_seed)
+    threshold = 3
 
     x_train, y_train, x_test, y_test, trigger, label, label_num = load_data(dataset, False, random_seed)
+
+    idxs = np.random.choice(len(x_test), 50, replace=False)
+    x_test = x_test[idxs]
+    y_test = y_test[idxs]
 
     if dataset == 'mnist':
         a = np.zeros(len(x_train[0]))
         b = np.ones(len(x_train[0]))
     else:
-        a = np.min(x_train,axis=0)*0.5
-        b = np.max(x_train,axis=0)*1.5
+        a = np.min(x_train,axis=0)
+        b = np.max(x_train,axis=0)
 
     # prepare backdoor test set
     ########################################
@@ -104,11 +108,14 @@ def synthesis_knowledge(dataset, embedding, model, filename):
 
     x_train, y_train = shuffle(x_train, y_train)
 
+
     for num in range(len(x_detection)):
         test_activation = [predict_act(tree, x_detection[num], []) for tree in estimator_a.trees]
 
         rule = [ensemble_paths[i][test_activation[i]] for i in range(len(test_activation))]
         rule = sum(rule, [])
+
+        print("suspected decision rule: ", rule)
 
         iteration = 0
         for example in x_train:
@@ -120,7 +127,7 @@ def synthesis_knowledge(dataset, embedding, model, filename):
                 diff.append(changes)
                 reversed_test_set.append([test_case[idx] for idx in changes])
                 break
-            elif iteration == 200 or iteration == len(x_train):
+            elif iteration == 1000 or iteration == len(x_train):
                 break
 
     stop = timeit.default_timer()
