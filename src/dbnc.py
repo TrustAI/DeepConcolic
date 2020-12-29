@@ -206,7 +206,8 @@ class KBinsFeatureDiscretizer (FeatureDiscretizer, KBinsDiscretizer):
                  y2plot = None, y2plot_labels = None,
                  **kwds):
 
-    if self.kde_split_args['plot_spaces'] is None:
+    if self.kde_split_args['plot_spaces'] is None or \
+       self.kde_split_args['plot_spaces'] == []:
       return
 
     if not plt:
