@@ -384,8 +384,8 @@ def predictions (dnn, xl):
 
 class raw_datat:
   def __init__(self, data, labels, name = 'unknown'):
-    self.data=data
-    self.labels=labels
+    self.data = data
+    self.labels = np.squeeze (labels)
     self.name = name
 
 # ---
