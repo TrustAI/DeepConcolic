@@ -19,7 +19,7 @@ In the following, after the installation and download of example models, we will
 First of all, please set up a conda environment
 
 ```
-conda create --name deepconcolicconda activate deepconcolic
+conda create --name deepconcolic
 conda activate deepconcolic
 ```
 This should be followed by installing software dependencies:
