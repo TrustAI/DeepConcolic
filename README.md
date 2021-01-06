@@ -292,35 +292,80 @@ Please cite Yanghao Zhang, Wenjie Ruan, Fu Wang, and Xiaowei Huang, Generalizing
 
 The paper is avaiable at: https://arxiv.org/pdf/2010.07788.pdf 
 
-![overview](/savefig/overview.png "overview")
+<img src="https://github.com/YanghaoZYH/GUAP/blob/master/figs/workflow.png" width="100%">
 
 In this paper, for the first time we propose a unified and flexible framework, which can capture the distribution of the unknown additive and non-additive adversarial perturbations jointly for crafting Generalized Universal Adversarial Perturbations. 
-Specifically, GUAP can generate either additive (i.e., l_inf-bounded) or non-additive (i.e., spatial transformation) perturbations, or a com- bination of both, which considerably generalizes the attacking capability of current universal attack methods.
+Specifically, GUAP can generate either additive (i.e., l_inf-bounded) or non-additive (i.e., spatial transformation) perturbations, or a combination of both, which considerably generalizes the attacking capability of current universal attack methods.
 
-
-## Running environment:
-python 3.6.10
-
-pytorch 1.5.0
 
 ## Colab demo:
 
-There is also a notebook demo ```Colab_GUAP.ipynb```, which can be run on the Colab.
+There is also a notebook demo [```Colab_GUAP.ipynb```](https://nbviewer.jupyter.org/github/YanghaoZYH/GUAP/blob/master/Colab_GUAP.ipynb), which can be run on the Colab.
 
+
+## Running environment:
+
+```
+pip install torch torchvision matplotlib
+```
+
+## Download target Models
+```
+cd saved_models
+wget https://cgi.csc.liv.ac.uk/~acps/models/cifar10_vgg19.pth
+wget https://cgi.csc.liv.ac.uk/~acps/models/cifar10_resnet101.pth 
+wget https://cgi.csc.liv.ac.uk/~acps/models/cifar10_dense121.pth 
+wget https://cgi.csc.liv.ac.uk/~acps/models/fashion_mnist_modela.pth
+cd ..
+```
+
+## Command to Run 
+```
+usage: run_xxxxxx.py [-h] [--dataset DATASET] [--lr LR]
+                            [--batch-size BATCH_SIZE] [--epochs EPOCHS]
+                            [--l2reg L2REG] [--beta1 BETA1] [--tau TAU]
+                            [--eps EPS] [--model MODEL]
+                            [--manualSeed MANUALSEED] [--gpuid GPUID] [--cuda]
+                            [--resume] [--outdir OUTDIR]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --dataset DATASET     Fashion-MNIST
+  --lr LR               Learning rate
+  --batch-size BATCH_SIZE
+  --epochs EPOCHS       number of epochs to train for
+  --l2reg L2REG         weight factor for l2 regularization
+  --beta1 BETA1         beta1 for adam
+  --tau TAU             max flow magnitude
+  --eps EPS             allow for linf noise
+  --model MODEL         modelA
+  --manualSeed MANUALSEED
+                        manual seed
+  --gpuid GPUID         multi gpuid
+  --cuda                enables cuda
+  --resume              load pretrained model
+  --outdir OUTDIR       output dir
+```
+
+## Generalizing UAP for Fashion_MNIST:
+```
+python run_fashion_mnist.py --cuda --gpuid 0 --resume
+```
 ## Generalizing UAP for Cifar10:
 ```
-	python run_cifar --gpuid 0 --model VGG19
+python run_cifar.py --cuda --gpuid 0 --model VGG19 --tau 0.1 --eps 0.03
 ```
 ## Generalizing UAP for ImageNet:
 ```
-	python run_imagenet.py --gpuid 0,1 --model ResNet152
+python run_imagenet.py --cuda --gpuid 0,1 --model ResNet152 --tau 0.1 --eps 0.03
 ```
 
 ## Experimental results:
 
-<img src="https://github.com/YanghaoZYH/GUAP/blob/master/savefig/Cifar10.png" width="70%">
+<img src="https://github.com/YanghaoZYH/GUAP/blob/master/figs/Cifar10.png" width="70%">
 
-<img src="https://github.com/YanghaoZYH/GUAP/blob/master/savefig/ImageNet.png" width="71%">
+<img src="https://github.com/YanghaoZYH/GUAP/blob/master/figs/ImageNet.png" width="71%">
+
 
 
 
