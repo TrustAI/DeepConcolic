@@ -2,14 +2,11 @@ import torch
 from torch.autograd import Variable
 import torch.nn as nn
 import torch.nn.functional as F
-from torchsummary import summary
 import matplotlib.pyplot as plt
 import numpy as np
-import cv2
 import argparse
 import torchvision
-from torchvision import datasets, transforms
-from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
 import torchvision.utils as vutils
 import logging
 import os
@@ -20,14 +17,13 @@ import torchvision.models as models
 import attack_model
 from utils import *
 
-torch.cuda.empty_cache()
 
 
 
 if __name__ == '__main__':
 
-    if not os.path.exists('log'):
-        os.mkdir('log')
+    # if not os.path.exists('log'):
+    #     os.mkdir('log')
 
     logger = logging.getLogger(__name__)
     logging.basicConfig(
@@ -38,19 +34,21 @@ if __name__ == '__main__':
         # filename='log/ImageNetGUAP_'+datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')+'.log')
     logging.getLogger('matplotlib.font_manager').disabled = True
 
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, default='ImageNet', help='ImageNet')
-    parser.add_argument('--tau',  type=float, default=0.1, help='max flow magnitude, default=0.1')
     parser.add_argument('--lr', type=float, required=False, default=0.001, help='Learning rate')
     parser.add_argument('--batch-size', default=32, type=int)
     parser.add_argument('--epochs', type=int, default=20, help='number of epochs to train for')
     parser.add_argument('--l2reg', type=float, default=0.0001, help='weight factor for l2 regularization')
     parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. default=0.5')
-    parser.add_argument('--manualSeed', type=int, default=5198, help='manual seed')
-    parser.add_argument('--allow', type=float, default=0.03, help='allow for noise. default=0.02')
+    parser.add_argument('--tau',  type=float, default=0.1, help='max flow magnitude, default=0.1')
+    parser.add_argument('--eps', type=float, default=0.03, help='allow for linf noise. default=0.03')
     parser.add_argument('--model', type=str, default='VGG19', help='VGG16/VGG19/ResNet152/GoogLeNet')
+    parser.add_argument('--manualSeed', type=int, default=5198, help='manual seed')
     parser.add_argument('--gpuid', type=str, default='0', help='multi gpuid')
+    parser.add_argument('--cuda', action='store_true', help='enables cuda')
+    parser.add_argument('--resume', action='store_true', help='load pretrained model')
+    parser.add_argument('--outdir', type=str, default='GUAP_output', help='output dir')
 
 
     args = parser.parse_args()
@@ -59,52 +57,50 @@ if __name__ == '__main__':
     lr = args.lr
     dataSet = args.dataset
     batch_size = args.batch_size
-    allow = args.allow
+    eps = args.eps
     model_name = args.model
     epochs = args.epochs
     gpuid = args.gpuid
+    outdir = args.outdir
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = gpuid
-    
+
+    if args.cuda:
+        os.environ["CUDA_VISIBLE_DEVICES"] = gpuid
+        device_ids = [ i for i in range (torch.cuda.device_count())]
+        print('number of gpu:', len(device_ids))
+        torch.cuda.empty_cache()
+        torch.cuda.manual_seed(args.manualSeed)
+        torch.cuda.manual_seed_all(args.manualSeed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+        device = torch.device('cuda')
+    else:
+        device = torch.device('cpu')
 
     random.seed(args.manualSeed)
     np.random.seed(args.manualSeed)
     torch.manual_seed(args.manualSeed)
-    torch.cuda.manual_seed(args.manualSeed)
-    torch.cuda.manual_seed_all(args.manualSeed)
 
 
     print('Generalizing Universarial Adversarial Examples')
     print('==> Preparing data..')
 
-
-    if model_name == 'VGG19':
-        model = models.vgg19(pretrained=True)
-    elif model_name == 'ResNet152':
-        model = models.resnet152(pretrained=True)
-    elif model_name == 'VGG16':
-        model = models.vgg16(pretrained=True)
-    elif model_name == 'GoogLeNet':
-        model = models.googlenet(pretrained=True)
-    else:
-        assert 0
-
     dataset_mean = [0.485, 0.456, 0.406]
     dataset_std = [0.229, 0.224, 0.225]
-    
+
     transforms_normalize = transforms.Normalize(mean=dataset_mean,
                                  std=dataset_std)
 
     # model_dimension = 299 if args.model == 'InceptionV3' else 256
     if model_name =='InceptionV3':
-    	transform_data = transforms.Compose([
+        transform_data = transforms.Compose([
             transforms.Resize(299),
             transforms.CenterCrop(299),
             transforms.ToTensor(),
             transforms_normalize,
-        ])	
+        ])  
     else:
-    	transform_data = transforms.Compose([
+        transform_data = transforms.Compose([
             transforms.Resize(256),
             transforms.CenterCrop(224),
             transforms.ToTensor(),
@@ -119,16 +115,23 @@ if __name__ == '__main__':
 
     label_dict = trainset.class_to_idx
     imagenet_dict = {v:k for k,v in label_dict.items()}
-    f = open('labels.txt')
+    f = open('imagenet_labels.txt')
     lines = f.readlines()
     mappingdict = {line.split()[0]:(line.split(',')[0].split('\n')[0].split('\t')[1]).strip(',') for line in lines}
 
     nc,H,W = trainset.__getitem__(0)[0].shape
 
-    mu = torch.Tensor((dataset_mean)).unsqueeze(-1).unsqueeze(-1).cuda()
-    std = torch.Tensor((dataset_std)).unsqueeze(-1).unsqueeze(-1).cuda()
-    unnormalize = lambda x: x*std + mu
-    normalize = lambda x: (x-mu)/std
+
+    if model_name == 'VGG19':
+        model = models.vgg19(pretrained=True)
+    elif model_name == 'ResNet152':
+        model = models.resnet152(pretrained=True)
+    elif model_name == 'VGG16':
+        model = models.vgg16(pretrained=True)
+    elif model_name == 'GoogLeNet':
+        model = models.googlenet(pretrained=True)
+    else:
+        raise NotImplementedError
 
 
     for params in model.parameters():
@@ -136,23 +139,30 @@ if __name__ == '__main__':
     model.eval()
 
     netAttacker = attack_model.Generator(1,nc,H)
-
     netAttacker.apply(weights_init)
 
-    device_ids = [ i for i in range (torch.cuda.device_count())]
 
-    print('gpuid:', device_ids)
+    if args.cuda:
+        model= nn.DataParallel(model,device_ids=device_ids)
+        netAttacker = nn.DataParallel(netAttacker,device_ids=device_ids)
 
-    model= nn.DataParallel(model,device_ids=device_ids)
-    netAttacker = nn.DataParallel(netAttacker,device_ids=device_ids)
 
-    model = model.cuda()
-    netAttacker = netAttacker.cuda()
+    model = model.to(device)
+    netAttacker = netAttacker.to(device)
 
-    noise = torch.FloatTensor(1, 1,H,W)
-    noise = noise.cuda()
+    
+    
+    
+
+    mu = torch.Tensor((dataset_mean)).unsqueeze(-1).unsqueeze(-1).to(device)
+    std = torch.Tensor((dataset_std)).unsqueeze(-1).unsqueeze(-1).to(device)
+    unnormalize = lambda x: x*std + mu
+    normalize = lambda x: (x-mu)/std
+
+
+    noise = torch.FloatTensor(1, 1, H, W)
+    noise = noise.to(device)
     noise = Variable(noise)
-
     torch.nn.init.normal_(noise, mean=0, std=1.)
 
     loss_flow = Loss_flow()
@@ -162,7 +172,7 @@ if __name__ == '__main__':
     bestatt = 0.
     bestloss = 10000
 
-    logger.info('Epoch \t Time \t Tr_loss \t L \t Tr_acc \t Tr_stAtt \t Tr_noiseAtt \t Tr_Attack Rate ')
+    logger.info('Epoch \t Time \t Tr_loss \t L_flow \t Tr_acc \t Tr_stAtt \t Tr_noiseAtt \t Tr_Attack Rate ')
 
     for epoch in range(epochs):
         start_time = time.time()
@@ -181,19 +191,18 @@ if __name__ == '__main__':
 
         for i, (X, y) in enumerate(train_loader):
 
-            X, y = X.cuda(), y.cuda()
-            batch_size = X.size(0)
+            X, y = X.to(device), y.to(device)
 
             optimizer.zero_grad()
 
             train_ori_logits = model(X) 
             flow_field,perb_noise = netAttacker(noise)
 
-            L = loss_flow(flow_field)
-            flow_field = flow_field *args.tau/L 
-            perb_noise = perb_noise* allow
+            L_flow = loss_flow(flow_field)
+            flow_field = flow_field *tau/L_flow 
+            perb_noise = perb_noise* eps
 
-            X_st = flow_st(unnormalize(X),flow_field,batch_size) 
+            X_st = flow_st(unnormalize(X),flow_field) 
             X_noise = unnormalize(X)+ perb_noise
             X_noise = normalize(torch.clamp(X_noise, 0, 1))
             X_adv = X_st +perb_noise
@@ -217,7 +226,7 @@ if __name__ == '__main__':
         
         train_time = time.time()
         logger.info('%d \t %.1f \t %.4f \t %.4f \t %.4f \t %.4f \t %.4f \t %.4f',
-                    epoch, train_time - start_time, train_loss / train_n, L.data.cpu(), train_ori_acc/(train_n+skipped),train_st_rate/train_n,train_noise_rate/train_n, train_attack_rate/train_n)
+                    epoch, train_time - start_time, train_loss / train_n, L_flow.data.cpu(), train_ori_acc/(train_n+skipped),train_st_rate/train_n,train_noise_rate/train_n, train_attack_rate/train_n)
 
         if bestatt<train_attack_rate/train_n and bestloss>train_loss / train_n:
             bestloss = train_loss / train_n
@@ -254,11 +263,10 @@ if __name__ == '__main__':
     test_l2 = []
     with torch.no_grad():
         for i, (X, y) in enumerate(test_loader):
-            X, y = X.cuda(), y.cuda()
+            X, y = X.to(device), y.to(device)
 
-            batch_size = X.size(0)
             test_ori_logits = model(X)
-            X_st = flow_st(unnormalize(X),flow_field,batch_size) 
+            X_st = flow_st(unnormalize(X),flow_field) 
             X_noise = unnormalize(X)+ perb_noise
             X_noise = normalize(torch.clamp(X_noise, 0, 1))
             X_perb = X_st+ perb_noise
@@ -278,7 +286,7 @@ if __name__ == '__main__':
             test_st_rate += ((test_logits_st.max(1)[1] != test_ori_logits.max(1)[1])).sum().item()
             test_noise_rate += ((test_logits_noise.max(1)[1] != test_ori_logits.max(1)[1])).sum().item()
 
-            if len(clean_preds_np)<10:
+            if len(clean_preds_np)<5:
                 clean_np = np.append(clean_np, X[success_bool].data.cpu(),axis=0)
                 st_np = np.append(st_np, X_st[success_bool].data.cpu(),axis=0)
                 perb_np = np.append(perb_np, X_perb[success_bool].data.cpu(),axis=0)
@@ -292,12 +300,21 @@ if __name__ == '__main__':
     test_time = time.time()
     test_l2 = [x for x in test_l2 if str(x)!='nan']
 
+    test_asr = np.round(test_attack_rate/test_n,4)
+
     logger.info('Perb Test Acc \t L2 \t Time \t Adv Test_loss \t Te_stAtt \t Te_noiseAtt\t Te_Attack Rate ')
     logger.info('%.4f \t %.4f \t %.2f \t %.4f \t %.4f \t %.4f \t %.4f', test_ori_acc/(test_n+skipped),np.mean(test_l2),test_time - start_time, test_adv_loss/test_n, test_st_rate/test_n,test_noise_rate/test_n, test_attack_rate/test_n)
 
-    clean = unnormalize(torch.from_numpy(clean_np[:5]).cuda()).cpu().clamp(0,1)
-    st = unnormalize(torch.from_numpy(st_np[:5]).cuda()).cpu().clamp(0,1)
-    adv = unnormalize(torch.from_numpy(perb_np[:5]).cuda()).cpu().clamp(0,1)
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
+    np.save(outdir+'/flow_'+dataSet+'_'+model_name+'_tau'+str(tau)+'_eps'+str(eps)+'_ASR'+str(test_asr)+'.npy',bestflow.data.cpu().numpy().astype(np.float32)) 
+    np.save(outdir+'/noise_'+dataSet+'_'+model_name+'_tau'+str(tau)+'_eps'+str(eps)+'_ASR'+str(test_asr)+'.npy',bestnoise.data.cpu().numpy().astype(np.float32)) 
+
+    torch.save(netAttacker.state_dict(), outdir+'/GUAP_model_'+dataSet+'_'+model_name+'_tau'+str(tau)+'_eps'+str(eps)+'_ASR'+str(test_asr)+'.pth')
+
+    clean = unnormalize(torch.from_numpy(clean_np[:5]).to(device)).cpu().clamp(0,1)
+    st = unnormalize(torch.from_numpy(st_np[:5]).to(device)).cpu().clamp(0,1)
+    adv = unnormalize(torch.from_numpy(perb_np[:5]).to(device)).cpu().clamp(0,1)
 
     middlenoise1 = st - clean
     middlenoise2 = adv - st
@@ -309,7 +326,8 @@ if __name__ == '__main__':
 
     fig = plt.figure(figsize=(10, 5))
     grid = vutils.make_grid(torch.cat((clean,middlenoise1,st,middlenoise2,adv)).float(),nrow=5)
-    # plt.imshow(grid.numpy().transpose((1, 2, 0)))
     if not os.path.exists('savefig'):
         os.mkdir('savefig')      
-    plt.imsave('savefig/ImageNet.png',grid.numpy().transpose((1, 2, 0)))
+    plt.imsave('./savefig/'+dataSet+'_'+model_name+'_tau'+str(tau)+'_eps'+str(eps)+'_ASR'+str(test_asr)+'.png',grid.numpy().transpose((1, 2, 0)))
+
+ 

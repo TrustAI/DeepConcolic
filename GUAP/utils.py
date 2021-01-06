@@ -1,27 +1,9 @@
 '''Some helper functions for PyTorch
 '''
-import os
-import sys
-import time
-import math
 import numpy as np
-import cv2
 import torch
 import torch.nn as nn
-import torch.nn.init as init
 import torch.nn.functional as F
-from torch.autograd import Variable
-from torchvision import datasets, transforms
-import matplotlib.pyplot as plt
-import argparse
-import torchvision
-from torch.utils.data import DataLoader, Dataset
-import torchvision.utils as vutils
-import logging
-import time
-import datetime
-import random
-import torchvision.models as models
 
 
 def weights_init(m):
@@ -34,11 +16,12 @@ def weights_init(m):
 
 
 
-def flow_st(images, flows,batch_size):
+def flow_st(images, flows):
 
-    # print(images.shape)
-    H,W = images.size()[2:]
-    
+    batch_size,_,H,W = images.size()
+
+    device = images.device
+
 
     # basic grid: tensor with shape (2, H, W) with value indicating the
     # pixel shift in the x-axis or y-axis dimension with respect to the
@@ -53,7 +36,7 @@ def flow_st(images, flows,batch_size):
 
     images = images.permute(0,2,3,1) #100, 28,28,1
 
-    grid = grid.cuda()
+    grid = grid.to(device)
 
     grid_new = grid + flows
     # assert 0
@@ -83,7 +66,7 @@ def flow_st(images, flows,batch_size):
     y1 = torch.clamp(y1, 0, H - 1)
 
 
-    b =torch.arange(0, batch_size).view(batch_size, 1, 1).repeat(1, H, W).cuda()
+    b =torch.arange(0, batch_size).view(batch_size, 1, 1).repeat(1, H, W).to(device)
     # assert 0 
     Ia = images[b, y0, x0].float()
     Ib = images[b, y1, x0].float()
