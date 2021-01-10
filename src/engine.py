@@ -61,6 +61,9 @@ class _ActivationStatBasedInitializable:
 
     - name: short description of what's computed;
 
+    - layer_indexes: a list or set of indexes for layers whose
+      activations values are needed;
+
     - accum: a callable taking batched activation values for every
       layer and any accumulator that is (initially `None`), and
       returns a new or updated accumulator.  This is called at least
@@ -272,20 +275,18 @@ class Analyzer:
     return self._analyzed_dnn
 
 
-  def eval(self, i, allow_input_layer = False, layer_indexes = None):
+  def eval(self, i, **kwds):
     '''
     Returns the activations associated to a given input.
     '''
-    return eval (self.dnn, i, allow_input_layer,
-                 layer_indexes = layer_indexes)
+    return eval (self.dnn, i, **kwds)
 
 
-  def eval_batch(self, i, allow_input_layer = False, layer_indexes = None):
+  def eval_batch(self, i, **kwds):
     '''
     Returns all activations associated to a given input batch.
     '''
-    return eval_batch (self.dnn, i, allow_input_layer,
-                       layer_indexes = layer_indexes)
+    return eval_batch (self.dnn, i, **kwds)
 
 
   @abstractmethod
@@ -677,9 +678,11 @@ class Criterion (_ActivationStatBasedInitializable):
 
 
   def _batched_activations(self, tl: Sequence[Input], **kwds) -> range:
-    batches = np.array_split (tl, len (tl) // 1000 + 1)
+    batches = np.array_split (tl, len (tl) // 100 + 1)
     for batch in batches:
-      yield (self.analyzer.eval_batch (batch, **kwds))
+      acts = self.analyzer.eval_batch (batch, **kwds)
+      yield (acts)
+      del acts
 
 
   @abstractmethod
@@ -825,8 +828,7 @@ class Engine:
 
 
   def _run_test(self, x):
-    return np.argmax (self.criterion.analyzer.dnn.predict (np.array([x])))
-
+    return prediction (self.criterion.analyzer.dnn, x)
 
   def _run_tests(self, xl):
     return predictions (self.criterion.analyzer.dnn, xl)
@@ -1039,9 +1041,12 @@ class Engine:
         np1 ('Aggregating activations required for {}... '
              .format(' & '.join((map ((lambda gg: gg['name']), ggi)))))
       acc = [ None for _ in gi ]
+      acc_indexes  = set().union (*(gi['layer_indexes'] for gi in gi \
+                                    if 'layer_indexes' in gi))
       gacc_indexes = set().union (*(gg['layer_indexes'] for gg in ggi))
       gacc = dict.fromkeys (gacc_indexes, np.array([]))
-      for act in self._batched_activations_on_raw_data ():
+      for act in self._batched_activations_on_raw_data \
+          (layer_indexes = acc_indexes.union (gacc_indexes)):
         acc = [ g['accum'](act, acc) for g, acc in zip(gi, acc) ]
         if ggi != []:
           for j in gacc_indexes:
@@ -1120,11 +1125,8 @@ class Engine:
           (x['test'], data, test_idxs, x['layer_indexes'])
 
 
-  def _batched_activations_on_raw_data(self):
-    batches = np.array_split (self.ref_data.data,
-                              len (self.ref_data.data) // 1000 + 1)
-    for batch in batches:
-      yield (self.criterion.analyzer.eval_batch (batch, allow_input_layer = True))
+  def _batched_activations_on_raw_data(self, **kwds):
+    return self.criterion._batched_activations (self.ref_data.data, **kwds)
 
 
   def _lazy_activations_on_indexed_data(self, fnc, data, indexes, layer_indexes):
@@ -1341,6 +1343,7 @@ class LayerLocalCriterion (Criterion):
         'accum': self._acc_magnitude_coefficients,
         'final': self._calculate_pfactors,
         'print': (lambda : [cl.pfactor for cl in self.cover_layers]),
+        'layer_indexes': set ([cl.layer_index for cl in self.cover_layers])
       }]
 
 

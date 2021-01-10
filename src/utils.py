@@ -358,27 +358,36 @@ def eval_batch(o, ims, allow_input_layer = False, layer_indexes = None):
     get_layer_functions (o) if isinstance (o, (keras.Sequential, keras.Model))
     # TODO: Check it's sequential? --------------------------------------^
     else o)
-  having_input_layer = allow_input_layer and has_input_layer
   activations = []
+  deepest_layer_index = max (layer_indexes) if layer_indexes is not None else None
   prev, prevv = None, None
   for l, func in enumerate (layer_functions):
-    prev = ([] if having_input_layer and l == 0 else \
-            func([ims])[0] if l == (1 if having_input_layer else 0) else \
+    prev = ([] if has_input_layer and l == 0 else \
+            func([ims])[0] if l == (1 if has_input_layer else 0) else \
             func([prev])[0])
     if prevv is not None and activations[-1] is not prevv:
       del prevv
     activations.append (prev if layer_indexes is None or l in layer_indexes else [])
+    if deepest_layer_index is not None and l == deepest_layer_index:
+      break
     prevv = prev
   return activations
 
-def eval(o, im, having_input_layer = False, **kwds):
-  return eval_batch (o, np.array([im]), having_input_layer, **kwds)
+def eval(o, im, **kwds):
+  return eval_batch (o, np.array([im]), **kwds)
 
 def eval_batch_func (dnn):
   return lambda imgs, **kwds: eval_batch (dnn, imgs, **kwds)
 
-def predictions (dnn, xl):
-  return np.argmax (dnn.predict (np.array (xl)), axis = 1)
+def prediction (dnn, x, top_classes = None):
+  return \
+    np.argmax (dnn.predict (np.array ([x]))) if top_classes is None else \
+    np.flip (np.argsort (dnn.predict (np.array ([x])))[0])[:top_classes]
+
+def predictions (dnn, xl, top_classes = None):
+  return \
+    np.argmax (dnn.predict (np.array (xl)), axis = 1) if top_classes is None else \
+    np.fliplr (np.argsort (dnn.predict (np.array (xl))))[:top_classes]
 
 # ---
 
