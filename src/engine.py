@@ -1347,19 +1347,23 @@ class LayerLocalCriterion (Criterion):
       }]
 
 
-  def _acc_magnitude_coefficients(self, new_acts, prev_acts = None):
-    import copy
-    if prev_acts is None:
-      prev_acts = copy.copy (new_acts)
-    else:
-      for j in range(0, len(prev_acts)):
-        prev_acts[j] = np.concatenate((prev_acts[j], new_acts[j]), axis = 0)
-    return prev_acts
+  def _acc_magnitude_coefficients (self, new_acts, acc = None):
+    acc = acc or dict ()
+    for cl in self.cover_layers:
+      cl_acts = new_acts[cl.layer_index]
+      cl_acts_average = np.average (np.abs (cl_acts))
+      if cl.layer_index not in acc:
+        acc[cl.layer_index] = (cl_acts_average, len (cl_acts))
+      else:
+        pavg, plen = acc[cl.layer_index]
+        nlen = plen + len (cl_acts)
+        navg = (cl_acts_average * len (cl_acts) + pavg * plen) / nlen
+        acc[cl.layer_index] = (navg, nlen)
+    return acc
 
 
-  def _calculate_pfactors (self, activations):
-    fks = [ np.average (np.abs (activations[cl.layer_index]))
-            for cl in self.cover_layers ]
+  def _calculate_pfactors (self, acc):
+    fks = [ acc[cl.layer_index][0] for cl in self.cover_layers ]
     av = np.average (fks)
     for cl, fks in zip(self.cover_layers, fks):
       cl.pfactor = av / fks

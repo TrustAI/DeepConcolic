@@ -514,6 +514,11 @@ class SScCriterion (LayerLocalCriterion, Criterion4FreeSearch, Criterion4RootedS
     return "SSC"
 
 
+  def stat_based_incremental_initializers(self):
+    # This disables computation of `pfactors`
+    return []
+
+
   def find_next_test_target(self) -> SScTarget:
     # Find a target decision at random:
     decision_search_attempt = self.get_random ()
