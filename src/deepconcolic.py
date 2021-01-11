@@ -167,6 +167,9 @@ def main():
                       'is used for future-proofing)', choices=filters.choices)
   parser.add_argument("--norm", dest="norm", # required = True, <- not for fuzzing
                       help="the norm metric", metavar="{linf,l0}")
+  parser.add_argument('--norm-factor', metavar = 'FLOAT', type = float, default = 1/4,
+                      help = 'norm distance upper threshold above which '
+                      'generated inputs are rejected by the oracle (default is 1/4)')
   parser.add_argument('--lb-hard', metavar = 'FLOAT', type = float,
                       help = 'hard lower bound for the distance between '
                       'original and generated inputs (concolic engine only---'
@@ -376,7 +379,7 @@ def main():
                                 'save_new_tests': args.save_all_tests,
                                 'save_input_func': save_input,
                                 'amplify_diffs': amplify_diffs },
-                norm_args = { 'factor': .25,
+                norm_args = { 'factor': args.norm_factor,
                               'LB_hard': lower_bound_metric_hard,
                               'LB_noise': lower_bound_metric_noise },
                 engine_args = { 'custom_filters': input_filters },
