@@ -35,7 +35,7 @@ def check_transformed (test_object, *args, test_size = 100, **kwds):
   })
 
 parser_check.set_defaults (func = check_transformed)
-    
+
 # ---
 
 if __name__=="__main__":

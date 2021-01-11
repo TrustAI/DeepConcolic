@@ -188,12 +188,14 @@ class PulpSolver4DNN (LpSolver4DNN):
   def setup(self, dnn,
             metric: PulpLinearMetric,
             input_bounds: Bounds = None,
+            postproc_inputs = id,
             build_encoder = pulp_encoding.strict_encoder,
             link_encoders = pulp_encoding.setup_layer_encoders,
             create_problem = pulp_encoding.create_base_problem,
             first = 0, upto = None):
     super().setup (dnn, build_encoder, link_encoders, create_problem,
                    input_bounds, first, upto)
+    self.postproc_inputs  = postproc_inputs
     # That's the objective:
     self.d_var = LpVariable(metric.dist_var_name,
                             lowBound = metric.draw_lower_bound (),
@@ -236,7 +238,7 @@ class PulpSolver4DNN (LpSolver4DNN):
       for idx, var in np.ndenumerate (in_vars):
         res[idx] = pulp.value (var)
       val = pulp.value(problem.objective)
-      result = val, res
+      result = val, self.postproc_inputs (res)
     else:
       p1 (status)
 

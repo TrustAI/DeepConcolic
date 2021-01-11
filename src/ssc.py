@@ -16,7 +16,7 @@ class ssc_pairt:
     self.dec_layer=dec_layer
     self.dec_pos=dec_pos
 
-def local_search(eval_batch, local_input, ssc_pair, adv_crafter, e_max_input, ssc_ratio):
+def local_search(eval_batch, local_input, ssc_pair, adv_crafter, e_max_input, ssc_ratio, postproc):
 
   d_min=NNUM
 
@@ -30,7 +30,9 @@ def local_search(eval_batch, local_input, ssc_pair, adv_crafter, e_max_input, ss
   while e_max-e_min>=EPSILON:
     #print ('                     === in while')
     adv_crafter.set_params(eps=e_max)
-    x_adv_vect=adv_crafter.generate(x=np.array([local_input]))
+    x = np.array([local_input])
+    x_adv_vect = adv_crafter.generate (x)
+    x_adv_vect = postproc (x_adv_vect)
     adv_acts = eval_batch (x_adv_vect, allow_input_layer = True)
     adv_cond_flags=adv_acts[ssc_pair.dec_layer.prev_layer_index][0]
     adv_cond_flags[adv_cond_flags<=0]=0
@@ -66,7 +68,7 @@ def local_search(eval_batch, local_input, ssc_pair, adv_crafter, e_max_input, ss
 
   return d_min, x_ret, diff_map
 
-def ssc_search(eval_batch, raw_data, cond_ratio, cond_layer, dec_layer, dec_pos, adv_crafter, adv_object=None):
+def ssc_search(eval_batch, raw_data, cond_ratio, cond_layer, dec_layer, dec_pos, adv_crafter, postproc, adv_object=None):
 
   try:
     sess = tf.compat.v1.Session ()
@@ -101,6 +103,7 @@ def ssc_search(eval_batch, raw_data, cond_ratio, cond_layer, dec_layer, dec_pos,
       adv_crafter.set_params(eps=e_max_input)
       adv_inp_vect=adv_crafter.generate(x=inp_vect)
       adv_inp_vect=np.clip(adv_inp_vect, adv_object.lb_v, adv_object.max_v)
+    adv_inp_vect = postproc (adv_inp_vect)
     acts = eval_batch (inp_vect, allow_input_layer = True)
     adv_acts = eval_batch (adv_inp_vect, allow_input_layer = True)
     dec1=(acts[dec_layer.layer_index][dec_pos])
@@ -114,7 +117,7 @@ def ssc_search(eval_batch, raw_data, cond_ratio, cond_layer, dec_layer, dec_pos,
     cond_flags=cond_flags.astype(bool)
     ssc_pair = ssc_pairt(cond_flags, acts[dec_layer.layer_index][dec_pos]>0, None, cond_layer, dec_layer, dec_pos)
 
-    diff, x_ret, diff_map_ret = local_search(eval_batch, data[i], ssc_pair, adv_crafter, e_max_input, ssc_ratio)
+    diff, x_ret, diff_map_ret = local_search(eval_batch, data[i], ssc_pair, adv_crafter, e_max_input, ssc_ratio, postproc)
 
     if diff<d_min:
       d_min=diff
@@ -317,7 +320,7 @@ class SScLayer (BoolMappedCoverableLayer):
     # print ('non-zero:', np.count_nonzero (self.map))
     # print ('')
 
-    
+
 
   def coverage(self, _feature_indices = None) -> Coverage:
     """Ignores `feature_indices` for now."""
@@ -337,7 +340,7 @@ class SScLayer (BoolMappedCoverableLayer):
       act = -1 * np.abs (act)
       act[act == 0] = -0.000001
       act = np.multiply(act, self.map)
-      act[act == 0] = -np.inf
+      act[act == 0] = MIN
       # Append activations after map change
       self._append_activations (act)
 
@@ -349,7 +352,7 @@ class SScLayer (BoolMappedCoverableLayer):
       # given
       #
       # NB: well that's a wrong assumption (ie still over-simplifying)
-      self.cond_map[dec_neuron, :] = False
+      self.cond_map[dec_neuron] = False
     else:
       # print (self, self.cond_map.shape, dec_neuron, cond_neuron)
       self.cond_map[dec_neuron, cond_neuron] = False
@@ -364,7 +367,7 @@ class SScLayer (BoolMappedCoverableLayer):
     used_weights = (self.layer.kernel_size if self.is_conv else
                     self.layer.get_weights ()[0].shape[:-1])
     return self.cond_map[(Ellipsis,) + (-1,) * len (used_weights)] == True
-    
+
 
 
   # def initialize_ubs(self):
@@ -501,6 +504,12 @@ class SScCriterion (LayerLocalCriterion, Criterion4FreeSearch, Criterion4RootedS
       cl.filter_out_padding_against (self.layer_imap[cl.prev_layer_index].layer)
 
 
+  @abstractmethod
+  def covered_layer_indexes (self) -> List[int]:
+    return [ self.injecting_layer.layer_index ] + \
+      [ cl.layer_index for cl in self.cover_layers ]
+
+
   @property
   def _updatable_layers(self):
     """
@@ -514,24 +523,30 @@ class SScCriterion (LayerLocalCriterion, Criterion4FreeSearch, Criterion4RootedS
     return "SSC"
 
 
+  def stat_based_incremental_initializers(self):
+    # This disables computation of `pfactors`
+    return []
+
+
   def find_next_test_target(self) -> SScTarget:
     # Find a target decision at random:
     decision_search_attempt = self.get_random ()
     if decision_search_attempt == None:
       raise EarlyTermination ('All decision features have been covered.')
     dec_cl, dec_pos = decision_search_attempt
-    cond_cl = self.layer_imap[dec_cl.prev_layer_index]
-    assert not (is_padding (dec_pos[1:], dec_cl, cond_cl,
-                            post = True, unravel_pos = False))
-    try:
-      # Try and find an appropriate condition neuron (i.e. based on
-      # Eq. (18)).
-      cond_apos, cond_val = cond_cl.find (np.argmax)
-      cond_cl.inhibit_activation (cond_apos)
-      return SScTarget (dec_cl, dec_pos, cond_cl, cond_apos[1:])
-    except ValueError:
-      # XXX this case may only happen upon cold start.
-      return SScTarget (dec_cl, dec_pos, None, None)
+    return SScTarget (dec_cl, dec_pos, None, None)
+    # cond_cl = self.layer_imap[dec_cl.prev_layer_index]
+    # assert not (is_padding (dec_pos[1:], dec_cl, cond_cl,
+    #                         post = True, unravel_pos = False))
+    # try:
+    #   # Try and find an appropriate condition neuron (i.e. based on
+    #   # Eq. (18)).
+    #   cond_apos, cond_val = cond_cl.find (np.argmax)
+    #   cond_cl.inhibit_activation (cond_apos)
+    #   return SScTarget (dec_cl, dec_pos, cond_cl, cond_apos[1:])
+    # except ValueError:
+    #   # XXX this case may only happen upon cold start.
+    #   return SScTarget (dec_cl, dec_pos, None, None)
 
 
   def find_next_rooted_test_target(self) -> Tuple[Input, SScTarget]:
@@ -588,6 +603,7 @@ def setup (test_object = None,
                                    **kwds))
   cover_layers = get_cover_layers (test_object.dnn, setup_layer,
                                    layer_indices = test_object.layer_indices,
+                                   activation_of_conv_or_dense_only = True,
                                    exclude_direct_input_succ = True)
   injecting_layer_index = cover_layers[0].prev_layer_index
   criterion_args['injecting_layer'] = (
@@ -636,7 +652,8 @@ class SScGANBasedAnalyzer (SScAnalyzer4FreeSearch):
     cond_layer = self.dnn.layers[dec_layer.prev_layer_index]
     d_min, d_norm, new_image, old_image, old_labels, cond_diff_map = (
       ssc_search (self.eval_batch, self.ref_data, self.cond_ratio,
-                  cond_layer, dec_layer, dec_pos, self.adv_crafter))
+                  cond_layer, dec_layer, dec_pos, self.adv_crafter,
+                  self._postproc_inputs))
     tp1 ('#Condition changes: {0}, norm distance: {1}'.format(d_min, d_norm))
     feasible = (d_min <= self.cond_ratio * np.prod(cond_layer.output.shape[1:].as_list ()) or
                 d_min == 1)             # ???

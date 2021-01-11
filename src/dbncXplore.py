@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from utils import *
 from plotting import plt
 from bounds import UniformBounds

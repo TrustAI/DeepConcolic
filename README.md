@@ -56,22 +56,25 @@ In the following, we first present the original ASE2018 version, and then introd
 ### Command to Run  
 
 ```
-usage: deepconcolic.py [-h] [--model MODEL] [--inputs DIR] --outputs DIR
-                       [--criterion nc, ssc...] [--setup-only] [--init INT]
-                       [--max-iterations INT] [--save-all-tests]
+usage: deepconcolic.py [-h] [--model MODEL] [--vgg16-model] [--inputs DIR]
+                       --outputs DIR [--criterion nc, ssc...] [--setup-only]
+                       [--init INT] [--max-iterations INT] [--save-all-tests]
                        [--rng-seed SEED] [--labels FILE]
-                       [--dataset {mnist,fashion_mnist,cifar10,OpenML:har}]
-                       [--extra-tests DIR [DIR ...]] [--vgg16-model]
-                       [--filters {LOF}] [--norm linf, l0] [--input-rows INT]
-                       [--input-cols INT] [--input-channels INT]
-                       [--cond-ratio FLOAT] [--top-classes INT]
-                       [--layers LAYER [LAYER ...]] [--feature-index INT]
-                       [--fuzzing] [--num-tests INT] [--num-processes INT]
-                       [--sleep-time INT] [--dbnc-spec SPEC]
+                       [--dataset {OpenML:har,cifar10,fashion_mnist,mnist}]
+                       [--extra-tests DIR [DIR ...]] [--filters {LOF}]
+                       [--norm linf, l0] [--input-rows INT] [--input-cols INT]
+                       [--input-channels INT] [--mcdc-cond-ratio FLOAT]
+                       [--top-classes CLS] [--layers LAYER [LAYER ...]]
+                       [--feature-index INT] [--fuzzing] [--num-tests INT]
+                       [--num-processes INT] [--sleep-time INT]
+                       [--dbnc-spec SPEC] [--dbnc-abstr PKL]
+
+Concolic testing for neural networks
 
 optional arguments:
   -h, --help            show this help message and exit
   --model MODEL         the input neural network model (.h5)
+  --vgg16-model         use keras's default VGG16 model (ImageNet)
   --inputs DIR          the input test data directory
   --outputs DIR         the outputput test data directory
   --criterion nc, ssc...
@@ -87,11 +90,10 @@ optional arguments:
                         number generator, and therefore get some(what)
                         reproducible results
   --labels FILE         the default labels
-  --dataset {mnist,fashion_mnist,cifar10,OpenML:har}
+  --dataset {OpenML:har,cifar10,fashion_mnist,mnist}
                         selected dataset
   --extra-tests DIR [DIR ...]
                         additonal directories of test images
-  --vgg16-model         vgg16 model
   --filters {LOF}       additional filters used to put aside generated test
                         inputs that are too far from training data (there is
                         only one filter to choose from for now; the plural is
@@ -100,8 +102,10 @@ optional arguments:
   --input-rows INT      input rows
   --input-cols INT      input cols
   --input-channels INT  input channels
-  --cond-ratio FLOAT    the condition feature size parameter (0, 1]
-  --top-classes INT     check the top-xx classifications
+  --mcdc-cond-ratio FLOAT
+                        the condition feature size parameter (0, 1]
+  --top-classes CLS     check the top-CLS classifications for models that
+                        output estimations for each class (e.g. VGG*)
   --layers LAYER [LAYER ...]
                         test layers given by name or index
   --feature-index INT   to test a particular feature map
@@ -110,6 +114,8 @@ optional arguments:
   --num-processes INT   number of processes to use
   --sleep-time INT      fuzzing sleep time
   --dbnc-spec SPEC      Feature extraction and discretisation specification
+  --dbnc-abstr PKL, --bn-abstr PKL
+                        input BN abstraction (.pkl)
 ```
 
 The neural network model under tested is specified by ``--model`` and a set of raw test data should be given
@@ -138,13 +144,13 @@ python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --dataset 
 To run MC/DC for DNNs on the CIFAR-10 model
 
 ```
-python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --criterion ssc --cond-ratio 0.1 --dataset cifar10 --outputs outs
+python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --criterion ssc --mcdc-cond-ratio 0.1 --dataset cifar10 --outputs outs
 ```
 
 To run MC/DC for DNNs on the VGG16 model (with input images from the ``data`` sub-directory)
 
 ```
-python deepconcolic.py --vgg16-model --inputs data/ --outputs outs --cond-ratio 0.1 --top-classes 5 --labels labels.txt --criterion ssc
+python deepconcolic.py --vgg16-model --inputs data/ --outputs outs --mcdc-cond-ratio 0.1 --top-classes 5 --labels labels.txt --criterion ssc
 ```
 
 To run Concolic Sign-sign-coverage (MC/DC) for DNNs on the MNIST model

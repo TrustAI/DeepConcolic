@@ -130,7 +130,8 @@ class _BasePulpAnalyzer (Analyzer, PulpSolver4DNN):
 
 
   def finalize_setup(self, clayers):
-    super().setup (self.dnn, self.metric, self._input_bounds,
+    super().setup (self.dnn, self.metric,
+                   self._input_bounds, self._postproc_inputs,
                    build_encoder = abstracted_layer_encoder (clayers),
                    upto = deepest_tested_layer (self.dnn, clayers))
 
