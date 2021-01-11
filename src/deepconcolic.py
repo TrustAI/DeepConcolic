@@ -165,8 +165,16 @@ def main():
                       'test inputs that are too far from training data (there '
                       'is only one filter to choose from for now; the plural '
                       'is used for future-proofing)', choices=filters.choices)
-  parser.add_argument("--norm", dest="norm", default="l0",
-                      help="the norm metric", metavar="linf, l0")
+  parser.add_argument("--norm", dest="norm", # required = True, <- not for fuzzing
+                      help="the norm metric", metavar="{linf,l0}")
+  parser.add_argument('--lb-hard', metavar = 'FLOAT', type = float,
+                      help = 'hard lower bound for the distance between '
+                      'original and generated inputs (concolic engine only---'
+                      'default is 1/255 for image datasets, 1/100 otherwise)')
+  parser.add_argument('--lb-noise', metavar = 'FLOAT', type = float,
+                      help = 'extra noise on the lower bound for the distance '
+                      'between original and generated inputs (concolic engine '
+                      'only---default is 1/10)')
   parser.add_argument("--input-rows", dest="img_rows", default="224",
                       help="input rows", metavar="INT")
   parser.add_argument("--input-cols", dest="img_cols", default="224",
@@ -295,8 +303,16 @@ def main():
   else:
     sys.exit ('Missing input neural network')
 
-  lower_bound_metric_hard = some (lower_bound_metric_hard, 0.01)
-  lower_bound_metric_noise = some (lower_bound_metric_noise, 0.1)
+  if args.lb_hard is not None:
+    lower_bound_metric_hard = float (args.lower_bound_metric_hard)
+    assert 0.0 < lower_bound_metric_hard <= 1.0
+  lower_bound_metric_hard = some (lower_bound_metric_hard, 1/100)
+
+  if args.lb_noise is not None:
+    lower_bound_metric_noise = float (args.lower_bound_metric_noise)
+    assert 0.0 <= lower_bound_metric_noise <= 1.0
+  lower_bound_metric_noise = some (lower_bound_metric_noise, 1/10)
+
   input_bounds = some (input_bounds, UniformBounds (0.0, 1.0))
   postproc_inputs = some (postproc_inputs, id)
 
@@ -335,6 +351,9 @@ def main():
                num_tests = int(args.num_tests),
                num_processes = int(args.num_processes))
     sys.exit(0)
+
+  if args.norm is None:
+    sys.exit ('Missing norm argument: l0 or linf')
 
   # DBNC-specific parameters:
   try:
