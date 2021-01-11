@@ -112,7 +112,7 @@ def deepconcolic(criterion, norm, test_object, report_args,
   elif criterion=='svc':
     from run_ssc import run_svc
     print('\n== Starting DeepConcolic tests for {0} =='.format (test_object))
-    run_svc(test_object, report_args['outdir'].path)
+    run_svc(test_object, report_args['outdir'])
   else:
     print('\n not supported coverage criterion... {0}\n'.format(criterion))
     sys.exit(0)

@@ -195,11 +195,17 @@ from art.estimators.classification import KerasClassifier
 #       print ('all decision features at layer {0} have been covered'.format(dec_layer.layer_index))
 #       sys.exit(0)
 
-
+from engine import CoverableLayer
 def run_svc(test_object, outs):
   print ('To run svc\n')
-  
-  f_results, cover_layers, _ = ssc_setup (test_object, outs)
+
+  setup_layer = \
+    lambda l, i, **kwds: CoverableLayer (layer = l, layer_index = i, **kwds)
+  cover_layers = get_cover_layers (test_object.dnn, setup_layer,
+                                   layer_indices = test_object.layer_indices,
+                                   activation_of_conv_or_dense_only = True,
+                                   exclude_direct_input_succ = True)
+  f_results = outs.stamped_filename ('SVC_report', suff = '.txt')
 
   ## define a global attacker
   classifier = KerasClassifier(clip_values=(MIN, -MIN), model=test_object.dnn)
