@@ -64,8 +64,14 @@ def xlist(t):
 def seqx(t):
   return [] if t is None else t if isinstance (t, (list, tuple)) else [t]
 
+def id(x):
+  return x
+
 def some(a, d):
   return a if a is not None else d
+
+def appopt(f, a):
+  return f(a) if a is not None else a
 
 def s_(i):
   return i, 's' if i > 1 else ''
@@ -242,18 +248,21 @@ def save_in_csv (filename):
     # append_in_file (f, name, ' ', np.array_str (arr, max_line_width = np.inf), '\n')
   return save_an_array
 
-def save_an_image(im, name, directory = './', log = True):
+def save_an_image(im, name, directory = './', log = True, channel_upscale = 255):
   if not directory.endswith('/'): directory += '/'
   f = directory + name + '.png'
   if log: print ('Outputing image into {0}'.format (f))
-  cv2.imwrite (f, im * 255)
+  cv2.imwrite (f, im * channel_upscale)
+
+def save_an_image_(channel_upscale = 255):
+  return lambda *args, **kwds: \
+    save_an_image (*args, channel_upscale = channel_upscale, **kwds)
 
 def save_adversarial_examples(adv, origin, diff, di):
   save_an_image(adv[0], adv[1], di)
   save_an_image(origin[0], origin[1], di)
   if diff is not None:
     save_an_image(diff[0], diff[1], di)
-
 
 # ---
 
@@ -283,9 +292,9 @@ def post_conv_or_dense (dnn, idx):
 
 def activation_of_conv_or_dense (dnn, idx):
   layer = dnn.layers[idx]
-  return post_conv_or_dense (dnn, idx) or \
-    ((is_conv_layer (layer) or is_dense_layer (layer)) and
-     activation_is_relu (layer))
+  return \
+    (is_activation_layer (layer) and post_conv_or_dense (dnn, idx)) or \
+    ((is_conv_layer (layer) or is_dense_layer (layer)) and activation_is_relu (layer))
 
 
 def testable_layer_function (dnn, idx,
@@ -321,7 +330,7 @@ def get_cover_layers (dnn, constr, layer_indices = None,
           (layer_indices is None or l in layer_indices) and flt (l) ]
 
   return [ constr (layer[1], layer[0],
-                   prev = (cls[l-1][0] if l > 0 else None),
+                   prev = (cls[l-1][0] if l > 0 else layer[0]-1 if layer[0] > 0 else None),
                    succ = (cls[l+1][1] if l < len(cls) - 1 else None))
            for l, layer in enumerate (cls) ]
 
@@ -394,16 +403,31 @@ def predictions (dnn, xl, top_classes = None):
 class raw_datat:
   def __init__(self, data, labels, name = 'unknown'):
     self.data = data
-    self.labels = np.squeeze (labels)
+    self.labels = appopt (np.squeeze, labels)
     self.name = name
+
+# ---
+
+def fix_image_channels_ (up = 255., bounds = (0.0, 255.0), ctype = 'uint8', down = 255.):
+  assert bounds is not None
+  assert ctype is not None
+  def aux (x):
+    if up is not None:
+      np.multiply (x, up, out = x)
+    x = np.clip (x, *bounds, out = x).astype (ctype).astype (float)
+    if down is not None:
+      np.divide (x, down, out = x)
+    return x
+  return aux
 
 # ---
 
 class test_objectt:
   def __init__(self, dnn, train_data, test_data):
-    self.dnn=dnn
+    self.dnn = dnn
     self.train_data = train_data
     self.raw_data = test_data
+    self.postproc_inputs = id
     # Most of what's below should not be needed anymore: one should
     # avoid populating that object with criteria/analyzer-specific
     # parameters.
@@ -443,7 +467,11 @@ class test_objectt:
     if self.layer_indices == None: return
 
     testable_idxs = tuple (l[1] for l in testable_layers)
-    testable_idxs = tuple (i + 1 if not dbnc else i for i in testable_idxs)
+    testable_idxs = tuple (i + 1 if (not dbnc and \
+                                     not is_activation_layer (self.dnn.get_layer(index=i)) and\
+                                     not activation_is_relu (self.dnn.get_layer(index=i))) \
+                           else i
+                           for i in testable_idxs)
     wrong_layer_indices = tuple (i for i in self.layer_indices if i not in testable_idxs)
     if wrong_layer_indices != ():
       sys.exit ('Untestable function {}layers: {}{}'

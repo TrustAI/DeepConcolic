@@ -23,7 +23,8 @@ class NcPulpAnalyzer (NcAnalyzer, LayerLocalAnalyzer, PulpSolver4DNN):
 
 
   def finalize_setup(self, clayers: Sequence[CoverableLayer]):
-    super().setup (self.dnn, self.metric, self._input_bounds,
+    super().setup (self.dnn, self.metric,
+                   self._input_bounds, self._postproc_inputs,
                    upto = deepest_tested_layer (self.dnn, clayers))
 
 

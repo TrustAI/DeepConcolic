@@ -19,6 +19,7 @@ def deepconcolic(criterion, norm, test_object, report_args,
                  norm_args = {},
                  dbnc_spec = {},
                  input_bounds = None,
+                 postproc_inputs = id,
                  run_engine = True,
                  **engine_run_args):
   test_object.check_layer_indices (criterion)
@@ -32,7 +33,8 @@ def deepconcolic(criterion, norm, test_object, report_args,
                          engine_args = engine_args,
                          setup_analyzer = NcPulpAnalyzer,
                          input_metric = LInfPulp (**norm_args),
-                         input_bounds = input_bounds)
+                         input_bounds = input_bounds,
+                         postproc_inputs = postproc_inputs)
     elif norm=='l0':
       from nc_l0 import NcL0Analyzer
       l0_args = copy.copy (norm_args)
@@ -60,6 +62,7 @@ def deepconcolic(criterion, norm, test_object, report_args,
                            setup_analyzer = Analyzer,
                            input_metric = LInfPulp (**norm_args),
                            input_bounds = input_bounds,
+                           postproc_inputs = postproc_inputs,
                            outdir = report_args['outdir'])
     else:
       sys.exit ('\n not supported norm... {0}\n'.format(norm))
@@ -76,6 +79,7 @@ def deepconcolic(criterion, norm, test_object, report_args,
                            setup_analyzer = Analyzer,
                            input_metric = LInfPulp (**norm_args),
                            input_bounds = input_bounds,
+                           postproc_inputs = postproc_inputs,
                            outdir = report_args['outdir'])
     else:
       sys.exit ('\n not supported norm... {0}\n'.format(norm))
@@ -93,6 +97,7 @@ def deepconcolic(criterion, norm, test_object, report_args,
                         setup_analyzer = SScGANBasedAnalyzer,
                         ref_data = test_object.raw_data,
                         input_bounds = input_bounds,
+                        postproc_inputs = postproc_inputs,
                         linf_args = linf_args)
   elif criterion=='ssclp':
     from pulp_norms import LInfPulp
@@ -102,7 +107,8 @@ def deepconcolic(criterion, norm, test_object, report_args,
                         engine_args = engine_args,
                         setup_analyzer = SScPulpAnalyzer,
                         input_metric = LInfPulp (**norm_args),
-                        input_bounds = input_bounds)
+                        input_bounds = input_bounds,
+                        postproc_inputs = postproc_inputs)
   elif criterion=='svc':
     from run_ssc import run_svc
     print('\n== Starting DeepConcolic tests for {0} =='.format (test_object))
@@ -121,6 +127,9 @@ def main():
   parser=argparse.ArgumentParser(description='Concolic testing for neural networks' )
   parser.add_argument('--model', dest='model', default='-1',
                       help='the input neural network model (.h5)')
+  parser.add_argument("--vgg16-model", dest='vgg16',
+                      help="use keras's default VGG16 model (ImageNet)",
+                      action="store_true")
   parser.add_argument("--inputs", dest="inputs", default="-1",
                       help="the input test data directory", metavar="DIR")
   parser.add_argument("--outputs", dest="outputs", required=True,
@@ -150,8 +159,6 @@ def main():
   parser.add_argument("--extra-tests", dest='extra_testset_dirs', metavar="DIR",
                       type=Path, nargs="+",
                       help="additonal directories of test images")
-  parser.add_argument("--vgg16-model", dest='vgg16',
-                      help="vgg16 model", action="store_true")
   parser.add_argument("--filters", dest='filters', # nargs='+'
                       nargs=1, default=[],
                       help='additional filters used to put aside generated '
@@ -166,10 +173,13 @@ def main():
                       help="input cols", metavar="INT")
   parser.add_argument("--input-channels", dest="img_channels", default="3",
                       help="input channels", metavar="INT")
-  parser.add_argument("--cond-ratio", dest="cond_ratio", default="0.01",
-                      help="the condition feature size parameter (0, 1]", metavar="FLOAT")
-  parser.add_argument("--top-classes", dest="top_classes", default="1",
-                      help="check the top-xx classifications", metavar="INT")
+  parser.add_argument("--mcdc-cond-ratio", dest="mcdc_cond_ratio", metavar = "FLOAT",
+                      type = float, default = 0.01,
+                      help ="the condition feature size parameter (0, 1]")
+  parser.add_argument("--top-classes", dest="top_classes", metavar="CLS",
+                      type = int, default = 1,
+                      help = "check the top-CLS classifications for models that "
+                      "output estimations for each class (e.g. VGG*)")
   parser.add_argument("--layers", dest="layers", nargs="+", metavar="LAYER",
                       help="test layers given by name or index")
   parser.add_argument("--feature-index", dest="feature_index", default="-1",
@@ -199,11 +209,10 @@ def main():
     sys.exit ("Invalid argument given for `--rng-seed': {}".format (e))
 
   outs = args.outputs
-  criterion=args.criterion
-  cond_ratio=float(args.cond_ratio)
-  top_classes=int(args.top_classes)
+  criterion = args.criterion
+  top_classes = int(args.top_classes)
 
-  test_data=None
+  test_data = None
   train_data = None
   img_rows, img_cols, img_channels = int(args.img_rows), int(args.img_cols), int(args.img_channels)
 
@@ -211,15 +220,15 @@ def main():
   inp_ub = 1
   save_input = None
   amplify_diffs = True
-  lower_bound_metric_hard = .01
-  lower_bound_metric_noise = 0
-  input_bounds = UniformBounds (0.0, 1.0)
+  lower_bound_metric_hard = None
+  lower_bound_metric_noise = None
+  input_bounds = None
 
   # fuzzing_params
   if args.inputs!='-1':
     file_list = []
     xs=[]
-    np1 ('Loading input data from {}... '.format (args.inputs))
+    np1 (f'Loading input data from `{args.inputs}\'... ')
     for path, subdirs, files in os.walk(args.inputs):
       for name in files:
         fname=(os.path.join(path, name))
@@ -234,7 +243,7 @@ def main():
     x_test = np.asarray(xs)
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
     test_data = raw_datat(x_test, None)
-    print (len(xs), 'loaded.')
+    c1 (f'{len(xs)} loaded.')
   elif args.dataset in datasets.choices:
     print ('Loading {} dataset... '.format (args.dataset), end = '', flush = True)
     (x_train, y_train), (x_test, y_test), dims, kind, _ = datasets.load_by_name (args.dataset)
@@ -244,11 +253,12 @@ def main():
                  save_in_csv ('new_inputs') if len (dims) == 1 else \
                  None
     amplify_diffs = kind in datasets.image_kinds
-    lower_bound_metric_hard = 1 / 255
-    lower_bound_metric_noise = 0.1
+    if kind in datasets.image_kinds: # assume 256 res.
+      lower_bound_metric_hard = 1 / 255
     input_bounds = UniformBounds () if kind in datasets.image_kinds else \
                    StatBasedInputBounds (hard_bounds = UniformBounds (-1.0, 1.0)) \
                    if kind in datasets.normalized_kinds else StatBasedInputBounds ()
+    postproc_inputs = fix_image_channels_ ()
     print ('done.')
   else:
     sys.exit ('Missing input dataset')
@@ -277,17 +287,24 @@ def main():
     tf.compat.v1.disable_eager_execution ()
     dnn = keras.applications.VGG16 ()
     inp_ub = 255
+    input_bounds = UniformBounds (0.0, 255.0)
+    postproc_inputs = fix_image_channels_ (up = None, down = None)
+    save_input = save_an_image_ (channel_upscale = 1.)
     lower_bound_metric_hard = 1/255
     dnn.summary()
-    save_input = save_an_image
   else:
     sys.exit ('Missing input neural network')
 
+  lower_bound_metric_hard = some (lower_bound_metric_hard, 0.01)
+  lower_bound_metric_noise = some (lower_bound_metric_noise, 0.1)
+  input_bounds = some (input_bounds, UniformBounds (0.0, 1.0))
+  postproc_inputs = some (postproc_inputs, id)
 
   test_object = test_objectt (dnn, train_data, test_data)
-  test_object.cond_ratio = cond_ratio
+  test_object.cond_ratio = args.mcdc_cond_ratio
   test_object.top_classes = top_classes
-  test_object.inp_ub = inp_ub
+  test_object.inp_ub = inp_ub   # only used in run_ssc.run_svc
+  test_object.postproc_inputs = postproc_inputs
   if args.layers is not None:
     try:
       test_object.set_layer_indices (int (l) if l.isdigit () else l
@@ -298,23 +315,8 @@ def main():
       test_object.feature_indices=[]
       test_object.feature_indices.append(int(args.feature_index))
       print ('feature index specified:', test_object.feature_indices)
-  # if args.training_data!='-1':          # NB: never actually used
-  #   tdata=[]
-  #   print ('To load the extra training data...')
-  #   for path, subdirs, files in os.walk(args.training_data):
-  #     for name in files:
-  #       fname=(os.path.join(path, name))
-  #       if fname.endswith('.jpg') or fname.endswith('.png'):
-  #         try:
-  #           image = cv2.imread(fname)
-  #           image = cv2.resize(image, (img_rows, img_cols))
-  #           image=image.astype('float')
-  #           tdata.append((image))
-  #         except: pass
-  #   print ('The extra training data loaded: ', len(tdata))
-  #   # test_object.training_data=tdata
 
-  if args.labels!='-1':             # NB: only used in run_scc.run_svc
+  if args.labels!='-1':             # NB: only used in run_ssc.run_svc
     labels=[]
     lines = [line.rstrip('\n') for line in open(args.labels)]
     for line in lines:
@@ -361,6 +363,7 @@ def main():
                 engine_args = { 'custom_filters': input_filters },
                 dbnc_spec = dbnc_spec,
                 input_bounds = input_bounds,
+                postproc_inputs = postproc_inputs,
                 run_engine = not args.setup_only,
                 initial_test_cases = init_tests,
                 max_iterations = max_iterations)

@@ -106,7 +106,6 @@ class KDESplit:
     self.bandwidth_ = kde.bandwidth
     self.kde_split_ = kde
 
-    id = lambda x: x
     logl2cspace, cspace2dens, cspace2logl, dens2cspace = ( \
         (id,     np.exp, id,      np.log) if self.dip_space == 'logl' else
         (np.exp, id, np.log, np.negative))

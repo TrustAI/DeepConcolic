@@ -253,11 +253,16 @@ class Analyzer:
   concrete inputs.
   '''
 
-  def __init__(self, analyzed_dnn = None, input_bounds: Optional[Bounds] = None, **kwds):
+  def __init__(self,
+               analyzed_dnn = None,
+               input_bounds: Optional[Bounds] = None,
+               postproc_inputs: Callable[[Sequence[Input]], Sequence[Input]] = id,
+               **kwds):
     assert analyzed_dnn is not None
     assert input_bounds is None or isinstance (input_bounds, Bounds)
     self._analyzed_dnn = analyzed_dnn
     self._input_bounds = input_bounds
+    self._postproc_inputs = postproc_inputs
     super().__init__(**kwds)
 
   # ---
@@ -841,11 +846,16 @@ class Engine:
     xl = []
     if initial_test_cases is not None and initial_test_cases > 0:
       x = self.ref_data.data
-      x = x[self._run_tests (x) == self.ref_data.labels]
+      if self.ref_data.labels is not None:
+        x = x[self._run_tests (x) == self.ref_data.labels]
       x = np.random.default_rng().choice (a = x, axis = 0,
                                           size = min (initial_test_cases, len (x)))
-      p1 ('Initializing with {} randomly selected test case{} that {} correctly classified.'
-          .format(*s_(len (x)), is_are_(len (x))[1]))
+      if self.ref_data.labels is not None:
+        p1 ('Initializing with {} randomly selected test case{} that {} correctly classified.'
+            .format(*s_(len (x)), is_are_(len (x))[1]))
+      else:
+        p1 ('Initializing with {} randomly selected test case{}.'
+            .format(*s_(len (x))))
       self.criterion.add_new_test_cases (x)
     elif initial_test_cases is None and self.criterion.rooted_search:
       p1 ('Randomly selecting an input from test data.')
@@ -1427,9 +1437,8 @@ class LayerLocalCriterion (Criterion):
         idx = np.random.randint(0, len(clx))
         cl = clx[idx]
         tot_s = np.prod (cl.map.shape)
-        # pos = np.random.randint (0, tot_s)
-        # if not self.test_object.feature_indices == None:
-        pos = np.argmax (cl.map.shape)
+        pos = (np.random.randint (0, tot_s) if self.feature_indices is None else \
+               np.argmax (cl.map.shape))
         while pos < tot_s and not cl.map.item(pos):
           pos += 1
         if pos < tot_s and cl.map.item(pos):
