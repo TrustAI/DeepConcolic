@@ -8,6 +8,8 @@ class L0Analyzer:
 
   def __init__(self, input_shape, eval_batch, gran = 2):
     self.shape = input_shape
+    if (len (self.shape) != 3):
+      raise ValueError ("The search engine dedicated to the L0 norm only supports 2D inputs")
     self.dim_row = min(input_shape[0], DIM)
     self.dim_col = min(input_shape[1], DIM)
     [x, y] = np.meshgrid(np.arange(self.dim_row), np.arange(self.dim_col))
