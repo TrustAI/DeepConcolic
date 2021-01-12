@@ -269,7 +269,7 @@ def main():
     input_bounds = UniformBounds () if kind in datasets.image_kinds else \
                    StatBasedInputBounds (hard_bounds = UniformBounds (-1.0, 1.0)) \
                    if kind in datasets.normalized_kinds else StatBasedInputBounds ()
-    postproc_inputs = fix_image_channels_ ()
+    postproc_inputs = fix_image_channels_ () if kind in datasets.image_kinds else id
     print ('done.')
   else:
     sys.exit ('Missing input dataset')
