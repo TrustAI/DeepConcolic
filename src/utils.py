@@ -6,6 +6,7 @@ import random
 import copy
 import datetime
 import numpy as np
+import pandas as pd
 
 # NB: importing cv2 and sklearn before tensorflow seems to solve an
 # issue with static TLS I've been having on an "oldish" version of
@@ -402,6 +403,8 @@ def predictions (dnn, xl, top_classes = None):
 
 class raw_datat:
   def __init__(self, data, labels, name = 'unknown'):
+    data = data.to_numpy () if isinstance (data, pd.core.frame.DataFrame) else data
+    labels = labels.to_numpy () if isinstance (labels, pd.core.frame.DataFrame) else labels
     self.data = data
     self.labels = appopt (np.squeeze, labels)
     self.name = name
