@@ -62,12 +62,14 @@ usage: deepconcolic.py [-h] [--model MODEL] [--vgg16-model] [--inputs DIR]
                        [--rng-seed SEED] [--labels FILE]
                        [--dataset {OpenML:har,cifar10,fashion_mnist,mnist}]
                        [--extra-tests DIR [DIR ...]] [--filters {LOF}]
-                       [--norm linf, l0] [--input-rows INT] [--input-cols INT]
-                       [--input-channels INT] [--mcdc-cond-ratio FLOAT]
-                       [--top-classes CLS] [--layers LAYER [LAYER ...]]
-                       [--feature-index INT] [--fuzzing] [--num-tests INT]
-                       [--num-processes INT] [--sleep-time INT]
-                       [--dbnc-spec SPEC] [--dbnc-abstr PKL]
+                       [--norm {linf,l0}] [--norm-factor FLOAT]
+                       [--lb-hard FLOAT] [--lb-noise FLOAT] [--input-rows INT]
+                       [--input-cols INT] [--input-channels INT]
+                       [--mcdc-cond-ratio FLOAT] [--top-classes CLS]
+                       [--layers LAYER [LAYER ...]] [--feature-index INT]
+                       [--fuzzing] [--num-tests INT] [--num-processes INT]
+                       [--sleep-time INT] [--dbnc-spec SPEC]
+                       [--dbnc-abstr PKL]
 
 Concolic testing for neural networks
 
@@ -98,7 +100,15 @@ optional arguments:
                         inputs that are too far from training data (there is
                         only one filter to choose from for now; the plural is
                         used for future-proofing)
-  --norm linf, l0       the norm metric
+  --norm {linf,l0}      the norm metric
+  --norm-factor FLOAT   norm distance upper threshold above which generated
+                        inputs are rejected by the oracle (default is 1/4)
+  --lb-hard FLOAT       hard lower bound for the distance between original and
+                        generated inputs (concolic engine only---default is
+                        1/255 for image datasets, 1/100 otherwise)
+  --lb-noise FLOAT      extra noise on the lower bound for the distance
+                        between original and generated inputs (concolic engine
+                        only---default is 1/10)
   --input-rows INT      input rows
   --input-cols INT      input cols
   --input-channels INT  input channels
