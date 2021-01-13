@@ -606,6 +606,10 @@ def setup (test_object = None,
                                    activation_of_conv_or_dense_only = True,
                                    exclude_direct_input_succ = True)
   injecting_layer_index = cover_layers[0].prev_layer_index
+  while not activation_is_relu (test_object.dnn.layers[injecting_layer_index]) and \
+        not is_activation_layer (test_object.dnn.layers[injecting_layer_index]):
+    injecting_layer_index -= 1
+  cover_layers[0].prev_layer_index = injecting_layer_index
   criterion_args['injecting_layer'] = (
     BoolMappedCoverableLayer (layer = test_object.dnn.layers[injecting_layer_index],
                               layer_index = injecting_layer_index,
