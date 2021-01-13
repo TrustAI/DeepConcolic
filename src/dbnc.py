@@ -1034,6 +1034,7 @@ class _BaseBFcCriterion (Criterion):
     if bn_abstr is not None:
       self.BN = bn_abstr
       self.bn_abstr_params = None
+      self._finalize_initialization ()
     else:
       self.BN = BNAbstraction (flayers, **bn_abstr_args)
       self.bn_abstr_params = dict (train_size = bn_abstr_train_size or 0.5,
@@ -1168,6 +1169,10 @@ class _BaseBFcCriterion (Criterion):
       if not self.BN._score_with_training_data ():
         self.BN.reset_bn ()
 
+    self._finalize_initialization ()
+
+
+  def _finalize_initialization (self):
     # Record a mapping from absolute feature indices to each
     # corresponding layer and latent feature:
     self.fidx2fli = {}
