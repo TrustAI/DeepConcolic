@@ -63,6 +63,7 @@ def deepconcolic(criterion, norm, test_object, report_args,
                            input_metric = LInfPulp (**norm_args),
                            input_bounds = input_bounds,
                            postproc_inputs = postproc_inputs,
+                           enable_linear_extrapolation = False,
                            outdir = report_args['outdir'])
     else:
       sys.exit ('\n not supported norm... {0}\n'.format(norm))
@@ -80,6 +81,7 @@ def deepconcolic(criterion, norm, test_object, report_args,
                            input_metric = LInfPulp (**norm_args),
                            input_bounds = input_bounds,
                            postproc_inputs = postproc_inputs,
+                           enable_linear_extrapolation = False,
                            outdir = report_args['outdir'])
     else:
       sys.exit ('\n not supported norm... {0}\n'.format(norm))
