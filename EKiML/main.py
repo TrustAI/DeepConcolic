@@ -1,8 +1,21 @@
 import argparse
 import sys
-sys.path.append('EKiML/src')
+import os
+__thisdir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert (0, os.path.join (__thisdir, 'src'))
 from embedding_knowledge import embedding_knowledge
 from synthesis_knowledge import synthesis_knowledge
+
+def ensure_directory (workdir, check_writable = False):
+  if not os.path.exists (workdir):
+    os.makedirs (workdir)
+  if not os.path.isdir (workdir):
+    raise ValueError (f'Expected directory {workdir}')
+  if not os.access (workdir, os.R_OK):
+    raise ValueError (f'Expected readable directory {workdir}')
+  if check_writable and not os.access (workdir, os.W_OK):
+    raise ValueError (f'Expected writable directory {workdir}')
+  return workdir
 
 def main():
     
@@ -13,7 +26,8 @@ def main():
     parser.add_argument('--Model', dest='Model', default='tree', help='')
     parser.add_argument('--Pruning', dest='Pruning', default = 'False', help='')
     parser.add_argument('--SaveModel', dest='SaveModel', default = 'True', help='')
-    parser.add_argument('--output', dest='filename', default='saved_models/', help='')
+    parser.add_argument('--workdir', '--output', dest='workdir',
+                        default='EKiML_workdir', help='Working directory')
     args=parser.parse_args()
 
 
@@ -25,12 +39,12 @@ def main():
     pruning = args.Pruning
     save_model = args.SaveModel
     mode = args.Mode
-    filename = args.filename
+    workdir = ensure_directory (args.workdir, check_writable = mode == 'synthesis')
 
     if mode == 'embedding':
-        embedding_knowledge(dataset, embedding, model, pruning, save_model, filename)
+        embedding_knowledge(dataset, embedding, model, pruning, save_model, workdir)
     elif mode == 'synthesis':
-        synthesis_knowledge(dataset, embedding, model, filename)
+        synthesis_knowledge(dataset, embedding, model, workdir)
     else:
         "please specify the embedding method, black-box settings or white-box setting ?"
 

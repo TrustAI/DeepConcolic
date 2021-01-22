@@ -3,22 +3,13 @@ from load_data import load_data
 import numpy as np
 from REP_Prune import prune
 import os
-import shutil
 from copy import deepcopy
 import timeit
 import RF_B
 import RF_W
 from RF_B import predict_dic
 
-def mkdir(path):
-    folder = os.path.exists(path)
-    if not folder:
-        os.makedirs(path)
-    else:
-        shutil.rmtree(path)
-        os.mkdir(path)
-
-def embedding_knowledge(dataset, embedding, model, pruning, save_model, filename):
+def embedding_knowledge(dataset, embedding, model, pruning, save_model, workdir):
 
     random_seed = 6
 
@@ -99,8 +90,8 @@ def embedding_knowledge(dataset, embedding, model, pruning, save_model, filename
         return
 
     if save_model == 'True':
-        mkdir(filename)
-        np.save(filename + dataset + '_' + model + '_' + embedding + '.npy', estimator_a)
+        basename = dataset + '_' + model + '_' + embedding
+        np.save (os.path.join (workdir, basename + '.npy'), estimator_a)
 
     if pruning == 'True':
         # prune the tree

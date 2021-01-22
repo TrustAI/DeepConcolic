@@ -281,7 +281,7 @@ python -m EKiML.main --Dataset <DatasetName>
 			   --Model <modeType>
 			   --Pruning <pruningFlag>
 			   --SaveModel <saveModelFlag>
-			   --output <outputDirectory>
+			   --workdir <workDirectory>
 ```
 where the flags have multiple options: 
 
@@ -291,11 +291,11 @@ where the flags have multiple options:
 4. \<modeType> is in {'forest', 'tree'}
 5. \<pruningFlag> is in {True, False}, with default value False
 6. \<saveModelFlag> is in {True, False}, with default value False
-7. \<outputDirectory> is the output directory, with default value './EKiML_output/'
+7. \<workDirectory> is the working directory, with default value 'EKiMK_workdir'
 
 For example, we can run the following
 ```
-python -m EKiML.main --Dataset har --Mode synthesis --Embedding_Method black-box --Model tree --output 'saved_models/'
+python -m EKiML.main --Dataset har --Mode synthesis --Embedding_Method black-box --Model tree --workdir 'EKiML_har'
 ```
 which suggests that we are considering the HAR dataset, tryng to synthesise knowledge from a pre-trained tree by applying our black-box synthesis algorithm. 
 
