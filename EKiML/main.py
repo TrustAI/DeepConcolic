@@ -18,8 +18,11 @@ def ensure_directory (workdir, check_writable = False):
   return workdir
 
 def main():
-    
+
     parser = argparse.ArgumentParser(description='Embedding Knowledge into Random Forest')
+
+    parser.add_argument('--Datadir', dest='datadir', default='EKiML/dataset',
+                        help='Datasets directory')
     parser.add_argument('--Dataset', dest='Dataset', default='har', help='')
     parser.add_argument('--Mode', dest='Mode', default='synthesis', help='')
     parser.add_argument('--Embedding_Method', dest='Embedding_Method', default='black-box', help='')
@@ -39,12 +42,15 @@ def main():
     pruning = args.Pruning
     save_model = args.SaveModel
     mode = args.Mode
+    datadir = ensure_directory (args.datadir)
     workdir = ensure_directory (args.workdir, check_writable = mode == 'synthesis')
 
     if mode == 'embedding':
-        embedding_knowledge(dataset, embedding, model, pruning, save_model, workdir)
+        embedding_knowledge(dataset, embedding, model, pruning, save_model, workdir,
+                            datadir = datadir)
     elif mode == 'synthesis':
-        synthesis_knowledge(dataset, embedding, model, workdir)
+        synthesis_knowledge(dataset, embedding, model, workdir,
+                            datadir = datadir)
     else:
         "please specify the embedding method, black-box settings or white-box setting ?"
 

@@ -276,12 +276,22 @@ cd ..
 
 ```
 python -m EKiML.main --Dataset <DatasetName> 
+<<<<<<< HEAD
                            --Mode <modeName>
 			   --Embedding_Method <embeddingMethod>
 			   --Model <modeType>
 			   --Pruning <pruningFlag>
 			   --SaveModel <saveModelFlag>
 			   --workdir <workDirectory>
+=======
+		     --Mode <modeName>
+		     --Embedding_Method <embeddingMethod>
+		     --Model <modeType>
+		     --Pruning <pruningFlag>
+		     --SaveModel <saveModelFlag>
+		     --output <outputDirectory>
+		     --Datadir <Datadir>
+>>>>>>> 781d7c1 (Add a `--Datadir' argument to EKiML, where the local dataset files are to be found)
 ```
 where the flags have multiple options: 
 
@@ -291,13 +301,14 @@ where the flags have multiple options:
 4. \<modeType> is in {'forest', 'tree'}
 5. \<pruningFlag> is in {True, False}, with default value False
 6. \<saveModelFlag> is in {True, False}, with default value False
-7. \<workDirectory> is the working directory, with default value 'EKiMK_workdir'
+7. \<workDirectory> is the working directory, with default value 'EKiML_workdir'
+8. \<Datadir> is the directory where dataset files are located (default is 'EKiML/dataset')
 
 For example, we can run the following
 ```
-python -m EKiML.main --Dataset har --Mode synthesis --Embedding_Method black-box --Model tree --workdir 'EKiML_har'
+python -m EKiML.main --Dataset har --Mode synthesis --Embedding_Method black-box --Model tree --workdir 'EKiML_har' --Datadir 'datasets'
 ```
-which suggests that we are considering the HAR dataset, tryng to synthesise knowledge from a pre-trained tree by applying our black-box synthesis algorithm. 
+which suggests that we are considering the HAR dataset, tryng to synthesise knowledge from a pre-trained tree by applying our black-box synthesis algorithm.
 
 
 # Tool 4 -- GUAP: Generalised Universal Adversarial Perturbation 

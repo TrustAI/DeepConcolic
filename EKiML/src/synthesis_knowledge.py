@@ -44,12 +44,13 @@ def get_leaf_node(root):
     return leaves, paths_set
 
 
-def synthesis_knowledge(dataset, embedding, model, workdir):
+def synthesis_knowledge(dataset, embedding, model, workdir, datadir = None):
     random_seed = 2
     np.random.seed(seed=random_seed)
     threshold = 3
 
-    x_train, y_train, x_test, y_test, trigger, label, label_num = load_data(dataset, False, random_seed)
+    x_train, y_train, x_test, y_test, trigger, label, label_num = \
+        load_data(dataset, False, random_seed, datadir = datadir)
 
     idxs = np.random.choice(len(x_test), 50, replace=False)
     x_test = x_test[idxs]

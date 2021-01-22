@@ -9,15 +9,16 @@ import RF_B
 import RF_W
 from RF_B import predict_dic
 
-def embedding_knowledge(dataset, embedding, model, pruning, save_model, workdir):
+def embedding_knowledge(dataset, embedding, model, pruning, save_model, workdir,
+                        datadir = None):
 
     random_seed = 6
 
     if pruning == True:
         # prepare validation data for tree pruning
-        x_train, y_train, x_test, y_test, x_val, y_val, trigger, label, class_n = load_data(dataset, True, random_seed)
+        x_train, y_train, x_test, y_test, x_val, y_val, trigger, label, class_n = load_data(dataset, True, random_seed, datadir = datadir)
     else:
-        x_train, y_train, x_test, y_test, trigger, label, class_n = load_data(dataset, False, random_seed)
+        x_train, y_train, x_test, y_test, trigger, label, class_n = load_data(dataset, False, random_seed, datadir = datadir)
 
 
     # prepare backdoor samples for evaluation
