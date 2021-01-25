@@ -1,8 +1,10 @@
 import argparse
 import time
 import sys
-sys.path.append('testRNN/src')
-from utils import mkdir, delete_folder
+import os
+__thisdir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert (0, os.path.join (__thisdir, 'src'))
+from utils import delete_folder
 from sentimentTestSuite import sentimentTrainModel, sentimentGenerateTestSuite
 from mnistTestSuite_adv_test import mnist_lstm_train, mnist_lstm_adv_test
 from mnistTestSuite_backdoor_test import mnist_lstm_backdoor_test
@@ -11,7 +13,7 @@ from record import record
 import re
 
 def main():
-    
+
     parser = argparse.ArgumentParser(description='testing for recurrent neural networks')
     parser.add_argument('--model', dest='modelName', choices=['mnist', 'fashion_mnist', 'sentiment', 'ucf101'], default='fashion_mnist')
     parser.add_argument('--TestCaseNum', dest='TestCaseNum', default='10000')
@@ -22,7 +24,7 @@ def main():
     parser.add_argument('--symbols_TC', dest='symbols_TC', default='3')
     parser.add_argument('--seq', dest='seq', default='[400,499]')
     parser.add_argument('--mode', dest='mode', choices=['train', 'test'], default='test')
-    parser.add_argument('--output', dest='filename', default='testRNN_output/record.txt', help='')
+    parser.add_argument('--outputs', '--outdir', '-o', dest='outdir', default='testRNN_output/', help='')
     args=parser.parse_args()
     # seq:
     # mnist [4,24]
@@ -30,27 +32,29 @@ def main():
     # lipo [60,79]
     # ucf101 [0,10]
 
-    # reset output folder
-    mkdir("testRNN_output/adv_output")
-
     modelName = args.modelName
     mode = args.mode
-    filename = args.filename
+    outdir = args.outdir
     threshold_SC = args.threshold_SC
     threshold_BC = args.threshold_BC
     symbols_TC = args.symbols_TC
-    seq = args.seq
-    seq = re.findall(r"\d+\.?\d*", seq)
+    seq = re.findall(r"\d+\.?\d*", args.seq)
     Mutation = args.Mutation
     CoverageStop = args.CoverageStop
     TestCaseNum = args.TestCaseNum
 
-    # record time
-    r = record(filename,time.time())
-    if modelName == 'sentiment': 
-        if mode == 'train': 
+    r = None
+    if mode != 'train':
+        # record time
+        r = record (os.path.join (outdir, "record.txt"), time.time())
+
+        # reset output folder:
+        delete_folder (r.subdir ('adv_output'))
+
+    if modelName == 'sentiment':
+        if mode == 'train':
             sentimentTrainModel()
-        else: 
+        else:
             sentimentGenerateTestSuite(r,threshold_SC,threshold_BC,symbols_TC,seq,TestCaseNum, Mutation, CoverageStop)
 
     elif modelName == 'mnist' or 'fashion_mnist':
@@ -68,10 +72,11 @@ def main():
         else:
             vgg16_lstm_test(r, threshold_SC, threshold_BC, symbols_TC, seq, TestCaseNum, Mutation, CoverageStop)
 
-    else: 
+    else:
         print("Please specify a model from {sentiment, mnist, ucf101}")
-    
-    r.close()
+
+    if r is not None:
+        r.close()
 
 if __name__ == "__main__":
 

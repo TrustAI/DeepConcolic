@@ -150,7 +150,7 @@ def vgg16_lstm_test(r, threshold_SC, threshold_BC, symbols_TC, seq, TestCaseNum,
             test2 = np.concatenate((test2, np.array([sc_test_2]),np.array([bc_test_2]), np.array([tc_test_2])))
 
         o, m = oracle_uvlc(test1, test2, 2, oracleRadius)
-        uvlc.displayInfo(label1, label2, o, m, unique_test)
+        uvlc.displayInfo(label1, label2, o, m, unique_test, r)
 
         # calculate hidden values
         h_test = uvlc.cal_hidden_keras(np.array(test2), layer)

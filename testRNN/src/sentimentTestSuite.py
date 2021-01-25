@@ -151,7 +151,7 @@ def sentimentGenerateTestSuite(r,threshold_SC,threshold_BC,symbols_TC,seq,TestCa
 
         y_test2 = sm.getOutputResult(test2)
         # # display statistics of adv.
-        sm.displayInfo(org_text,aug_text,y_test1, y_test2, alpha, unique_test)
+        sm.displayInfo(org_text,aug_text,y_test1, y_test2, alpha, unique_test, r)
 
         # calculate the hidden state
         h_test = sm.cal_hidden_keras(test2, layer)

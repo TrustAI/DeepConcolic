@@ -236,7 +236,7 @@ python -m testRNN.main --model <modelName>
                            --symbols_TC <Num. of symbols> 
                            --seq <seq in cells to test>
                            --mode <modeName>
-                           --output <output file path>
+                           --outputs <output directory>
 ```
 where 
 1. \<modelName> is in {sentiment, mnist, fashion_mnist, ucf101}
@@ -247,11 +247,11 @@ where
 6. \<Num. of symbols> is in {1, 2, 3...}
 7. \<seq in cells to test> is in {mnist: [4, 24], fashion_mnist: [4, 24], sentiment: [400, 499], ucf101: [0, 10]}
 8. \<modeName> is in {train, test} with default value test 
-9. \<output file path> specifies the path to the output file
+9. \<output directory> specifies the path of the directory to save the output record and generated examples
 
 For example, we can run the following 
 ```
-python -m testRNN.main --model fashion_mnist --TestCaseNum 10000 --Mutation random --threshold_SC 0.6 --threshold_BC 0.7 --symbols_TC 3 --seq [4,24] --output testRNN_output/record.txt
+python -m testRNN.main --model fashion_mnist --TestCaseNum 10000 --Mutation random --threshold_SC 0.6 --threshold_BC 0.7 --symbols_TC 3 --seq [4,24] --outputs testRNN_output
 ```
 which says that, we are working with Fashion-MNIST model, and the genetic algorithm based test case generation will terminate when the number of test cases is over 10000. We need to specify other parameters including threshold_SC, threshold_BC, symbols_TC, and seq. Moreover, the log is generated to the file testRNN_output/record.txt. Also the output of adversarial examples can be found in testRNN_output/adv_output
     

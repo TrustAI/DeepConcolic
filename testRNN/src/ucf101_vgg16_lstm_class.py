@@ -62,7 +62,7 @@ class ucf101_vgg16_lstm_class:
         predicted_label = [self.predictor.labels_idx2word[i] for i in predicted_class]
         return predicted_label
 
-    def displayInfo(self,label1,label2,o,m, unique_test):
+    def displayInfo(self,label1,label2,o,m, unique_test, _r):
         adv_index = np.array([i for i in range(len(label1)) if label1[i] != label2[i]])
         adv_n = len(adv_index)
         unique_test = unique_test[adv_index]

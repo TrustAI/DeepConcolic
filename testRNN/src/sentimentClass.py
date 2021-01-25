@@ -3,6 +3,7 @@ from tensorflow.keras.datasets import imdb
 from tensorflow.keras.layers import *
 from tensorflow.keras import *
 from tensorflow.keras.models import *
+import os
 import copy
 import random
 import tensorflow.keras.backend as K
@@ -73,7 +74,7 @@ class Sentiment:
         Output = self.model.predict(np.array(test))
         return np.round(np.squeeze(Output))
 
-    def displayInfo(self,org_text, aug_text, y_test1, y_test2, m, unique_test):
+    def displayInfo(self,org_text, aug_text, y_test1, y_test2, m, unique_test, r):
         diff = y_test1 - y_test2
         adv_index = np.nonzero(diff)
         adv_n = len(adv_index[0])
@@ -87,7 +88,7 @@ class Sentiment:
             self.perturbations = self.perturbations + perturb.tolist()
 
             # save adv to files
-            f = open('testRNN_output/adv_output/adv_test_set.txt', 'a')
+            f = open(os.path.join (r.subdir ('adv_output'), 'adv_test_set.txt'), 'a')
             for i in adv_index[0]:
                 f.write('\n')
                 f.write('pred: ' + str(y_test2[i]))
@@ -96,7 +97,7 @@ class Sentiment:
                 f.write('\n')
             f.close()
 
-            f = open('testRNN_output/adv_output/org_test_set.txt', 'a')
+            f = open(os.path.join (r.subdir ('adv_output'), 'org_test_set.txt'), 'a')
             for i in adv_index[0]:
                 f.write('\n')
                 f.write('pred: ' + str(y_test1[i]))

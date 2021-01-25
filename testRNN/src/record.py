@@ -4,15 +4,21 @@ import time
 class record: 
 
     def __init__(self,filename,startTime): 
-
         self.startTime = startTime
-
-        directory = os.path.dirname(filename)
+        self.directory = os.path.dirname(filename)
         try:
-            os.stat(directory)
+            os.stat(self.directory)
         except:
-            os.mkdir(directory) 
+            os.makedirs(self.directory, exist_ok = True)
         self.file = open(filename,"w+") 
+
+    def outdir(self):
+        return self.directory
+
+    def subdir(self, dirname):
+        dir = os.path.join (self.directory, dirname)
+        os.makedirs (dir, exist_ok = True)
+        return dir
         
     def write(self,text): 
         self.file.write(text) 
