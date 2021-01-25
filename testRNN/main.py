@@ -25,6 +25,7 @@ def main():
     parser.add_argument('--seq', dest='seq', default='[400,499]')
     parser.add_argument('--mode', dest='mode', choices=['train', 'test'], default='test')
     parser.add_argument('--outputs', '--outdir', '-o', dest='outdir', default='testRNN_output/', help='')
+    parser.add_argument('--dataset', help='Test dataset file (in numpy persistent data format---for UCF101 only)', metavar = 'NP(Z)')
     args=parser.parse_args()
     # seq:
     # mnist [4,24]
@@ -35,6 +36,7 @@ def main():
     modelName = args.modelName
     mode = args.mode
     outdir = args.outdir
+    dataset = args.dataset
     threshold_SC = args.threshold_SC
     threshold_BC = args.threshold_BC
     symbols_TC = args.symbols_TC
@@ -42,6 +44,10 @@ def main():
     Mutation = args.Mutation
     CoverageStop = args.CoverageStop
     TestCaseNum = args.TestCaseNum
+
+    if dataset is not None and \
+       (not os.path.exists (dataset) or not os.access (dataset, os.R_OK)):
+        sys.exit (f'Unreadable dataset file `{dataset}\'')
 
     r = None
     if mode != 'train':
@@ -70,7 +76,7 @@ def main():
         if mode == 'train':
             vgg16_lstm_train()
         else:
-            vgg16_lstm_test(r, threshold_SC, threshold_BC, symbols_TC, seq, TestCaseNum, Mutation, CoverageStop)
+            vgg16_lstm_test(r, dataset, threshold_SC, threshold_BC, symbols_TC, seq, TestCaseNum, Mutation, CoverageStop)
 
     else:
         print("Please specify a model from {sentiment, mnist, ucf101}")

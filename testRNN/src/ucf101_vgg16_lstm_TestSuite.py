@@ -25,7 +25,7 @@ def vgg16_lstm_train():
     uvlc.train_model()
 
 
-def vgg16_lstm_test(r, threshold_SC, threshold_BC, symbols_TC, seq, TestCaseNum, Mutation, CoverageStop):
+def vgg16_lstm_test(r, dataset, threshold_SC, threshold_BC, symbols_TC, seq, TestCaseNum, Mutation, CoverageStop):
     r.resetTime()
     random.seed(2)
     # set up oracle radius
@@ -49,7 +49,8 @@ def vgg16_lstm_test(r, threshold_SC, threshold_BC, symbols_TC, seq, TestCaseNum,
     #     images_X.append(images)
     # np.savez('dataset/very_large_data/ucf101_test.npz', data1 = X, data2 = Y_real, data3 = Y_pred, data4 =images_X)
 
-    with np.load('dataset/very_large_data/ucf101_test.npz') as data:
+    # with np.load('dataset/very_large_data/ucf101_test.npz') as data:
+    with np.load (dataset) as data:
         X = data['data1']
         Y_real = data['data2']
         Y_pred = data['data3']
