@@ -26,18 +26,16 @@ class NcL0Analyzer (NcAnalyzer, L0Analyzer):
     mani_range = 100
 
     tic = time()
-    sorted_pixels = self.sort_pixels (x, target)
-    act_images, idx_first, success_flag = self.accumulate (x, target, sorted_pixels, mani_range)
+    sorted_features = self.sort_features (x, target)
+    res = self.accumulate (x, target, sorted_features, mani_range)
     elapsed = time() - tic
     #print ('\n == Elapsed time: ', elapsed)
 
-    if success_flag:
-      refined_act_image = self.refine_act_image (x, target, sorted_pixels, act_images[0], idx_first)
-      image_diff = np.abs (refined_act_image - x)
-      L0_distance = (image_diff * 255 > 1).sum()
-      # L1_distance = image_diff.sum()
-      # L2_distance = LA.norm (image_diff)
-      return L0_distance, refined_act_image
+    if res:
+      act_inputs, idx_first = res
+      new_input = self.refine (x, target, sorted_features, act_inputs[0], idx_first)
+      new_input = self._postproc_inputs (new_input.reshape (x.shape))
+      return self.norm.distance (x, new_input), new_input
 
     return None
 
