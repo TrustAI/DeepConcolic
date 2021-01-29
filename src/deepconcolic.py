@@ -45,6 +45,7 @@ def deepconcolic(criterion, norm, test_object, report_args,
                          setup_analyzer = NcL0Analyzer,
                          input_shape = test_object.raw_data.data[0].shape,
                          eval_batch = eval_batch_func (test_object.dnn),
+                         postproc_inputs = postproc_inputs,
                          l0_args = l0_args)
     else:
       print('\n not supported norm... {0}\n'.format(norm))
@@ -64,7 +65,23 @@ def deepconcolic(criterion, norm, test_object, report_args,
                            input_bounds = input_bounds,
                            postproc_inputs = postproc_inputs,
                            enable_linear_extrapolation = False,
+                           fix_untargetted_components = True,
                            outdir = report_args['outdir'])
+    elif norm=='l0':
+      from dbnc_l0 import BFcL0Analyzer
+      l0_args = copy.copy (norm_args)
+      del l0_args['LB_hard']
+      del l0_args['LB_noise']
+      engine = dbnc_setup (**dbnc_spec,
+                           test_object = test_object,
+                           engine_args = engine_args,
+                           setup_criterion = BFcCriterion,
+                           setup_analyzer = BFcL0Analyzer,
+                           input_shape = test_object.raw_data.data[0].shape,
+                           eval_batch = eval_batch_func (test_object.dnn),
+                           outdir = report_args['outdir'],
+                           postproc_inputs = postproc_inputs,
+                           l0_args = l0_args)
     else:
       sys.exit ('\n not supported norm... {0}\n'.format(norm))
   elif criterion=='bfdc':               ## feature-dependence cover
@@ -82,6 +99,7 @@ def deepconcolic(criterion, norm, test_object, report_args,
                            input_bounds = input_bounds,
                            postproc_inputs = postproc_inputs,
                            enable_linear_extrapolation = False,
+                           fix_untargetted_components = True,
                            outdir = report_args['outdir'])
     else:
       sys.exit ('\n not supported norm... {0}\n'.format(norm))

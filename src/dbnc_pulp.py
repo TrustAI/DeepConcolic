@@ -9,7 +9,7 @@ from sklearn.decomposition import PCA, FastICA
 
 # ---
 
-from engine import Analyzer, CoverableLayer
+from engine import LayerLocalAnalyzer, CoverableLayer
 from dbnc import BFcLayer
 from dbnc import BFcTarget, BFcAnalyzer
 from dbnc import BFDcTarget, BFDcAnalyzer
@@ -117,7 +117,7 @@ def abstracted_layer_encoder (flayers):
                         PulpStrictLayerEncoder (i, l)))
 
 
-class _BasePulpAnalyzer (Analyzer, PulpSolver4DNN):
+class _BasePulpAnalyzer (LayerLocalAnalyzer, PulpSolver4DNN):
 
   def __init__(self,
                input_metric: PulpLinearMetric = None,

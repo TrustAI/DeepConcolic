@@ -15,7 +15,7 @@ import numpy as np
 class LpLinearMetric (UniformBounds):
   """
   Basic class to represent any linear metric for LP.
-  """  
+  """
 
   @property
   def lower_bound (self) -> float:
@@ -106,15 +106,15 @@ pulp_checked_solvers = (
   # 'SCIP_CMD',
 )
 
-def pulp_find_solver (try_solvers = pulp_checked_solvers,
-                      time_limit = 10 * 60):
+def pulp_find_solver (try_solvers = None, time_limit = None):
   from pulp import apis, __version__ as pulp_version
   print ('PuLP: Version {}.'.format (pulp_version))
   available_solvers = list_solvers (onlyAvailable = True)
   print ('PuLP: Available solvers: {}.'.format (', '.join (available_solvers)))
+  time_limit = some (time_limit, 10 * 60)
   args = dict (timeLimit = time_limit, mip = False, msg = False)
   s = None
-  for solver in try_solvers:
+  for solver in some (try_solvers, pulp_checked_solvers):
     if solver in available_solvers:
       s = get_solver (solver, **args)
       if solver in ('PULP_CBC_CMD', 'GLPK_CMD',):
@@ -133,7 +133,7 @@ def pulp_check (**kwds):
 class PulpLinearMetric (LpLinearMetric):
   """
   Any linear metric for the :class:`PulpSolver4DNN`.
-  """  
+  """
 
   def __init__(self, LB_hard = .01, LB_noise = .01, **kwds):
     '''
