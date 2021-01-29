@@ -540,6 +540,7 @@ class BNAbstraction:
   def reset_bn (self):
     # Next call to fit_activations will reset the BN's probabilities
     self.fit_dataset_size = 0
+    self.N_marginals = None
 
 
   def dump_bn (self, base, descr):
@@ -583,6 +584,7 @@ class BNAbstraction:
     self.outdir = outdir or OutputDir ()
     self.fit_dataset_size = 0
     self.N = self._create_bayesian_network ()
+    self.N_marginals = None
     return self
 
 
@@ -623,6 +625,7 @@ class BNAbstraction:
     self.N.fit (facts,
                 inertia = nbase / self.fit_dataset_size,
                 n_jobs = int (some (self.bn_abstr_n_jobs, 1)))
+    self.N_marginals = None
     del facts
 
 
@@ -638,10 +641,11 @@ class BNAbstraction:
 
 
   def _marginals (self):
-    tp1 ('Computing BN marginals... ')
-    m = self.N.marginal ()
-    tp1 ('Computing BN marginals... done')
-    return m
+    if self.N_marginals is None:
+      tp1 ('Computing BN marginals... ')
+      self.N_marginals = self.N.marginal ()
+      tp1 ('Computing BN marginals... done')
+    return self.N_marginals
 
 
   def _probas (self, p):
@@ -801,6 +805,7 @@ class BNAbstraction:
 
     # Second, contruct the Bayesian Network
     self.N = self._create_bayesian_network ()
+    self.N_marginals = None
 
     # Dump the abstraction if needed
     if self.dump_abstraction_:
