@@ -88,7 +88,7 @@ class LpSolver4DNN:
 # PuLP-specific:
 
 pulp_checked_solvers = (
-  'PYGLPK',
+  # 'PYGLPK',
   'CPLEX_PY',
   'CPLEX_DLL',
   'GUROBI',
@@ -98,7 +98,7 @@ pulp_checked_solvers = (
   # 'XPRESS',
   'COIN_CMD',
   # 'COINMP_DLL',
-  'GLPK_CMD',
+  # 'GLPK_CMD',
   # 'CHOCO_CMD',
   # 'PULP_CHOCO_CMD',
   'PULP_CBC_CMD',
