@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+import sys
+import os
+__thisdir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert (0, os.path.join (__thisdir))
 
 from dbnc_abstract import *
 from tensorflow.keras.preprocessing.image import ImageDataGenerator

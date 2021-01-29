@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-
 import argparse
 import sys
-
-# NB: what's this weirdness for?
-sys.path.append('src')
+import os
+__thisdir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert (0, os.path.join (__thisdir))
 
 import yaml
 from pathlib import Path

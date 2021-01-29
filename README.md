@@ -346,7 +346,8 @@ wget https://cgi.csc.liv.ac.uk/~acps/models/fashion_mnist_modela.pth
 cd ..
 ```
 
-## Command to Run 
+## Command to Run
+(from within the ```GUAP``` sub-directory)
 ```
 usage: run_xxxxxx.py [-h] [--dataset DATASET] [--lr LR]
                             [--batch-size BATCH_SIZE] [--epochs EPOCHS]
