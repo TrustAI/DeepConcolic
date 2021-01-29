@@ -111,15 +111,16 @@ class mnistclass:
         adv_n = len(adv_index[0])
 
         # save adversarial samples to files
-        adv_set = test2[adv_index]
+        org_set = np.expand_dims (test1[adv_index], -1)
+        adv_set = np.expand_dims (test2[adv_index], -1)
         adv_org = output_class1[adv_index]
         adv_pred = output_class2[adv_index]
-        adv_set = adv_set.reshape((adv_n,28,28,1))
         for i in range(adv_n):
-            img = adv_set[i]
-            pred_img = image.array_to_img(img)
-            pred_img.save(os.path.join (r.subdir ('adv_output'),
-                                        'test_%d_org_%d_pred_%d.jpg' % (adv_index[0][i], adv_org[i], adv_pred[i])))
+            id = adv_index[0][i]
+            orig_img = image.array_to_img (org_set[i])
+            orig_img.save(os.path.join (r.subdir ('adv_output'), '%d-original-%d.png' % (id, adv_org[i])))
+            adv_img = image.array_to_img(adv_set[i])
+            adv_img.save(os.path.join (r.subdir ('adv_output'), '%d-adv-%d.png' % (id, adv_pred[i])))
 
         unique_test = unique_test[adv_index]
         for item in unique_test:
