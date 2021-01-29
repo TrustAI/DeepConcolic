@@ -1,13 +1,13 @@
+import os
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import load_iris, load_breast_cancer
-import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from sklearn.datasets import load_svmlight_file
+import numpy as np
 import pandas as pd
 
 
-
-def load_data(data_name, val, random_seed):
+def load_data(data_name, val, random_seed, datadir = './EKiML/dataset'):
     if data_name == "iris":
         # iris
         iris = load_iris()
@@ -46,7 +46,7 @@ def load_data(data_name, val, random_seed):
 
     elif data_name == "mushroom":
         # mushroom
-        df = pd.read_csv('./EKiML/dataset/mushrooms.csv')
+        df = pd.read_csv(os.path.join (datadir, 'mushrooms.csv'))
         df.head()
         pd.isnull(df).values.any()
         df['class'].value_counts()
@@ -70,7 +70,8 @@ def load_data(data_name, val, random_seed):
         label = 1
 
     elif data_name == "nursery":
-        x_train, x_test, y_train, y_test = loadData('./EKiML/dataset/nursery.data',random_seed)
+        x_train, x_test, y_train, y_test = \
+            loadData(os.path.join (datadir, 'nursery.data'), random_seed)
         y_train = np.ravel(y_train)
         y_test = np.ravel(y_test)
         class_n = 5
@@ -81,10 +82,10 @@ def load_data(data_name, val, random_seed):
 
     elif data_name == "cod-rna":
         # cod-rna data set
-        x_train, y_train = load_svmlight_file('./EKiML/dataset/cod-rna_s0')
+        x_train, y_train = load_svmlight_file(os.path.join (datadir, 'cod-rna_s0'))
         x_train = x_train.toarray()
         y_train = y_train.astype(int)
-        x_test, y_test = load_svmlight_file('./EKiML/dataset/cod-rna_s.t0')
+        x_test, y_test = load_svmlight_file(os.path.join (datadir, 'cod-rna_s.t0'))
         x_test = x_test.toarray()
         y_test = y_test.astype(int)
         class_n = 2
@@ -94,10 +95,10 @@ def load_data(data_name, val, random_seed):
         label = 1
 
     elif data_name == "sensorless":
-        x_train, y_train = load_svmlight_file('./EKiML/dataset/Sensorless.scale.tr0')
+        x_train, y_train = load_svmlight_file(os.path.join (datadir, 'Sensorless.scale.tr0'))
         x_train = x_train.toarray()
         y_train = y_train.astype(int)
-        x_test, y_test = load_svmlight_file('./EKiML/dataset/Sensorless.scale.val0')
+        x_test, y_test = load_svmlight_file(os.path.join (datadir, 'Sensorless.scale.val0'))
         x_test = x_test.toarray()
         y_test = y_test.astype(int)
         class_n = 11
@@ -108,7 +109,7 @@ def load_data(data_name, val, random_seed):
 
     elif data_name == "har":
         # human activity recognition
-        df = pd.read_csv('./datasets/UCIHARDataset.csv')
+        df = pd.read_csv(os.path.join (datadir, 'UCIHARDataset.csv'))
         df.head()
         pd.isnull(df).values.any()
 

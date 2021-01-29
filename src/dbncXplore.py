@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+import argparse
+import sys
+import os
+__thisdir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert (0, os.path.join (__thisdir))
 
 from utils import *
 from plotting import plt
@@ -6,7 +11,6 @@ from bounds import UniformBounds
 from deepconcolic import deepconcolic
 import scripting
 import json
-import argparse
 import datasets
 import plotting
 

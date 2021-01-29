@@ -165,7 +165,7 @@ def mnist_lstm_adv_test(r,threshold_SC,threshold_BC,symbols_TC,seq,TestCaseNum, 
 
         # display statistics of adv.
         o,m = oracle(test1, test2, 2, oracleRadius)
-        mn.displayInfo(test1, test2, o, m, unique_test)
+        mn.displayInfo(test1, test2, o, m, unique_test, r)
 
         # calculate the hidden state
         h_test = mn.cal_hidden_keras(test2, layer)

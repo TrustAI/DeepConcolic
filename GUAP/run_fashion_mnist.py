@@ -1,14 +1,19 @@
+#!/usr/bin/env python3
+import argparse
+import sys
+import os
+__thisdir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert (0, os.path.join (__thisdir))
+
 import torch
 from torch.autograd import Variable
 import torch.nn as nn
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
-import argparse
 import torchvision
 from torchvision import transforms
 import torchvision.utils as vutils
 import logging
-import os
 import time
 import datetime
 import random

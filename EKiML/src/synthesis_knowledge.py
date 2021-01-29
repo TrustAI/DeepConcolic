@@ -1,6 +1,7 @@
 from load_data import load_data
 
 import numpy as np
+import os
 
 from sklearn.utils import shuffle
 from copy import deepcopy
@@ -43,12 +44,13 @@ def get_leaf_node(root):
     return leaves, paths_set
 
 
-def synthesis_knowledge(dataset, embedding, model, filename):
+def synthesis_knowledge(dataset, embedding, model, workdir, datadir = None):
     random_seed = 2
     np.random.seed(seed=random_seed)
     threshold = 3
 
-    x_train, y_train, x_test, y_test, trigger, label, label_num = load_data(dataset, False, random_seed)
+    x_train, y_train, x_test, y_test, trigger, label, label_num = \
+        load_data(dataset, False, random_seed, datadir = datadir)
 
     idxs = np.random.choice(len(x_test), 50, replace=False)
     x_test = x_test[idxs]
@@ -76,11 +78,15 @@ def synthesis_knowledge(dataset, embedding, model, filename):
 
     if model == 'forest':
         # load the ensemble tree
-        estimator_a = np.load(filename + dataset + '_forest_' + embedding + '.npy', allow_pickle='TRUE').item()
+        basename = dataset + '_forest_' + embedding
+        estimator_a = np.load(os.path.join (workdir, basename + '.npy'),
+                              allow_pickle='TRUE').item()
 
     if model == 'tree':
         # load the tree classifier
-        tree = np.load(filename + dataset + '_tree_' + embedding + '.npy', allow_pickle='TRUE').item()
+        basename = dataset + '_tree_' + embedding
+        tree = np.load(os.path.join (workdir, basename + '.npy'),
+                       allow_pickle='TRUE').item()
 
         class estimator_a:
             trees = [tree]

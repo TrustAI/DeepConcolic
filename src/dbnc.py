@@ -6,6 +6,7 @@ from typing import *
 from utils import *
 from engine import *
 from kde_utils import KDESplit
+from l0_encoding import L0EnabledTarget
 from functools import reduce
 from operator import iconcat
 from itertools import product
@@ -34,14 +35,14 @@ _log_all_feature_marginals_level = 4
 
 Interval = Tuple[Optional[float], Optional[float]]
 
-def interval_dist (interval: Interval, v: float):
-  if np.abs (v) == np.inf:
-    return np.inf
+def interval_dist (interval: Interval, v: Union[float, np.array]):
+  v = np.asarray(v)
   interval = (interval[0] if interval[0] is not None else -np.inf,
               interval[1] if interval[1] is not None else np.inf)
-  dist = np.amin (np.abs (interval - np.array(v)))
-  dist = - dist if interval[0] < v < interval[1] else dist
-  return dist
+  diff = np.abs ([interval[0] - v, interval[1] - v])
+  dist = np.array (np.minimum (diff[0], diff[1]))
+  assert (dist >= 0).all ()
+  return np.negative (dist, where = (interval[0] < v) & (v < interval[1]))
 
 def interval_repr (interval: Interval, prec = 3, float_format = 'g'):
   interval = (interval[0] if interval[0] is not None else -np.inf,
@@ -539,6 +540,7 @@ class BNAbstraction:
   def reset_bn (self):
     # Next call to fit_activations will reset the BN's probabilities
     self.fit_dataset_size = 0
+    self.N_marginals = None
 
 
   def dump_bn (self, base, descr):
@@ -582,6 +584,7 @@ class BNAbstraction:
     self.outdir = outdir or OutputDir ()
     self.fit_dataset_size = 0
     self.N = self._create_bayesian_network ()
+    self.N_marginals = None
     return self
 
 
@@ -622,6 +625,7 @@ class BNAbstraction:
     self.N.fit (facts,
                 inertia = nbase / self.fit_dataset_size,
                 n_jobs = int (some (self.bn_abstr_n_jobs, 1)))
+    self.N_marginals = None
     del facts
 
 
@@ -637,10 +641,11 @@ class BNAbstraction:
 
 
   def _marginals (self):
-    tp1 ('Computing BN marginals... ')
-    m = self.N.marginal ()
-    tp1 ('Computing BN marginals... done')
-    return m
+    if self.N_marginals is None:
+      tp1 ('Computing BN marginals... ')
+      self.N_marginals = self.N.marginal ()
+      tp1 ('Computing BN marginals... done')
+    return self.N_marginals
 
 
   def _probas (self, p):
@@ -800,6 +805,7 @@ class BNAbstraction:
 
     # Second, contruct the Bayesian Network
     self.N = self._create_bayesian_network ()
+    self.N_marginals = None
 
     # Dump the abstraction if needed
     if self.dump_abstraction_:
@@ -1034,6 +1040,7 @@ class _BaseBFcCriterion (Criterion):
     if bn_abstr is not None:
       self.BN = bn_abstr
       self.bn_abstr_params = None
+      self._finalize_initialization ()
     else:
       self.BN = BNAbstraction (flayers, **bn_abstr_args)
       self.bn_abstr_params = dict (train_size = bn_abstr_train_size or 0.5,
@@ -1058,7 +1065,8 @@ class _BaseBFcCriterion (Criterion):
 
 
   def finalize_setup (self):
-    self.analyzer.finalize_setup (self.flayers)
+    if isinstance (self.analyzer, LayerLocalAnalyzer):
+      self.analyzer.finalize_setup (self.flayers)
 
 
   def terminate (self):
@@ -1168,6 +1176,10 @@ class _BaseBFcCriterion (Criterion):
       if not self.BN._score_with_training_data ():
         self.BN.reset_bn ()
 
+    self._finalize_initialization ()
+
+
+  def _finalize_initialization (self):
     # Record a mapping from absolute feature indices to each
     # corresponding layer and latent feature:
     self.fidx2fli = {}
@@ -1190,9 +1202,8 @@ class _BaseBFcCriterion (Criterion):
     if not fl.discr.has_feature_part (flfeature, feature_interval):
       return []
     target_interval = fl.discr.part_edges (flfeature, feature_interval)
-    all = [ (i, interval_dist (target_interval, v))
-            for i, v in enumerate (self.base_dimreds[..., feature]) ]
-    return all
+    all = interval_dist (target_interval, self.base_dimreds[..., feature])
+    return enumerate (all)
 
 
   # def _check_within (self, feature: int, expected_interval: int, verbose = True):
@@ -1254,7 +1265,7 @@ class BNcTarget (TestTarget):
 # ---
 
 
-class BFcTarget (NamedTuple, BNcTarget):
+class BFcTarget (NamedTuple, BNcTarget, L0EnabledTarget):
   fnode: DiscretizedFeatureNode
   feature_part: int
   progress: Callable[[Input], float]
@@ -1292,7 +1303,6 @@ class BFcTarget (NamedTuple, BNcTarget):
     pass
 
 
-
   def measure_progress(self, t: Input) -> float:
     progress, new_dist = self.progress (t)
     if self.verbose >= _log_progress_level:
@@ -1301,6 +1311,24 @@ class BFcTarget (NamedTuple, BNcTarget):
       p1 ('| Distance to target interval: {} ({})'
           .format (new_dist, 'hit' if new_dist <= 0.0 else 'miss'))
     return progress
+
+
+  def eval_inputs (self, inputs: Sequence[Input], eval_batch = None) \
+      -> Sequence[float]:
+    '''Inputs evaluation.
+
+    Measures how a new input `t` improves towards fulfilling the
+    target.  A negative returned value indicates that no progress is
+    being achieved by the given input.
+
+    '''
+    acts = eval_batch (inputs, layer_indexes = (self.fnode.flayer.layer_index,))
+    dimr = self.fnode.flayer.dimred_activations (acts)[..., self.fnode.feature]
+    return - interval_dist (self.fnode.interval (self.feature_part), dimr)
+
+
+  def valid_inputs (self, evals: Sequence[float]) -> Sequence[bool]:
+    return (evals >= 0)
 
 
 # ---
@@ -1367,7 +1395,8 @@ class BFcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
         # Search closest test -that does not fall within target interval (?)-:
         # within_target = self._check_within (feature, feature_interval, verbose = False)
         for ti, dist in self._all_tests_n_dists_to (feature, feature_interval):
-          if ((feature, feature_interval, ti) in self.ban[fl]#  or
+          if (dist < 0 or
+              (feature, feature_interval, ti) in self.ban[fl]# or
               # within_target (flfeature, self.test_cases[i])
               ):
             continue
@@ -1522,7 +1551,8 @@ class BFDcCriterion (BFcCriterion, Criterion4RootedSearch):
         # Search closest test -that does not fall within target interval (?)-:
         # within_target = self._check_within (feature, feature_interval, verbose = False)
         for ti, dist in self._all_tests_n_dists_to (feature, feature_interval):
-          if ((feature, feature_interval, ti) in self.ban[fl]#  or
+          if (dist < 0 or
+              (feature, feature_interval, ti) in self.ban[fl]# or
               # within_target (flfeature, self.test_cases[i])
               ):
             continue
@@ -1794,7 +1824,6 @@ def setup (setup_criterion = None,
                        cover_layers = cover_layers,
                        setup_criterion = setup_criterion,
                        criterion_args = criterion_args,
-                       fix_untargetted_components = True,
                        **kwds)
 
 # ---

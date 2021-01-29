@@ -236,7 +236,7 @@ python -m testRNN.main --model <modelName>
                            --symbols_TC <Num. of symbols> 
                            --seq <seq in cells to test>
                            --mode <modeName>
-                           --output <output file path>
+                           --outputs <output directory>
 ```
 where 
 1. \<modelName> is in {sentiment, mnist, fashion_mnist, ucf101}
@@ -247,11 +247,11 @@ where
 6. \<Num. of symbols> is in {1, 2, 3...}
 7. \<seq in cells to test> is in {mnist: [4, 24], fashion_mnist: [4, 24], sentiment: [400, 499], ucf101: [0, 10]}
 8. \<modeName> is in {train, test} with default value test 
-9. \<output file path> specifies the path to the output file
+9. \<output directory> specifies the path of the directory to save the output record and generated examples
 
 For example, we can run the following 
 ```
-python -m testRNN.main --model fashion_mnist --TestCaseNum 10000 --Mutation random --threshold_SC 0.6 --threshold_BC 0.7 --symbols_TC 3 --seq [4,24] --output testRNN_output/record.txt
+python -m testRNN.main --model fashion_mnist --TestCaseNum 10000 --Mutation random --threshold_SC 0.6 --threshold_BC 0.7 --symbols_TC 3 --seq [4,24] --outputs testRNN_output
 ```
 which says that, we are working with Fashion-MNIST model, and the genetic algorithm based test case generation will terminate when the number of test cases is over 10000. We need to specify other parameters including threshold_SC, threshold_BC, symbols_TC, and seq. Moreover, the log is generated to the file testRNN_output/record.txt. Also the output of adversarial examples can be found in testRNN_output/adv_output
     
@@ -276,12 +276,22 @@ cd ..
 
 ```
 python -m EKiML.main --Dataset <DatasetName> 
+<<<<<<< HEAD
                            --Mode <modeName>
 			   --Embedding_Method <embeddingMethod>
 			   --Model <modeType>
 			   --Pruning <pruningFlag>
 			   --SaveModel <saveModelFlag>
-			   --output <outputDirectory>
+			   --workdir <workDirectory>
+=======
+		     --Mode <modeName>
+		     --Embedding_Method <embeddingMethod>
+		     --Model <modeType>
+		     --Pruning <pruningFlag>
+		     --SaveModel <saveModelFlag>
+		     --output <outputDirectory>
+		     --Datadir <Datadir>
+>>>>>>> 781d7c1 (Add a `--Datadir' argument to EKiML, where the local dataset files are to be found)
 ```
 where the flags have multiple options: 
 
@@ -291,13 +301,14 @@ where the flags have multiple options:
 4. \<modeType> is in {'forest', 'tree'}
 5. \<pruningFlag> is in {True, False}, with default value False
 6. \<saveModelFlag> is in {True, False}, with default value False
-7. \<outputDirectory> is the output directory, with default value './EKiML_output/'
+7. \<workDirectory> is the working directory, with default value 'EKiML_workdir'
+8. \<Datadir> is the directory where dataset files are located (default is 'EKiML/dataset')
 
 For example, we can run the following
 ```
-python -m EKiML.main --Dataset har --Mode synthesis --Embedding_Method black-box --Model tree --output 'saved_models/'
+python -m EKiML.main --Dataset har --Mode synthesis --Embedding_Method black-box --Model tree --workdir 'EKiML_har' --Datadir 'datasets'
 ```
-which suggests that we are considering the HAR dataset, tryng to synthesise knowledge from a pre-trained tree by applying our black-box synthesis algorithm. 
+which suggests that we are considering the HAR dataset, tryng to synthesise knowledge from a pre-trained tree by applying our black-box synthesis algorithm.
 
 
 # Tool 4 -- GUAP: Generalised Universal Adversarial Perturbation 
@@ -335,7 +346,8 @@ wget https://cgi.csc.liv.ac.uk/~acps/models/fashion_mnist_modela.pth
 cd ..
 ```
 
-## Command to Run 
+## Command to Run
+(from within the ```GUAP``` sub-directory)
 ```
 usage: run_xxxxxx.py [-h] [--dataset DATASET] [--lr LR]
                             [--batch-size BATCH_SIZE] [--epochs EPOCHS]

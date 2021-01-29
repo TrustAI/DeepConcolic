@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
-
 import argparse
+import sys
+import os
+__thisdir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert (0, os.path.join (__thisdir))
+
 from utils import *
 from dbnc import BFcLayer, BNAbstraction, abstract_layer_setup
 from scipy import stats

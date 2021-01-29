@@ -15,7 +15,7 @@ import numpy as np
 class LpLinearMetric (UniformBounds):
   """
   Basic class to represent any linear metric for LP.
-  """  
+  """
 
   @property
   def lower_bound (self) -> float:
@@ -85,11 +85,55 @@ class LpSolver4DNN:
 
 # ---
 
+# PuLP-specific:
+
+pulp_checked_solvers = (
+  # 'PYGLPK',
+  'CPLEX_PY',
+  'CPLEX_DLL',
+  'GUROBI',
+  'CPLEX_CMD',
+  'GUROBI_CMD',
+  # 'MOSEK',
+  # 'XPRESS',
+  'COIN_CMD',
+  # 'COINMP_DLL',
+  # 'GLPK_CMD',
+  # 'CHOCO_CMD',
+  # 'PULP_CHOCO_CMD',
+  'PULP_CBC_CMD',
+  # 'MIPCL_CMD',
+  # 'SCIP_CMD',
+)
+
+def pulp_find_solver (try_solvers = None, time_limit = None):
+  from pulp import apis, __version__ as pulp_version
+  print ('PuLP: Version {}.'.format (pulp_version))
+  available_solvers = list_solvers (onlyAvailable = True)
+  print ('PuLP: Available solvers: {}.'.format (', '.join (available_solvers)))
+  time_limit = some (time_limit, 10 * 60)
+  args = dict (timeLimit = time_limit, mip = False, msg = False)
+  s = None
+  for solver in some (try_solvers, pulp_checked_solvers):
+    if solver in available_solvers:
+      s = get_solver (solver, **args)
+      if solver in ('PULP_CBC_CMD', 'GLPK_CMD',):
+        print ('PuLP: {} solver selected.'.format (solver))
+        print ('PuLP: WARNING: {} does not support time limit.'.format (solver))
+      else:
+        print ('PuLP: {} solver selected (with {} minutes time limit).'
+               .format (solver, time_limit / 60))
+      break
+  return s
+
+def pulp_check (**kwds):
+  assert pulp_find_solver (**kwds) is not None
+
 
 class PulpLinearMetric (LpLinearMetric):
   """
   Any linear metric for the :class:`PulpSolver4DNN`.
-  """  
+  """
 
   def __init__(self, LB_hard = .01, LB_noise = .01, **kwds):
     '''
@@ -138,50 +182,11 @@ class PulpLinearMetric (LpLinearMetric):
 # ---
 
 
-PulpVarMap = NewType('PulpVarMap', Sequence[np.ndarray])
-
-
 class PulpSolver4DNN (LpSolver4DNN):
 
-  def __init__(self,
-               try_solvers = ('PYGLPK',
-                              'CPLEX_PY',
-                              'CPLEX_DLL',
-                              'GUROBI',
-                              'CPLEX_CMD',
-                              'GUROBI_CMD',
-                              # 'MOSEK',
-                              # 'XPRESS',
-                              'COIN_CMD',
-                              # 'COINMP_DLL',
-                              'GLPK_CMD',
-                              # 'CHOCO_CMD',
-                              # 'PULP_CHOCO_CMD',
-                              'PULP_CBC_CMD',
-                              # 'MIPCL_CMD',
-                              # 'SCIP_CMD',
-                              ),
-               time_limit = 10 * 60,
-               **kwds):
-    from pulp import apis, __version__ as pulp_version
-    print ('PuLP: Version {}.'.format (pulp_version))
-    available_solvers = list_solvers (onlyAvailable = True)
-    print ('PuLP: Available solvers: {}.'.format (', '.join (available_solvers)))
-    args = { 'timeLimit': time_limit,
-             # 'timelimit': time_limit,
-             # 'maxSeconds': time_limit,
-             'mip': False, 'msg': False }
-    for solver in try_solvers:
-      if solver in available_solvers:
-        self.solver = get_solver (solver, **args)
-        # NB: does CPLEX_PY actually supports time limits?
-        if solver in ('PULP_CBC_CMD', 'GLPK_CMD',):
-          print ('PuLP: {} solver selected.'.format (solver))
-          print ('PuLP: WARNING: {} does not support time limit.'.format (solver))
-        else:
-          print ('PuLP: {} solver selected (with {} minutes time limit).'
-                 .format (solver, time_limit / 60))
-        break
+  def __init__(self, try_solvers = None, time_limit = None, **kwds):
+    self.solver = pulp_find_solver (try_solvers = try_solvers,
+                                    time_limit = time_limit)
     super().__init__(**kwds)
 
 

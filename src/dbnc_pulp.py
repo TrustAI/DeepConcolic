@@ -9,7 +9,7 @@ from sklearn.decomposition import PCA, FastICA
 
 # ---
 
-from engine import Analyzer, CoverableLayer
+from engine import LayerLocalAnalyzer, CoverableLayer
 from dbnc import BFcLayer
 from dbnc import BFcTarget, BFcAnalyzer
 from dbnc import BFDcTarget, BFDcAnalyzer
@@ -71,7 +71,7 @@ class PulpBFcAbstrLayerEncoder (PulpStrictLayerEncoder):
 
     lin_expr = self.pulp_output_feature_linear_expression (feature)
     low, up = self.flayer.discr.part_edges (feature, feature_part)
-    assert low == -np.inf or up == np.inf or low <= up - epsilon
+    assert low == -np.inf or up == np.inf or low <= up - act_epsilon
 
     # mean = self.flayer.discr.part_mean (feature, feature_part)
 
@@ -79,11 +79,11 @@ class PulpBFcAbstrLayerEncoder (PulpStrictLayerEncoder):
     if low != -np.inf:
       cstrs.append (LpConstraint (lin_expr, LpConstraintGE,
                                   '{}_low_{}'.format(self.flayer, feature),
-                                  low + epsilon))
+                                  low + act_epsilon))
     if up != np.inf:
       cstrs.append (LpConstraint (lin_expr, LpConstraintLE,
                                   '{}_up_{}'.format(self.flayer, feature),
-                                  up - 2 * epsilon))
+                                  up - act_epsilon - lt_epsilon))
 
     return cstrs
 
@@ -94,10 +94,10 @@ class PulpBFcAbstrLayerEncoder (PulpStrictLayerEncoder):
     if approx:
       return [ LpConstraint (lin_expr, LpConstraintGE,
                              '{}_low_{}'.format(self.flayer, component),
-                             value - epsilon),
+                             value - act_epsilon),
                LpConstraint (lin_expr, LpConstraintLE,
                              '{}_up_{}'.format(self.flayer, component),
-                             value + epsilon)]
+                             value + act_epsilon)]
     else:
       return [ LpConstraint (lin_expr, LpConstraintEQ,
                              '{}_eq_{}'.format(self.flayer, component),
@@ -117,7 +117,7 @@ def abstracted_layer_encoder (flayers):
                         PulpStrictLayerEncoder (i, l)))
 
 
-class _BasePulpAnalyzer (Analyzer, PulpSolver4DNN):
+class _BasePulpAnalyzer (LayerLocalAnalyzer, PulpSolver4DNN):
 
   def __init__(self,
                input_metric: PulpLinearMetric = None,

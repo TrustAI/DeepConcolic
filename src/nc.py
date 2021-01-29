@@ -4,6 +4,7 @@ from engine import (Input, TestTarget,
                     BoolMappedCoverableLayer, LayerLocalCriterion,
                     Criterion4RootedSearch,
                     Analyzer4RootedSearch)
+from l0_encoding import L0EnabledTarget
 import numpy as np
 
 
@@ -20,7 +21,7 @@ class NcLayer (BoolMappedCoverableLayer):
 # ---
 
 
-class NcTarget (NamedTuple, TestTarget):
+class NcTarget (NamedTuple, L0EnabledTarget, TestTarget):
   """Inherits :class:`engine.TestTarget` as well."""
   layer: NcLayer
   position: Tuple[int, ...]
@@ -38,6 +39,22 @@ class NcTarget (NamedTuple, TestTarget):
   def log_repr(self) -> str:
     return '#layer: {} #pos: {}'.format(self.layer.layer_index,
                                         xtuple (self.position[1:]))
+
+
+  def eval_inputs (self, inputs: Sequence[Input], eval_batch = None) \
+      -> Sequence[float]:
+    """
+    Measures how a new input `t` improves towards fulfilling the
+    target.  A negative returned value indicates that no progress is
+    being achieved by the given input.
+    """
+    acts = eval_batch (inputs, layer_indexes = (self.layer.layer_index,))
+    acts = acts[self.layer.layer_index][(Ellipsis,) + self.position[1:]]
+    return acts
+
+
+  def valid_inputs (self, evals: Sequence[float]) -> Sequence[bool]:
+    return evals > 0
 
 
 # ---

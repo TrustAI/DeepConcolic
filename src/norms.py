@@ -40,13 +40,13 @@ class L0 (Norm):
 
 
   def distance(self, x, y):
-    return (np.abs (x - y) * self.scale > 1).sum()
+    return np.count_nonzero (np.abs (x - y) * self.scale > 1)
 
 
   def close_to(self, refs, x):
     size = refs[0].size * self.factor
     for diff in refs - x:
-      if np.count_nonzero (diff) <= size:
+      if np.count_nonzero (np.abs (diff) * self.scale > 1) <= size:
         return True
     return False
 
