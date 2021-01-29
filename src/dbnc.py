@@ -3,9 +3,10 @@ import plotting
 import joblib                   # for saving abstraction pipelines
 import builtins
 from plotting import plt
+from utils import *
 from utils_io import *
 from utils_funcs import *
-from utils import *
+from utils_stats import AutoRBFKernelPCA
 from engine import *
 from kde_utils import KDESplit
 from l0_encoding import L0EnabledTarget
@@ -21,6 +22,14 @@ from pomegranate import Node, BayesianNetwork
 from pomegranate.distributions import (DiscreteDistribution,
                                        ConditionalProbabilityTable,
                                        JointProbabilityTable)
+
+class AutoRBFKernelPCA_ (AutoRBFKernelPCA):
+
+  @property
+  def components_(self):
+    """Hack, because we just need the lenght."""
+    return self.lambdas_
+
 
 # ---
 
@@ -167,6 +176,8 @@ def layer_transform (l, i, options):
                          PCA (**options, copy = False)) if decomp == 'pca' else \
           make_pipeline (StandardScaler (copy = False),
                          IncrementalPCA (**options, copy = False)) if decomp == 'ipca' else \
+          make_pipeline (StandardScaler (copy = False),
+                         AutoRBFKernelPCA_(**options)) if decomp in ('kpca', 'rbf_kpca') else \
           make_pipeline (FastICA (**options)))
   return fext, skip, focus
 
