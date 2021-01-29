@@ -149,6 +149,9 @@ class GenericL0Analyzer (Analyzer4RootedSearch, L0Analyzer):
 
   def __init__(self, l0_args = {}, **kwds):
     super().__init__(**kwds)
+    if 'LB_hard' in l0_args:
+      l0_args = dict (**l0_args, scale = 1 / l0_args['LB_hard'])
+      del l0_args['LB_hard']
     self.norm = L0 (**l0_args)
 
 

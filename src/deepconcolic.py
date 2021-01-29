@@ -37,7 +37,6 @@ def deepconcolic(criterion, norm, test_object, report_args,
     elif norm=='l0':
       from nc_l0 import NcL0Analyzer
       l0_args = copy.copy (norm_args)
-      del l0_args['LB_hard']
       del l0_args['LB_noise']
       engine = nc_setup (test_object = test_object,
                          engine_args = engine_args,
@@ -69,7 +68,6 @@ def deepconcolic(criterion, norm, test_object, report_args,
     elif norm=='l0':
       from dbnc_l0 import BFcL0Analyzer
       l0_args = copy.copy (norm_args)
-      del l0_args['LB_hard']
       del l0_args['LB_noise']
       engine = dbnc_setup (**dbnc_spec,
                            test_object = test_object,
@@ -326,12 +324,12 @@ def main():
     sys.exit ('Missing input neural network')
 
   if args.lb_hard is not None:
-    lower_bound_metric_hard = float (args.lower_bound_metric_hard)
+    lower_bound_metric_hard = float (args.lb_hard)
     assert 0.0 < lower_bound_metric_hard <= 1.0
   lower_bound_metric_hard = some (lower_bound_metric_hard, 1/100)
 
   if args.lb_noise is not None:
-    lower_bound_metric_noise = float (args.lower_bound_metric_noise)
+    lower_bound_metric_noise = float (args.lb_noise)
     assert 0.0 <= lower_bound_metric_noise <= 1.0
   lower_bound_metric_noise = some (lower_bound_metric_noise, 1/10)
 
