@@ -1,4 +1,3 @@
-from typing import *
 from utils import *
 from itertools import product
 from engine import Input, Analyzer4RootedSearch

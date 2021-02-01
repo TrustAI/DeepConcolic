@@ -1,4 +1,5 @@
-from typing import *
+from utils_io import *
+from utils_funcs import *
 from utils import *
 from functools import reduce
 from sklearn.model_selection import train_test_split
@@ -181,6 +182,79 @@ class DynamicFilter:
   @abstractmethod
   def close_to(self, refs: Sequence[Input], x: Input) -> bool:
     raise NotImplementedError
+
+
+# ---
+
+
+class Bounds:
+  """
+  Basic abstract class to represent any bounds.  (Mostly for typing
+  arguments and sub-classing.)
+  """
+
+  @property
+  def low (self) -> np.array(float):
+    raise NotImplementedError
+
+  @property
+  def up (self) -> np.array(float):
+    raise NotImplementedError
+
+  @abstractmethod
+  def __getitem__ (self, _idx: Tuple[int, ...]) -> Tuple[float, float]:
+    raise NotImplementedError
+
+
+# ---
+
+
+class Coverage:
+  """Basic helper class to manipulate and type-annotate coverage measures."""
+
+  def __init__(self, covered = None, total = None, non_covered = None):
+    if total != None:
+      self.total = total
+    elif covered != None and non_covered != None:
+      self.total = covered + non_covered
+    elif covered != None:
+      self.total = covered
+    elif non_covered != None:
+      self.total = non_covered
+    else:
+      self.total = 0
+
+    if covered != None:
+      self.c = covered
+    elif non_covered != None and self.total > 0:
+      self.c = self.total - non_covered
+    else:
+      self.c = 0
+
+
+  def __add__(self, x):
+    return Coverage (covered = self.c + x.c,
+                     total = self.total + x.total)
+
+
+  def __mul__(self, f: float):
+    return Coverage (covered = float(self.c) * f,
+                     total = self.total)
+
+
+  @property
+  def done(self) -> bool:
+    return self.total == self.c
+
+
+  @property
+  def as_prop(self) -> float:
+    return (((1.0 * self.c) / (1.0 * self.total))
+            if self.total != 0 else 0.0)
+
+
+  def __repr__(self):
+    return str(self.as_prop)
 
 
 # ---

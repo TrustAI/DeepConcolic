@@ -6,6 +6,7 @@ __thisdir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert (0, os.path.join (__thisdir))
 
 from utils import *
+from utils_funcs import rng_seed
 from dbnc import BFcLayer, BNAbstraction, abstract_layer_setup
 from scipy import stats
 import datasets

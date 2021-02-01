@@ -1,8 +1,6 @@
-from typing import *
-from pulp import *
 from utils import *
+from pulp import *
 from pulp_encoding import *
-import numpy as np
 
 # ---
 

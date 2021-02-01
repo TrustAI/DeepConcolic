@@ -2,6 +2,8 @@ import os
 import random
 import subprocess
 import time
+from utils_io import *
+from utils_funcs import random
 from utils import *
 from fuzz_variables import *
 

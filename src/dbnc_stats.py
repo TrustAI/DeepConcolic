@@ -1,6 +1,7 @@
 import norms
 import scripting
-from utils import rng_seed
+from utils_io import *
+from utils_funcs import *
 from dbnc import *
 from nc import *
 from bounds import UniformBounds
@@ -207,7 +208,6 @@ def run (test_object = None,
                                         size = min (test_size, len (idxs_nobar))))
     print ('Selected', len (test_nobar_idxs[-1]), 'valid nobar-test samples.')
 
-  # import utils
   # for i, im in enumerate(x[test_idxs]):
   #   utils.save_an_image (im, str (i), "/tmp/outs/full/")
   # for i, im in enumerate(x[test_nobar_idxs]):
