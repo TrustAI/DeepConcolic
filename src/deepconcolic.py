@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
-import argparse
-import sys
-import os
+import sys, os
 __thisdir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert (0, os.path.join (__thisdir))
-
-import yaml
+import argparse
 from pathlib import Path
 from utils_io import *
 from utils_funcs import *
 from utils import *
 from bounds import UniformBounds, StatBasedInputBounds
-import fuzzer
-import datasets
+import fuzzer, datasets
 import filters
+import plugins
+import yaml
+
 
 def deepconcolic(criterion, norm, test_object, report_args,
                  engine_args = {},

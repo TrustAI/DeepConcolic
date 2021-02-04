@@ -1,7 +1,5 @@
-import os
-import datetime
+import os, datetime, cv2
 import numpy as np
-import cv2
 from utils_funcs import random
 
 # ---
@@ -41,11 +39,21 @@ def is_are_(i):
 
 def setup_output_dir (outs, log = True):
   if not os.path.exists (outs):
+    if log: print (f'Creating output directory: {outs}')
     os.makedirs (outs)
   if not outs.endswith ('/'):
     outs += '/'
-  if log: print ('Setting up output directory: {0}'.format (outs))
   return outs
+
+def dir_or_file_in_dir (default_filename, suff):
+  def aux (f, filename = default_filename):
+    dirname = os.path.dirname (f) if f.endswith (suff) else f
+    if dirname is not None:
+      setup_output_dir (dirname)
+    if f.endswith (suff):
+      return f
+    return os.path.join (f, f'{filename}')
+  return aux
 
 # def setup_report_files (outs, ident, suff0 = '', suff = '.txt', log = True):
 #   if not os.path.exists(outs):

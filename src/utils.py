@@ -1,8 +1,7 @@
 from abc import abstractmethod
 from utils_io import *
 from utils_funcs import *
-import sys
-import copy
+import sys, copy
 
 # NB: importing cv2 and sklearn before tensorflow seems to solve an
 # issue with static TLS I've been having on an "oldish" version of
@@ -203,15 +202,21 @@ def eval(o, im, **kwds):
 def eval_batch_func (dnn):
   return lambda imgs, **kwds: eval_batch (dnn, imgs, **kwds)
 
-def prediction (dnn, x, top_classes = None):
+def _prediction (f, x, top_classes = None):
   return \
-    np.argmax (dnn.predict (np.array ([x]))) if top_classes is None else \
+    np.argmax (f (np.array ([x]))) if top_classes is None else \
     np.flip (np.argsort (dnn.predict (np.array ([x])))[0])[:top_classes]
 
-def predictions (dnn, xl, top_classes = None):
+def _predictions (f, xl, top_classes = None):
   return \
-    np.argmax (dnn.predict (np.array (xl)), axis = 1) if top_classes is None else \
-    np.fliplr (np.argsort (dnn.predict (np.array (xl))))[:top_classes]
+    np.argmax (f (np.array (xl)), axis = 1) if top_classes is None else \
+    np.fliplr (np.argsort (f (np.array (xl))))[:top_classes]
+
+def prediction (dnn, x, top_classes = None):
+  return _prediction (dnn.predict, x, top_classes = top_classes)
+
+def predictions (dnn, x, top_classes = None):
+  return _predictions (dnn.predict, x, top_classes = top_classes)
 
 # ---
 
@@ -311,6 +316,8 @@ class test_objectt:
 # ---
 
 # TODO: generalize to n-dimensional convolutional layers:
+# Good starting point: `from tensorflow.python.keras.utils import conv_utils'
+# https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/keras/utils/conv_utils.py
 def is_padding(dec_pos, dec_layer, cond_layer, post = True, unravel_pos = True):
   ## to check if dec_pos is a padding
   dec_layer = actual_layer (dec_layer)
