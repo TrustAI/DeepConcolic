@@ -270,8 +270,8 @@ def run (test_object = None,
   def dbnc_run (dbnc_stats, n_feats, discr, bnzf):
     (n_feats_name, n_feats, tech, ncomps), (discr_name, discr, nbins) = n_feats, discr
 
-    setup_layer = lambda l, i, **kwds: \
-      abstract_layer_setup (l, i, n_feats, discr, discr_n_jobs = 8)
+    setup_layer = lambda l, i, **kwds:
+      layer_setup (l, i, n_feats, discr, discr_n_jobs = 8)
     cover_layers = get_cover_layers (test_object.dnn, setup_layer,
                                      layer_indices = test_object.layer_indices,
                                      activation_of_conv_or_dense_only = False,

@@ -7,7 +7,7 @@ sys.path.insert (0, os.path.join (__thisdir))
 from utils import *
 from utils_funcs import rng_seed
 from utils_args import *
-from dbnc import BNAbstraction, abstract_layer_setup
+from dbnc import BNAbstraction, layer_setup
 import datasets
 import plugins
 import scipy
@@ -113,7 +113,7 @@ def create (test_object,
   feats = dict (decomp = feature_extraction, n_components = num_features)
   discr = dict (strategy = discr_strategy, n_bins = n_bins, extended = extended_discr)
   setup_layer = lambda l, i, **kwds: \
-    abstract_layer_setup (l, i, feats, discr, discr_n_jobs = 8)
+    layer_setup (l, i, feats, discr, discr_n_jobs = 8)
   clayers = get_cover_layers \
     (test_object.dnn, setup_layer, layer_indices = test_object.layer_indices,
      activation_of_conv_or_dense_only = False,

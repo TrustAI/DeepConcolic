@@ -1,6 +1,7 @@
 import warnings
 import plotting
 import joblib                   # for saving abstraction pipelines
+import builtins
 from plotting import plt
 from utils_io import *
 from utils_funcs import *
@@ -22,6 +23,368 @@ from pomegranate.distributions import (DiscreteDistribution,
                                        JointProbabilityTable)
 
 # ---
+
+class FLayer (CoverableLayer):
+  """
+  Base class for layers that support feature extraction.
+  """
+
+  def __init__(self, transform = None,
+               skip: Optional[int] = None,
+               focus: Optional[int] = None,
+               **kwds):
+    super().__init__(**kwds)
+    assert skip is None or isinstance (skip, int)
+    assert focus is None or isinstance (focus, int)
+    self.transform = transform
+    self.first = some (skip, 0)
+    self.last = focus
+
+
+  @property
+  def focus (self) -> slice:
+    return slice (self.first, self.last)
+
+
+  def get_params (self, deep = True):
+    return dict (name = self.layer.name,
+                 first = self.first,
+                 last = self.last)
+
+
+  def get_abstraction_info (self):
+    return dict (**self.get_info (),
+                 transform = self.transform,
+                 first = self.first,
+                 last = self.last)
+
+
+  def set_abstraction_info (self, dnn,
+                            transform = None,
+                            first = None,
+                            last = None,
+                            **kwds):
+    super ().set_info (dnn, **kwds)
+    self.transform = transform
+    self.first = first
+    self.last = last
+
+
+  @classmethod
+  def from_abstraction_info (cls, dnn, **kwds):
+    self = cls.__new__(cls)
+    self.set_abstraction_info (dnn, **kwds)
+    return self
+
+
+  def feature_of_component (self, component: int) -> Optional[int]:
+    if self.first <= component and (self.last is None or component <= self.last):
+      return component - self.first
+    else:
+      return None
+
+
+  def range_components (self) -> range:
+    return range (len (self.transform[-1].components_))
+
+
+  @property
+  def num_features (self) -> int:
+    '''
+    Number of extracted features for the layer.
+    '''
+    return len (self.transform[-1].components_[self.focus])
+
+
+  def range_features (self) -> range:
+    '''
+    Range over all feature indexes.
+    '''
+    return range (self.num_features)
+
+
+  def dimred_activations (self, acts, acc = None, feature_space = True):
+    transform = lambda x: \
+      self.transform.transform (x)[:,self.focus] if feature_space else \
+      self.transform.transform (x)
+    y = lazy_activations_transform (acts[self.layer_index], transform)
+    acc = np.hstack ((acc, y)) if acc is not None else y
+    if y is not acc: del y
+    return acc
+
+
+# ---
+
+
+def layer_transform_options (li, feats = None, default = 1):
+
+  if feats is not None:
+    if isinstance (feats, (int, float)):
+      return feats
+    if isinstance (feats, str):
+      return builtins.eval(feats, {})(li)
+    if isinstance (feats, dict) and li in feats:
+      li_feats = feats[li]
+      if not isinstance (li_feats, (int, float, str, dict)):
+        raise ValueError (
+          'feats[{}] should be an int, a string, or a float (got {})'
+          .format (li, type (li_feats)))
+      return li_feats
+    elif isinstance (feats, dict):
+      return feats
+    raise ValueError (
+      'feats should either be a dictonary, an int, a string, or a float (got {})'
+      .format (type (feats)))
+
+  return default
+
+
+def layer_transform (l, i, options):
+  decomp = 'pca'
+  skip, focus = None, None
+  if isinstance (options, dict):
+    options = dict (options)
+    if 'decomp' in options:
+      decomp = options['decomp']
+      del options['decomp']
+    if 'skip' in options:
+      skip = options['skip']
+      del options['skip']
+    if 'focus' in options:
+      focus = options['focus']
+      del options['focus']
+  elif (isinstance (options, (int, float)) or options == 'mle') and \
+           decomp == 'pca':
+    options = dict (n_components = options,
+                    svd_solver = ('arpack' if isinstance (options, int) else
+                                  'full' if isinstance (options, float) else 'auto'))
+  if isinstance (options, dict) and \
+         'n_components' in options and isinstance (options['n_components'], int):
+    options = dict (options)
+    options['n_components'] = min (np.prod (l.output.shape[1:]) - 1,
+                                   options['n_components'])
+  fext = (make_pipeline (StandardScaler (copy = False),
+                         PCA (**options, copy = False)) if decomp == 'pca' else \
+          make_pipeline (StandardScaler (copy = False),
+                         IncrementalPCA (**options, copy = False)) if decomp == 'ipca' else \
+          make_pipeline (FastICA (**options)))
+  return fext, skip, focus
+
+
+def flayer_setup (l, i, feats = None, **kwds):
+  options = layer_transform_options (i, feats)
+  fext, skip, focus = layer_transform (l, i, options)
+  return FLayer (layer = l, layer_index = i,
+                 transform = fext, skip = skip, focus = focus)
+
+
+# ---
+
+
+class FAbstraction:
+
+  def __init__(self,
+               flayers: Sequence[FLayer],
+               *args,
+               feat_extr_train_size = 1,
+               print_classification_reports = True,
+               score_layer_likelihoods = False,
+               report_on_feature_extractions = None,
+               close_reports_on_feature_extractions = None,
+               outdir: OutputDir = None,
+               **kwds):
+    super ().__init__(*args, **kwds)
+    assert (print_classification_reports is None or isinstance (print_classification_reports, bool))
+    assert (report_on_feature_extractions is None or callable (report_on_feature_extractions))
+    assert (close_reports_on_feature_extractions is None or callable (close_reports_on_feature_extractions))
+    assert (feat_extr_train_size > 0)
+    self.feat_extr_train_size = feat_extr_train_size
+    self.print_classification_reports = print_classification_reports
+    self.score_layer_likelihoods = score_layer_likelihoods
+    self.report_on_feature_extractions = report_on_feature_extractions
+    self.close_reports_on_feature_extractions = close_reports_on_feature_extractions
+    self.flayers = flayers
+    self.outdir = outdir or OutputDir ()
+
+
+  def reset (self):
+    super ().reset ()
+    self.outdir.reset_stamp ()
+
+
+  def dump_abstraction (self, pathname = None, outdir = None, base = 'abstraction'):
+    if pathname is None:
+      outdir = some (outdir, self.outdir)
+      pathname = self.outdir.filepath (base, suff = '.pkl')
+    np1 (f'Dumping abstraction into `{pathname}\'... ')
+    abstraction = [fl.get_abstraction_info () for fl in self.flayers]
+    joblib.dump (abstraction, pathname, compress = 1)
+    c1 ('done')
+
+
+  @classmethod
+  def from_file (cls,
+                 dnn,
+                 filename,
+                 outdir: OutputDir = None):
+    self = cls.__new__(cls)
+    np1 (f'Loading abstraction from `{filename}\'... ')
+    flayers = joblib.load (filename)
+    c1 ('done')
+    self.flayers = [ FLayer.from_abstraction_info (dnn, **fl)
+                     for fl in flayers ]
+    self.outdir = outdir or OutputDir ()
+    return self
+
+
+  # ---
+
+
+  def dimred_activations (self, acts, fls = None, **kwds):
+    acc = None
+    for fl in self.flayers if fls is None else fls:
+      acc = fl.dimred_activations (acts, acc = acc, **kwds)
+    return acc
+
+
+  @property
+  def num_features (self) -> Sequence[int]:
+    return [ fl.num_features for fl in self.flayers ]
+
+
+  # ---
+
+
+  def initialize (self, acts, true_labels = None, pred_labels = None,
+                  fit_with_training_data: bool = False,
+                  fl_init_callback = None,
+                  **kwds):
+    """
+    Called through :meth:`stat_based_train_cv_initializers` above.
+    """
+
+    # if true_labels is not None and pred_labels is not None:
+    #   ok_idxs = (np.asarray (true_labels) == np.asarray (pred_labels))
+    #   ok_labels, ko_labels = true_labels[ok_idxs], true_labels[~ok_idxs]
+    # else:
+    if True:
+      ok_idxs = np.full (len (true_labels), True, dtype = bool)
+      ok_labels, ko_labels = true_labels, []
+
+    ts0 = np.count_nonzero (ok_idxs)
+    # cp1 ('| Given {} correctly classified training sample'.format (*s_(ts0)))
+    cp1 ('| Given {} classified training sample'.format (*s_(ts0)))
+    fts = None if self.feat_extr_train_size == 1 \
+          else (min (ts0, int (self.feat_extr_train_size))
+                if self.feat_extr_train_size > 1
+                else int (ts0 * self.feat_extr_train_size))
+    if fts is not None:
+      p1 ('| Using {} training samples for feature extraction'.format (*s_(fts)))
+
+    # First, fit feature extraction parameters:
+    for fl in self.flayers:
+      p1 ('| Extracting features for layer {}... '.format (fl))
+      facts = acts[fl.layer_index]
+      x_ok = facts[ok_idxs].reshape (ts0, -1)
+
+      tp1 ('Extracting features...')
+
+      if fts is None:
+        y_ok = fl.transform.fit_transform (x_ok, ok_labels)
+      else:
+        # Copying the inputs here as we pass `copy = False` when
+        # constructing the pipeline.
+        fl.transform.fit (x_ok[:fts].copy (), y = ok_labels[:fts])
+        y_ok = fl.transform.transform (x_ok)
+      p1 ('| Extracted {} feature{}'.format (*s_(y_ok.shape[1])))
+
+      # Correct feature range (or should we error out for invalid
+      # spec?):
+      fl.first = min (fl.first, y_ok.shape[1] - 1)
+      if fl.first > 0:
+        p1 ('| Skipping {} important feature{}'.format (*s_(fl.first)))
+      if fl.last is not None:
+        fl.last = max (min (fl.last, y_ok.shape[1]), fl.first + 1)
+        p1 ('| Focusing on {} feature{}'.format (*s_(fl.last - fl.first)))
+
+      if fl_init_callback is not None:
+        fl_init_callback (fl, x_ok, y_ok, ok_labels, ko_labels, ok_idxs)
+
+      del x_ok, y_ok
+
+    self.explained_variance_ratios_ = \
+      { str(fl): (fl.transform[-1].explained_variance_ratio_[fl.focus].tolist (),
+                  fl.transform[-1].explained_variance_ratio_.tolist ())
+        for fl in self.flayers
+        if hasattr (fl.transform[-1], 'explained_variance_ratio_') }
+
+    # Report on explained variance
+    for fl in self.explained_variance_ratios_:
+      variance_ratios = self.explained_variance_ratios_[fl]
+      partv, totv = sum (variance_ratios[0]), sum (variance_ratios[1])
+      if totv == partv:
+        p1 ('| Captured variance ratio for layer {} is {:6.2%}'
+            .format (fl, totv))
+      else:
+        p1 ('| Captured variance ratio for layer {} is {:6.2%}'
+            ' (over a total of {:6.2%} extracted)'
+            .format (fl, partv, totv))
+
+
+  def _score_with_training_data (self) -> bool:
+    return self.score_layer_likelihoods
+
+
+  # ---
+
+  def get_params (self, deep = True):
+    p = dict (explained_variance_ratios = list (self.explained_variance_ratios_))
+    if deep:
+      p['layers'] = [ fl.get_params (deep) for fl in self.flayers ]
+    return p
+
+  # ---
+
+  def _score (self, acts, true_labels = None, **kwds):
+    """
+    Basic scores for manual investigations.
+    """
+
+    p1 (f'| Given scoring sample of size {len (true_labels)}')
+
+    if (self.score_layer_likelihoods or
+        self.report_on_feature_extractions is not None):
+      self._score_feature_extractions (acts, true_labels)
+
+
+  def _score_feature_extractions (self, acts, true_labels = None):
+    racc = None
+    idx = 1
+    self.average_log_likelihoods_ = []
+    for fl in self.flayers:
+
+      # if self.score_layer_likelihoods:
+      #   tp1 ('| Computing average log-likelihood of test sample for layer {}...'
+      #        .format (fl))
+      #   flatacts = fl.flatten_map (acts)
+      #   self.average_log_likelihoods_.append (fl.transform.score (flatacts))
+      #   p1 ('| Average log-likelihood of test sample for layer {} is {}'
+      #        .format (fl, self.average_log_likelihood[-1]))
+      #   del flatacts
+
+      if self.report_on_feature_extractions is not None:
+        fdimred = self.dimred_activations (acts, (fl,))
+        racc = self.report_on_feature_extractions (fl, fdimred, true_labels, racc)
+        del fdimred
+
+      idx += 1
+
+    if self.close_reports_on_feature_extractions is not None:
+      self.close_reports_on_feature_extractions (racc)
+
+
+# ---
+
 
 # Whether to enable logs to the console of progress towards target
 # intervals:
@@ -319,63 +682,39 @@ class KBinsNOutFeatureDiscretizer (KBinsFeatureDiscretizer):
 # ---
 
 
-class BFcLayer (CoverableLayer):
+class BFcLayer (FLayer):
   """
   Base class for layers to be covered by BN-based criteria.
   """
 
-  def __init__(self, transform = None,
+  def __init__(self,
                discretization: FeatureDiscretizer = None,
-               skip: Optional[int] = None,
-               focus: Optional[int] = None,
                **kwds):
     super().__init__(**kwds)
     assert isinstance (discretization, FeatureDiscretizer)
-    assert skip is None or isinstance (skip, int)
-    assert focus is None or isinstance (focus, int)
-    self.transform = transform
     self.discr = discretization
-    self.first = some (skip, 0)
-    self.last = focus
-
-
-  @property
-  def focus (self) -> slice:
-    return slice (self.first, self.last)
 
 
   def get_params (self, deep = True):
-    return dict (name = self.layer.name,
-                 # transform = self.transform.get_params (deep),
-                 # discretization = self.discr.get_params (deep),
-                 discretized_latent_features = {
-                   f: [ interval_repr (self.discr.part_edges (f, i))
-                        for i in range (self.discr.feature_parts (f)) ]
-                   for f in self.range_features ()
-                 },
-                 first = self.first,
-                 last = self.last)
+    p = super ().get_params (deep = deep)
+    p['discretized_hidden_features'] = {
+      f: [ interval_repr (self.discr.part_edges (f, i))
+           for i in range (self.discr.feature_parts (f)) ]
+      for f in self.range_features ()
+    }
+    return p
 
 
   def get_abstraction_info (self):
-    return dict (**self.get_info (),
-                 transform = self.transform,
-                 discr = self.discr,
-                 first = self.first,
-                 last = self.last)
+    return dict (**super ().get_abstraction_info (),
+                 discr = self.discr)
 
 
   def set_abstraction_info (self, dnn,
-                            transform = None,
                             discr = None,
-                            first = None,
-                            last = None,
                             **kwds):
-    super ().set_info (dnn, **kwds)
-    self.transform = transform
+    super ().set_abstraction_info (dnn, **kwds)
     self.discr = discr
-    self.first = first
-    self.last = last
 
 
   @classmethod
@@ -385,46 +724,10 @@ class BFcLayer (CoverableLayer):
     return self
 
 
-  def feature_of_component (self, component: int) -> Optional[int]:
-    if self.first <= component and (self.last is None or component <= self.last):
-      return component - self.first
-    else:
-      return None
-
-
-  def range_components (self) -> range:
-    return range (len (self.transform[-1].components_))
-
-
-  @property
-  def num_features (self) -> int:
-    '''
-    Number of extracted features for the layer.
-    '''
-    return len (self.transform[-1].components_[self.focus])
-
-
-  def range_features (self) -> range:
-    '''
-    Range over all feature indexes.
-    '''
-    return range (self.num_features)
-
-
   @property
   def num_feature_parts (self) -> Sequence[int]:
     return [ self.discr.feature_parts (feature)
              for feature in self.range_features () ]
-
-
-  def dimred_activations (self, acts, acc = None, feature_space = True):
-    transform = lambda x: \
-      self.transform.transform (x)[:,self.focus] if feature_space else \
-      self.transform.transform (x)
-    y = lazy_activations_transform (acts[self.layer_index], transform)
-    acc = np.hstack ((acc, y)) if acc is not None else y
-    if y is not acc: del y
-    return acc
 
 
   def dimred_n_discretize_activations (self, acts, acc = None):
@@ -499,43 +802,25 @@ class DiscretizedHiddenFeatureNode (DiscretizedFeatureNode):
 
 # ---
 
-class BNAbstraction:
+class BNAbstraction (FAbstraction):
 
   def __init__(self,
                flayers: Sequence[BFcLayer],
                *args,
                bn_abstr_n_jobs = None,
-               feat_extr_train_size = 1,
-               print_classification_reports = True,
-               score_layer_likelihoods = False,
-               report_on_feature_extractions = None,
-               close_reports_on_feature_extractions = None,
                assess_discretized_feature_probas = False,
                dump_abstraction = True,
-               outdir: OutputDir = None,
                **kwds):
-    super ().__init__(*args, **kwds)
-    assert (print_classification_reports is None or isinstance (print_classification_reports, bool))
-    assert (report_on_feature_extractions is None or callable (report_on_feature_extractions))
-    assert (close_reports_on_feature_extractions is None or callable (close_reports_on_feature_extractions))
-    assert (feat_extr_train_size > 0)
+    super ().__init__(flayers, *args, **kwds)
     self.bn_abstr_n_jobs = bn_abstr_n_jobs
-    self.feat_extr_train_size = feat_extr_train_size
-    self.print_classification_reports = print_classification_reports
-    self.score_layer_likelihoods = score_layer_likelihoods
-    self.report_on_feature_extractions = report_on_feature_extractions
-    self.close_reports_on_feature_extractions = close_reports_on_feature_extractions
     self.assess_discretized_feature_probas = assess_discretized_feature_probas
     self.dump_abstraction_ = dump_abstraction
-    self.flayers = flayers
-    self.outdir = outdir or OutputDir ()
-    self.fit_dataset_size = 0 # as modeled in BN
+    self.fit_dataset_size = 0   # as modeled in BN
 
 
   def reset (self):
     super ().reset ()
     self.reset_bn ()
-    self.outdir.reset_stamp ()
 
 
   def reset_bn (self):
@@ -560,21 +845,17 @@ class BNAbstraction:
 
 
   def dump_abstraction (self, pathname = None, outdir = None, base = 'bn-abstraction'):
-    if pathname is None:
-      outdir = some (outdir, self.outdir)
-      pathname = self.outdir.filepath (base, suff = '.pkl')
-    np1 (f'Dumping abstraction into `{pathname}\'... ')
-    abstraction = [fl.get_abstraction_info () for fl in self.flayers]
-    joblib.dump (abstraction, pathname, compress = 1)
-    c1 ('done')
+    super ().dump_abstraction (pathname = pathname,
+                               outdir = outdir,
+                               base = base)
 
 
   @classmethod
   def from_file (cls,
                  dnn,
                  filename,
-                 bn_abstr_n_jobs = None,
-                 outdir: OutputDir = None):
+                 outdir: OutputDir = None,
+                 bn_abstr_n_jobs = None):
     self = cls.__new__(cls)
     np1 (f'Loading abstraction from `{filename}\'... ')
     flayers = joblib.load (filename)
@@ -592,23 +873,11 @@ class BNAbstraction:
   # ---
 
 
-  def dimred_activations (self, acts, fls = None, **kwds):
-    acc = None
-    for fl in self.flayers if fls is None else fls:
-      acc = fl.dimred_activations (acts, acc = acc, **kwds)
-    return acc
-
-
   def dimred_n_discretize_activations (self, acts, fls = None):
     acc = None
     for fl in self.flayers if fls is None else fls:
       acc = fl.dimred_n_discretize_activations (acts, acc = acc)
     return acc
-
-
-  @property
-  def num_features (self) -> Sequence[int]:
-    return [ fl.num_features for fl in self.flayers ]
 
 
   @property
@@ -717,50 +986,10 @@ class BNAbstraction:
     Called through :meth:`stat_based_train_cv_initializers` above.
     """
 
-    # if true_labels is not None and pred_labels is not None:
-    #   ok_idxs = (np.asarray (true_labels) == np.asarray (pred_labels))
-    #   ok_labels, ko_labels = true_labels[ok_idxs], true_labels[~ok_idxs]
-    # else:
-    if True:
-      ok_idxs = np.full (len (true_labels), True, dtype = bool)
-      ok_labels, ko_labels = true_labels, []
-
-    ts0 = np.count_nonzero (ok_idxs)
-    # cp1 ('| Given {} correctly classified training sample'.format (*s_(ts0)))
-    cp1 ('| Given {} classified training sample'.format (*s_(ts0)))
-    fts = None if self.feat_extr_train_size == 1 \
-          else (min (ts0, int (self.feat_extr_train_size))
-                if self.feat_extr_train_size > 1
-                else int (ts0 * self.feat_extr_train_size))
-    if fts is not None:
-      p1 ('| Using {} training samples for feature extraction'.format (*s_(fts)))
-
-    # First, fit feature extraction and discretizer parameters:
-    for fl in self.flayers:
-      p1 ('| Extracting and discretizing features for layer {}... '.format (fl))
-      facts = acts[fl.layer_index]
-      x_ok = facts[ok_idxs].reshape (ts0, -1)
-
-      tp1 ('Extracting features...')
-
-      if fts is None:
-        y_ok = fl.transform.fit_transform (x_ok, ok_labels)
-      else:
-        # Copying the inputs here as we pass `copy = False` when
-        # constructing the pipeline.
-        fl.transform.fit (x_ok[:fts].copy (), y = ok_labels[:fts])
-        y_ok = fl.transform.transform (x_ok)
-      p1 ('| Extracted {} feature{}'.format (*s_(y_ok.shape[1])))
-
-      # Correct feature range (or should we error out for invalid
-      # spec?):
-      fl.first = min (fl.first, y_ok.shape[1] - 1)
-      if fl.first > 0:
-        p1 ('| Skipping {} important feature{}'.format (*s_(fl.first)))
-      if fl.last is not None:
-        fl.last = max (min (fl.last, y_ok.shape[1]), fl.first + 1)
-        p1 ('| Focusing on {} feature{}'.format (*s_(fl.last - fl.first)))
-
+    def discr_callback (fl, x_ok, y_ok, ok_labels, ko_labels, ok_idxs):
+      # Fit discretizer parameters:
+      p1 ('| Discretizing features for layer {}... '.format (fl))
+      ts0 = np.count_nonzero (ok_idxs)
       fit_wrt_args = {}
       x_ko, y_ko = [], []
       if len (ko_labels) > 0:
@@ -784,25 +1013,14 @@ class BNAbstraction:
         p1 ('| Discretization of feature {} involves {} interval{}'
             .format (fi, *s_(fl.discr.feature_parts (fi))))
       p1 ('| Discretized {} feature{}'.format (*s_(fl.num_features)))
-      del x_ok, y_ok, x_ko, y_ko
+      del x_ko, y_ko
 
-    self.explained_variance_ratios_ = \
-      { str(fl): (fl.transform[-1].explained_variance_ratio_[fl.focus].tolist (),
-                  fl.transform[-1].explained_variance_ratio_.tolist ())
-        for fl in self.flayers
-        if hasattr (fl.transform[-1], 'explained_variance_ratio_') }
-
-    # Report on explained variance
-    for fl in self.explained_variance_ratios_:
-      variance_ratios = self.explained_variance_ratios_[fl]
-      partv, totv = sum (variance_ratios[0]), sum (variance_ratios[1])
-      if totv == partv:
-        p1 ('| Captured variance ratio for layer {} is {:6.2%}'
-            .format (fl, totv))
-      else:
-        p1 ('| Captured variance ratio for layer {} is {:6.2%}'
-            ' (over a total of {:6.2%} extracted)'
-            .format (fl, partv, totv))
+    super ().initialize (acts,
+                         true_labels = true_labels,
+                         pred_labels = pred_labels,
+                         fit_with_training_data = fit_with_training_data,
+                         fl_init_callback = discr_callback,
+                         **kwds)
 
     # Second, contruct the Bayesian Network
     self.N = self._create_bayesian_network ()
@@ -828,7 +1046,8 @@ class BNAbstraction:
 
 
   def _score_with_training_data (self) -> bool:
-    return self.score_layer_likelihoods or self.assess_discretized_feature_probas
+    return super ()._score_with_training_data () \
+      or self.assess_discretized_feature_probas
 
 
   # ---
@@ -881,56 +1100,20 @@ class BNAbstraction:
   # ---
 
   def get_params (self, deep = True):
-    p = dict (node_count = self.N.node_count (),
-              edge_count = self.N.edge_count (),
-              explained_variance_ratios = list (self.explained_variance_ratios_))
-    if deep:
-      p['layers'] = [ fl.get_params (deep) for fl in self.flayers ]
+    p = super ().get_params (deep = deep)
+    p['node_count'] = self.N.node_count ()
+    p['edge_count'] = self.N.edge_count (),
     return p
 
   # ---
 
   def _score (self, acts, true_labels = None, **kwds):
-    """
-    Basic scores for manual investigations.
-    """
-
-    p1 (f'| Given scoring sample of size {len (true_labels)}')
-
-    if (self.score_layer_likelihoods or
-        self.report_on_feature_extractions is not None):
-      self._score_feature_extractions (acts, true_labels)
+    super ()._score (acts, true_labels = true_labels, **kwds)
 
     if self.assess_discretized_feature_probas:
       truth = self.dimred_n_discretize_activations (acts)
       self._score_discretized_feature_probas (truth)
       del truth
-
-
-  def _score_feature_extractions (self, acts, true_labels = None):
-    racc = None
-    idx = 1
-    self.average_log_likelihoods_ = []
-    for fl in self.flayers:
-
-      # if self.score_layer_likelihoods:
-      #   tp1 ('| Computing average log-likelihood of test sample for layer {}...'
-      #        .format (fl))
-      #   flatacts = fl.flatten_map (acts)
-      #   self.average_log_likelihoods_.append (fl.transform.score (flatacts))
-      #   p1 ('| Average log-likelihood of test sample for layer {} is {}'
-      #        .format (fl, self.average_log_likelihood[-1]))
-      #   del flatacts
-
-      if self.report_on_feature_extractions is not None:
-        fdimred = self.dimred_activations (acts, (fl,))
-        racc = self.report_on_feature_extractions (fl, fdimred, true_labels, racc)
-        del fdimred
-
-      idx += 1
-
-    if self.close_reports_on_feature_extractions is not None:
-      self.close_reports_on_feature_extractions (racc)
 
 
   def _score_discretized_feature_probas (self, truth):
@@ -1004,8 +1187,6 @@ class BNAbstraction:
   def _all_prediction_probas (self, fprobas):
     return [ self._prediction_probas (p) for p in fprobas ]
 
-
-  # ----
 
 
 # ----
@@ -1591,33 +1772,7 @@ class BFDcCriterion (BFcCriterion, Criterion4RootedSearch):
 
 # ---
 
-
-
-# def abstract_layerp (li, feats = None, discr = None, layer_indices = []):
-#   return (li in discr if discr is not None and isinstance (discr, dict) else
-#           li in feats if feats is not None and isinstance (feats, dict) else
-#           li in layer_indices)
-
-import builtins
-
-def abstract_layer_features (li, feats = None, discr = None, default = 1):
-  if feats is not None:
-    if isinstance (feats, (int, float)):
-      return feats
-    if isinstance (feats, str):
-      return builtins.eval(feats, {})(li)
-    if isinstance (feats, dict) and li in feats:
-      li_feats = feats[li]
-      if not isinstance (li_feats, (int, float, str, dict)):
-        raise ValueError (
-          'feats[{}] should be an int, a string, or a float (got {})'
-          .format (li, type (li_feats)))
-      return li_feats
-    elif isinstance (feats, dict):
-      return feats
-    raise ValueError (
-      'feats should either be a dictonary, an int, a string, or a float (got {})'
-      .format (type (feats)))
+def layer_transform_options_from_discr (li, discr = None, default = 1):
 
   # Guess from discr
   if discr is not None:
@@ -1633,7 +1788,7 @@ def abstract_layer_features (li, feats = None, discr = None, default = 1):
   return default
 
 
-def abstract_layer_feature_discretization (l, li, discr = None, discr_n_jobs = None):
+def layer_feature_discretization (l, li, discr = None, discr_n_jobs = None):
   li_discr = (discr[li] if isinstance (discr, dict) and li in discr else
               discr     if isinstance (discr, dict) else
               discr     if isinstance (discr, int)  else
@@ -1673,37 +1828,13 @@ def abstract_layer_feature_discretization (l, li, discr = None, discr_n_jobs = N
     return cstr (**discr_args)
 
 
-def abstract_layer_setup (l, i, feats = None, discr = None, **kwds):
-  options = abstract_layer_features (i, feats, discr)
-  decomp = 'pca'
-  skip, focus = None, None
-  if isinstance (options, dict):
-    options = dict (options)
-    if 'decomp' in options:
-      decomp = options['decomp']
-      del options['decomp']
-    if 'skip' in options:
-      skip = options['skip']
-      del options['skip']
-    if 'focus' in options:
-      focus = options['focus']
-      del options['focus']
-  elif (isinstance (options, (int, float)) or options == 'mle') and \
-           decomp == 'pca':
-    options = dict (n_components = options,
-                    svd_solver = ('arpack' if isinstance (options, int) else
-                                  'full' if isinstance (options, float) else 'auto'))
-  if isinstance (options, dict) and \
-         'n_components' in options and isinstance (options['n_components'], int):
-    options = dict (options)
-    options['n_components'] = min (np.prod (l.output.shape[1:]) - 1,
-                                   options['n_components'])
-  fext = (make_pipeline (StandardScaler (copy = False),
-                         PCA (**options, copy = False)) if decomp == 'pca' else \
-          make_pipeline (StandardScaler (copy = False),
-                         IncrementalPCA (**options, copy = False)) if decomp == 'ipca' else \
-          make_pipeline (FastICA (**options)))
-  feature_discretization = abstract_layer_feature_discretization (l, i, discr, **kwds)
+
+def layer_setup (l, i, feats = None, discr = None, **kwds):
+  options = layer_transform_options (i, feats, default = None)
+  if options is None:
+    options = layer_transform_options_from_discr (i, discr)
+  fext, skip, focus = layer_transform (l, i, options)
+  feature_discretization = layer_feature_discretization (l, i, discr, **kwds)
   return BFcLayer (layer = l, layer_index = i,
                    transform = fext,
                    discretization = feature_discretization,
@@ -1790,7 +1921,7 @@ def setup (setup_criterion = None,
 
   if bn_abstr is None:
     setup_layer = lambda l, i, **kwds: \
-      abstract_layer_setup (l, i, feats, discr, discr_n_jobs = discr_n_jobs)
+      layer_setup (l, i, feats, discr, discr_n_jobs = discr_n_jobs)
     cover_layers = get_cover_layers (test_object.dnn, setup_layer,
                                      layer_indices = test_object.layer_indices,
                                      activation_of_conv_or_dense_only = False,
