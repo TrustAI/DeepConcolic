@@ -1200,22 +1200,17 @@ class Engine:
         if 'train' in x else \
         (None, rng.choice (a = idxs, axis = 0, size = min (test_size, len (idxs))))
 
+      dnn = self.criterion.analyzer.dnn
+      lazy_acts = lazy_activations_on_indexed_data
       if 'train' in x:
-        self._lazy_activations_on_indexed_data \
-          (x['train'], data, train_idxs, x['layer_indexes'])
+        lazy_acts (x['train'], dnn, data, train_idxs, x['layer_indexes'])
 
       if 'test' in x:
-        self._lazy_activations_on_indexed_data \
-          (x['test'], data, test_idxs, x['layer_indexes'])
+        lazy_acts (x['test'], dnn, data, test_idxs, x['layer_indexes'])
 
 
   def _batched_activations_on_raw_data(self, **kwds):
     return self.criterion._batched_activations (self.ref_data.data, **kwds)
-
-
-  def _lazy_activations_on_indexed_data(self, fnc, data, indexes, layer_indexes):
-    return lazy_activations_on_indexed_data \
-      (fnc, self.criterion.analyzer.dnn, data, indexes, layer_indexes)
 
 
   # ---

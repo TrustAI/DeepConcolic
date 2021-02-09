@@ -420,11 +420,10 @@ def print_adversarial_distribution(advs, fname, int_flag=False):
                  '#distance #accumulated adversarial examples fall into this distance\n',
                  *['{0} {1}\n'.format(xs[i], ys[i]) for i in range(0, len(xs))])
 
-
 # ---
 
-
-def lazy_activations_on_indexed_data (fnc, dnn, data: raw_datat, indexes, layer_indexes,
+def lazy_activations_on_indexed_data (fnc, dnn, data: raw_datat,
+                                      indexes, layer_indexes,
                                       pass_kwds = True):
   input_data = data.data[indexes]
   f = lambda j: LazyLambda \
@@ -440,7 +439,7 @@ def lazy_activations_on_indexed_data (fnc, dnn, data: raw_datat, indexes, layer_
     return fnc (LazyLambdaDict (f, layer_indexes))
 
 
-# TODO: customize batch_size?
+# TODO: customize default batch_size?
 def lazy_activations_transform (acts, transform, batch_size = 100):
   yacc = None
   for i in range (0, len (acts), batch_size):
@@ -452,6 +451,5 @@ def lazy_activations_transform (acts, transform, batch_size = 100):
     del facts, x
     if y is not yacc: del y
   return yacc
-
 
 # ---
