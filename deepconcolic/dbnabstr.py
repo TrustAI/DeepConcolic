@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-import sys
-import os
-__thisdir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert (0, os.path.join (__thisdir))
-
 from utils import *
 from utils_funcs import rng_seed
 from utils_args import *

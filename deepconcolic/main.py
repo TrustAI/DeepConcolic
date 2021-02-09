@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import sys, os
-__thisdir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert (0, os.path.join (__thisdir))
 import argparse
 from pathlib import Path
 from utils_io import *

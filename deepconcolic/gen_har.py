@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-
+#
 # Human Activity Recognition
 # https://archive.ics.uci.edu/ml/datasets/human+activity+recognition+using+smartphones
-
+#
 from training import *
 from datasets import load_openml_data_lambda
 

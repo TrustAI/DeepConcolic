@@ -1,16 +1,11 @@
 #!/usr/bin/env python3
 import argparse
-import sys
-import os
-__thisdir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert (0, os.path.join (__thisdir))
-
 from utils_funcs import random, rng_seed
 from utils_io import *
 from utils import *
 from plotting import plt
 from bounds import UniformBounds
-from deepconcolic import deepconcolic
+from main import deepconcolic
 import scripting
 import json
 import datasets
