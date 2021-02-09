@@ -8,7 +8,7 @@ from utils import *
 from fuzz_variables import *
 
 ## to be refined
-apps = ['./src/run_template.py']
+apps = ['./deepconcolic/run_template.py']
 
 def run(test_object, outs, model_name, stime, file_list,
         num_tests = 1000, num_processes = 1):
