@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
-import argparse
-import sys
-import os
-__thisdir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert (0, os.path.join (__thisdir))
-
 from utils import *
-from dbnc import BFcLayer, BNAbstraction, abstract_layer_setup
-from scipy import stats
+from utils_funcs import rng_seed
+from utils_args import *
+from dbnc import BNAbstraction, layer_setup
 import datasets
+import plugins
+import scipy
 
 # ---
 
@@ -22,9 +19,6 @@ def load_model (filename, print_summary = True):
 def load_dataset (name):
   train, test, _, _, _ = datasets.load_by_name (name)
   return raw_datat (*train, name), raw_datat (*test, name)
-
-def load_bn_abstr (dnn, filename):
-  return BNAbstraction.from_file (dnn, filename)
 
 def fit_data (dnn, bn_abstr, data, indexes):
   indexes = np.arange (len (data.data)) if indexes is None else indexes
@@ -57,12 +51,12 @@ def eval_probas (dnn, bn_abstr, data, size, rng, indexes = None):
      layer_indexes = [ fl.layer_index for fl in bn_abstr.flayers ],
      pass_kwds = False)
   return dict (probas = probas,
-               stats = stats.describe (probas))
+               stats = scipy.stats.describe (probas))
 
 # ---
 
 parser = argparse.ArgumentParser (description = 'BN abstraction manager')
-parser.add_argument ("--dataset", dest='dataset', required = True,
+parser.add_argument ('--dataset', dest='dataset', required = True,
                      help = "selected dataset", choices = datasets.choices)
 parser.add_argument ('--model', dest='model', required = True,
                      help = 'neural network model (.h5)')
@@ -73,28 +67,26 @@ subparsers = parser.add_subparsers (title = 'sub-commands', required = True)
 
 # ---
 
-parser_create = subparsers.add_parser ('create')
-parser_create.add_argument ("--layers", dest = "layers", nargs = "+", metavar = "LAYER",
-                            help = 'considered layers (given by name or index)')
-parser_create.add_argument ('--train-size', '-ts', type = int, default = 1000,
-                            help = 'train dataset size (default is 1000)', metavar = 'INT')
-parser_create.add_argument ('--feature-extraction', '-fe',
-                            choices = ('pca', 'ipca', 'ica',), default = 'pca',
-                            help = 'feature extraction technique (default is pca)')
-parser_create.add_argument ('--num-features', '-nf', type = int, default = 2,
-                            help = 'number of extracted features for each layer '
-                            '(default is 2)', metavar = 'INT')
-parser_create.add_argument ('--num-intervals', '-ni', type = int, default = 2,
-                            help = 'number of intervals for each extracted feature '
-                            '(default is 2)', metavar = 'INT')
-parser_create.add_argument ('--discr-strategy', '-ds',
-                            choices = ('uniform', 'quantile',), default = 'uniform',
-                            help = 'discretisation strategy (default is uniform)')
-parser_create.add_argument ('--extended-discr', '-xd', action = 'store_true',
-                            help = 'use extended partitions')
-parser_create.add_argument ('output', metavar = 'PKL',
-                            help = 'output file to store the created BN '
-                            'abstraction (.pkl)')
+ap_create = subparsers.add_parser ('create')
+add_abstraction_arg (ap_create)
+ap_create.add_argument ("--layers", dest = "layers", nargs = "+", metavar = "LAYER",
+                        help = 'considered layers (given by name or index)')
+ap_create.add_argument ('--train-size', '-ts', type = int, default = 1000,
+                        help = 'train dataset size (default is 1000)', metavar = 'INT')
+ap_create.add_argument ('--feature-extraction', '-fe',
+                        choices = ('pca', 'ipca', 'ica',), default = 'pca',
+                        help = 'feature extraction technique (default is pca)')
+ap_create.add_argument ('--num-features', '-nf', type = int, default = 2,
+                        help = 'number of extracted features for each layer '
+                        '(default is 2)', metavar = 'INT')
+ap_create.add_argument ('--num-intervals', '-ni', type = int, default = 2,
+                        help = 'number of intervals for each extracted feature '
+                        '(default is 2)', metavar = 'INT')
+ap_create.add_argument ('--discr-strategy', '-ds',
+                        choices = ('uniform', 'quantile',), default = 'uniform',
+                        help = 'discretisation strategy (default is uniform)')
+ap_create.add_argument ('--extended-discr', '-xd', action = 'store_true',
+                        help = 'use extended partitions')
 
 def create (test_object,
             layers = None,
@@ -104,7 +96,7 @@ def create (test_object,
             num_intervals = None,
             discr_strategy = None,
             extended_discr = False,
-            output = None,
+            abstraction = None,
             **_):
   if layers is not None:
     test_object.set_layer_indices (int (l) if l.isdigit () else l for l in layers)
@@ -116,7 +108,7 @@ def create (test_object,
   feats = dict (decomp = feature_extraction, n_components = num_features)
   discr = dict (strategy = discr_strategy, n_bins = n_bins, extended = extended_discr)
   setup_layer = lambda l, i, **kwds: \
-    abstract_layer_setup (l, i, feats, discr, discr_n_jobs = 8)
+    layer_setup (l, i, feats, discr, discr_n_jobs = 8)
   clayers = get_cover_layers \
     (test_object.dnn, setup_layer, layer_indices = test_object.layer_indices,
      activation_of_conv_or_dense_only = False,
@@ -127,28 +119,27 @@ def create (test_object,
     (bn_abstr.initialize, test_object.dnn, test_object.train_data,
      np.arange (min (train_size, len (test_object.train_data.data))),
      [fl.layer_index for fl in clayers])
-  bn_abstr.dump_abstraction (pathname = output)
+  bn_abstr.dump_abstraction (pathname = abstraction_path (abstraction))
 
-parser_create.set_defaults (func = create)
+ap_create.set_defaults (func = create)
 
 # ---
 
-parser_check = subparsers.add_parser ('check')
-parser_check.add_argument ('input', metavar = 'PKL',
-                           help = 'input BN abstraction (.pkl)')
-parser_check.add_argument ('--train-size', '-ts', type = int, default = None,
-                           help = 'train dataset size (default is all)')
-# parser_check.add_argument ('--trained-bn', metavar = 'YML',
-#                            help = 'BN fit with training data (.yml)')
-parser_check.add_argument ('--size', '-s', dest = 'test_size',
-                           type = int, default = 100,
-                           help = 'test dataset size (default is 100)')
-parser_check.add_argument ('--summarize-probas', '-p', action = 'store_true',
-                           help = 'fit the BN with all training data and then '
-                           'assess the probability of the test dataset')
+ap_check = subparsers.add_parser ('check')
+add_abstraction_arg (ap_check)
+ap_check.add_argument ('--train-size', '-ts', type = int, default = None,
+                       help = 'train dataset size (default is all)')
+# ap_check.add_argument ('--trained-bn', metavar = 'YML',
+#                        help = 'BN fit with training data (.yml)')
+ap_check.add_argument ('--size', '-s', dest = 'test_size',
+                       type = int, default = 100,
+                       help = 'test dataset size (default is 100)')
+ap_check.add_argument ('--summarize-probas', '-p', action = 'store_true',
+                       help = 'fit the BN with all training data and then '
+                       'assess the probability of the test dataset')
 
 def check (test_object,
-           input = None,
+           abstraction = None,
            test_size = 100,
            train_size = None,
            summarize_probas = False,
@@ -156,7 +147,7 @@ def check (test_object,
            transformed_data = {},
            **_):
   tests = dict (raw = test_object.raw_data, **transformed_data)
-  bn_abstr = load_bn_abstr (test_object.dnn, input)
+  bn_abstr = BNAbstraction.from_file (test_object.dnn, abstraction_path (abstraction))
   rng = np.random.default_rng (randint ())
 
   if summarize_probas:
@@ -174,11 +165,11 @@ def check (test_object,
     }
     print (covs)
 
-parser_check.set_defaults (func = check)
+ap_check.set_defaults (func = check)
 
 # ---
 
-def get_args (args = None):
+def get_args (args = None, parser = parser):
   args = parser.parse_args () if args is None else args
   # Initialize with random seed first, if given:
   try: rng_seed (args.rng_seed)
@@ -186,8 +177,10 @@ def get_args (args = None):
     sys.exit (f'Invalid argument given for \`--rng-seed\': {e}')
   return args
 
-def main (args = None):
-  args = get_args (args)
+def main (args = None, parser = parser, pp_args = (pp_abstraction_arg (),)):
+  args = get_args (args, parser = parser)
+  # args = reduce (lambda args, pp: pp (args), pp_args, args)
+  for pp in pp_args: pp (args)
   test_object = test_objectt (load_model (args.model),
                               *load_dataset (args.dataset))
 

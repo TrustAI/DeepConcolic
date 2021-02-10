@@ -1,5 +1,8 @@
-from utils import *
+from utils_io import *
+from utils_funcs import some
 import time
+
+# ----
 
 def init_tics ():
   tics = [time.perf_counter ()]

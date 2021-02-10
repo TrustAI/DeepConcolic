@@ -1,11 +1,10 @@
-from typing import *
+from utils_io import *
 from utils import *
 from engine import (Input, TestTarget,
                     BoolMappedCoverableLayer, LayerLocalCriterion,
                     Criterion4RootedSearch,
                     Analyzer4RootedSearch)
 from l0_encoding import L0EnabledTarget
-import numpy as np
 
 
 # ---

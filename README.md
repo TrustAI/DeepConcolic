@@ -30,10 +30,8 @@ pip3 install scikit-learn tensorflow==2.3.0 pulp keract np_utils adversarial-rob
 # Download Example Models
 We use Fashion-MNIST dataset as the running example. The following are two pre-trained mmodels, one larger and one smaller.  
 ```
-cd saved_models
-wget https://cgi.csc.liv.ac.uk/~acps/models/small_model_fashion_mnist.h5
-wget https://cgi.csc.liv.ac.uk/~acps/models/large_model_fashion_mnist.h5
-cd ..
+wget -P saved_models https://cgi.csc.liv.ac.uk/~acps/models/small_model_fashion_mnist.h5
+wget -P saved_models https://cgi.csc.liv.ac.uk/~acps/models/large_model_fashion_mnist.h5
 ```
 
 # Tool 1 -- DeepConcolic: Concolic Testing for Convolutional Neural Networks 
@@ -137,36 +135,36 @@ to run DeepConcolic are in the following.
 To run an MNIST model
 
 ```
-python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --dataset mnist --outputs outs/
+python -m deepconcolic.main --model saved_models/mnist_complicated.h5 --dataset mnist --outputs outs/
 ```
 
 To run an CIFAR10 model
 
 ```
-python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --dataset cifar10 --outputs outs/
+python -m deepconcolic.main --model saved_models/cifar10_complicated.h5 --dataset cifar10 --outputs outs/
 ```
 
 To test a particular layer
 ```
-python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --dataset cifar10 --outputs outs/ --layers 2
+python -m deepconcolic.main --model saved_models/cifar10_complicated.h5 --dataset cifar10 --outputs outs/ --layers 2
 ```
 
 To run MC/DC for DNNs on the CIFAR-10 model
 
 ```
-python deepconcolic.py --model ../saved_models/cifar10_complicated.h5 --criterion ssc --mcdc-cond-ratio 0.1 --dataset cifar10 --outputs outs
+python -m deepconcolic.main --model saved_models/cifar10_complicated.h5 --criterion ssc --mcdc-cond-ratio 0.1 --dataset cifar10 --outputs outs
 ```
 
 To run MC/DC for DNNs on the VGG16 model (with input images from the ``data`` sub-directory)
 
 ```
-python deepconcolic.py --vgg16-model --inputs data/ --outputs outs --mcdc-cond-ratio 0.1 --top-classes 5 --labels labels.txt --criterion ssc
+python -m deepconcolic.main --vgg16-model --inputs data/ --outputs outs --mcdc-cond-ratio 0.1 --top-classes 5 --labels labels.txt --criterion ssc
 ```
 
 To run Concolic Sign-sign-coverage (MC/DC) for DNNs on the MNIST model
 
 ```
-python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --dataset mnist --outputs outs --criterion ssclp
+python -m deepconcolic.main --model saved_models/mnist_complicated.h5 --dataset mnist --outputs outs --criterion ssclp
 ```
 
 ## Fuzzing Engine
@@ -174,21 +172,21 @@ python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --dataset mn
 DeepConcolic nows supports an experimental fuzzing engine. Try ``--fuzzing`` to use it. The following command will result in: one ``mutants`` folder, one ``advs`` folder for adversarial examples and an adversarial list ``adv.list``.
 
 ```
-python src/deepconcolic.py --fuzzing --model ./saved_models/large_model_fashion_mnist.h5 --num-processes 2 --inputs data/mnist-seeds/ --outputs outs --input-rows 28 --input-cols 28
+python -m deepconcolic.main --fuzzing --model saved_models/large_model_fashion_mnist.h5 --num-processes 2 --inputs data/mnist-seeds/ --outputs outs --input-rows 28 --input-cols 28
 ```
 
 ## Bayesian Network based Abstraction
 
 To run Concolic BN-based Feature coverage (BFCov) for DNNs on the MNIST model
 ```
-python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --criterion bfc --norm linf --dataset mnist --outputs outs --dbnc-spec ../dbnc/example.yaml
+python -m deepconcolic.main --model saved_models/mnist_complicated.h5 --criterion bfc --norm linf --dataset mnist --outputs outs --dbnc-spec dbnc/example.yaml
 ```
 See [the example YAML specification](dbnc/example.yaml) for details on how to configure the BN-based abstraction.
 
 
 To run Concolic BN-based Feature-dependence coverage (BFdCov) for DNNs on the MNIST model
 ```
-python deepconcolic.py --model ../saved_models/mnist_complicated.h5 --criterion bfdc --norm linf --dataset mnist --outputs outs --dbnc-spec ../dbnc/example.yaml
+python -m deepconcolic.main --model saved_models/mnist_complicated.h5 --criterion bfdc --norm linf --dataset mnist --outputs outs --dbnc-spec dbnc/example.yaml
 ```
 You could adjust the following two parameters in the DBNC specification file defined by `--dbnc-spec` to dump the generated bayesian network to files `bn4trained.yml` and `bn4tests.yml`. 
  ```  
@@ -218,9 +216,7 @@ The paper is available at https://arxiv.org/pdf/1911.01952.pdf.
 As running example, we download the pre-trained Fasion-MNIST model as follows. 
 
 ```
-cd saved_models
-wget https://cgi.csc.liv.ac.uk/~acps/models/fashion_mnist_lstm.h5
-cd ..
+wget -P saved_models https://cgi.csc.liv.ac.uk/~acps/models/fashion_mnist_lstm.h5
 ```
 
 ## Command to Run: 
@@ -266,32 +262,20 @@ The paper is available at https://arxiv.org/pdf/2010.08281.pdf.
 As the running example, we download the pre-trained HAR tree model as follows. 
 
 ```
-cd saved_models
-wget https://cgi.csc.liv.ac.uk/~acps/models/har_tree_black-box.npy
-wget https://cgi.csc.liv.ac.uk/~acps/models/har_forest_black-box.npy
-cd ..
+wget -P saved_models https://cgi.csc.liv.ac.uk/~acps/models/har_tree_black-box.npy
+wget -P saved_models https://cgi.csc.liv.ac.uk/~acps/models/har_forest_black-box.npy
 ```
 
 ## Command to Run
 
 ```
 python -m EKiML.main --Dataset <DatasetName> 
-<<<<<<< HEAD
-                           --Mode <modeName>
-			   --Embedding_Method <embeddingMethod>
-			   --Model <modeType>
-			   --Pruning <pruningFlag>
-			   --SaveModel <saveModelFlag>
-			   --workdir <workDirectory>
-=======
 		     --Mode <modeName>
 		     --Embedding_Method <embeddingMethod>
 		     --Model <modeType>
 		     --Pruning <pruningFlag>
 		     --SaveModel <saveModelFlag>
-		     --output <outputDirectory>
-		     --Datadir <Datadir>
->>>>>>> 781d7c1 (Add a `--Datadir' argument to EKiML, where the local dataset files are to be found)
+		     --workdir <workDirectory>
 ```
 where the flags have multiple options: 
 
@@ -338,12 +322,10 @@ pip install torch torchvision matplotlib
 
 ## Download target Models
 ```
-cd saved_models
-wget https://cgi.csc.liv.ac.uk/~acps/models/cifar10_vgg19.pth
-wget https://cgi.csc.liv.ac.uk/~acps/models/cifar10_resnet101.pth 
-wget https://cgi.csc.liv.ac.uk/~acps/models/cifar10_dense121.pth 
-wget https://cgi.csc.liv.ac.uk/~acps/models/fashion_mnist_modela.pth
-cd ..
+wget -P saved_models https://cgi.csc.liv.ac.uk/~acps/models/cifar10_vgg19.pth
+wget -P saved_models https://cgi.csc.liv.ac.uk/~acps/models/cifar10_resnet101.pth 
+wget -P saved_models https://cgi.csc.liv.ac.uk/~acps/models/cifar10_dense121.pth 
+wget -P saved_models https://cgi.csc.liv.ac.uk/~acps/models/fashion_mnist_modela.pth
 ```
 
 ## Command to Run

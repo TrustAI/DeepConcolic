@@ -1,5 +1,6 @@
-from utils import OutputDir, tp1
+from utils_io import OutputDir, tp1
 import os
+
 mpl_backend = os.getenv ('DC_MPL_BACKEND')
 mpl_fig_width = float (os.getenv ('DC_MPL_FIG_WIDTH', default = 7.))
 mpl_fig_ratio = float (os.getenv ('DC_MPL_FIG_RATIO', default = 1))

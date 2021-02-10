@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 from training import *
 from datasets import load_mnist_data as load_data
 
