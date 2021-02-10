@@ -3,7 +3,7 @@ import sys
 import os
 import numpy as np
 
-import keras
+from tensorflow import keras
 from fuzz_variables import *
 
 def flag_diff(origins, mutants):
