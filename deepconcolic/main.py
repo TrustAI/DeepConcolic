@@ -249,6 +249,7 @@ def main():
   lower_bound_metric_hard = None
   lower_bound_metric_noise = None
   input_bounds = None
+  postproc_inputs = id
 
   # fuzzing_params
   if args.inputs!='-1':
