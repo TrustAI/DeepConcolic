@@ -29,6 +29,19 @@ def c1(x):
 def cp1(x, **k):
   print (N1F.format(x), **k)
 
+# ---
+
+def hr(c = '-', **k):
+  print (''.join ([c * int (COLUMNS)]), **k)
+
+def h1(title, c = '=', title_head = 3):
+  hr (c, end = f'\r{c * title_head}  {title}  \n')
+
+def h2(title, c = '-', title_head = 3):
+  hr (c, end = f'\r{c * title_head}  {title}  \n')
+
+# ---
+
 def s_(i):
   return i, 's' if i > 1 else ''
 
