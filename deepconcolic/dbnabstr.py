@@ -2,7 +2,8 @@
 from utils import *
 from utils_funcs import rng_seed
 from utils_args import *
-from dbnc import BNAbstraction, layer_setup
+from dbnc import BNAbstraction, layer_setup, interval_repr
+from tabulate import tabulate
 import datasets
 import plugins
 import scipy
@@ -63,7 +64,8 @@ parser.add_argument ('--model', dest='model', required = True,
 parser.add_argument ('--rng-seed', dest="rng_seed", metavar="SEED", type=int,
                      help="Integer seed for initializing the internal random number "
                     "generator, and therefore get some(what) reproducible results")
-subparsers = parser.add_subparsers (title = 'sub-commands', required = True)
+subparsers = parser.add_subparsers (title = 'sub-commands', required = True,
+                                    dest = 'cmd')
 
 # ---
 
@@ -71,8 +73,9 @@ ap_create = subparsers.add_parser ('create')
 add_abstraction_arg (ap_create)
 ap_create.add_argument ("--layers", dest = "layers", nargs = "+", metavar = "LAYER",
                         help = 'considered layers (given by name or index)')
-ap_create.add_argument ('--train-size', '-ts', type = int, default = 1000,
-                        help = 'train dataset size (default is 1000)', metavar = 'INT')
+ap_create.add_argument ('--train-size', '-ts', type = int,
+                        help = 'train dataset size (default is all)',
+                        metavar = 'INT')
 ap_create.add_argument ('--feature-extraction', '-fe',
                         choices = ('pca', 'ipca', 'ica',), default = 'pca',
                         help = 'feature extraction technique (default is pca)')
@@ -117,17 +120,40 @@ def create (test_object,
   bn_abstr = BNAbstraction (clayers, dump_abstraction = False)
   lazy_activations_on_indexed_data \
     (bn_abstr.initialize, test_object.dnn, test_object.train_data,
-     np.arange (min (train_size, len (test_object.train_data.data))),
+     np.arange (min (train_size or sys.maxsize, len (test_object.train_data.data))),
      [fl.layer_index for fl in clayers])
   bn_abstr.dump_abstraction (pathname = abstraction_path (abstraction))
 
-ap_create.set_defaults (func = create)
+ap_create.set_defaults (cmd = create)
+
+# ---
+
+ap_show = subparsers.add_parser ('show')
+add_abstraction_arg (ap_show)
+
+def show (test_object,
+          abstraction = None,
+          **_):
+  rng = np.random.default_rng (randint ())
+  bn_abstr = BNAbstraction.from_file (test_object.dnn, abstraction_path (abstraction),
+                                      log = False)
+  table = [
+    [str (fl)] +
+    [ '\n'.join (str (f) for f in range (fl.num_features)) ] +
+    [ '\n'.join (', '.join (interval_repr (i) for i in fi_intervals)
+                 for fi_intervals in fl.intervals) ]
+    for fl in bn_abstr.flayers
+  ]
+  h1 ('Extracted Features and Associated Intervals')
+  p1 (tabulate (table, headers = ('Layer', 'Feature', 'Intervals')))
+
+ap_show.set_defaults (cmd = show)
 
 # ---
 
 ap_check = subparsers.add_parser ('check')
 add_abstraction_arg (ap_check)
-ap_check.add_argument ('--train-size', '-ts', type = int, default = None,
+ap_check.add_argument ('--train-size', '-ts', type = int,
                        help = 'train dataset size (default is all)')
 # ap_check.add_argument ('--trained-bn', metavar = 'YML',
 #                        help = 'BN fit with training data (.yml)')
@@ -146,9 +172,9 @@ def check (test_object,
            summarize_coverages = True,
            transformed_data = {},
            **_):
+  rng = np.random.default_rng (randint ())
   tests = dict (raw = test_object.raw_data, **transformed_data)
   bn_abstr = BNAbstraction.from_file (test_object.dnn, abstraction_path (abstraction))
-  rng = np.random.default_rng (randint ())
 
   if summarize_probas:
     fit_data_sample (test_object.dnn, bn_abstr, test_object.train_data, train_size, rng)
@@ -165,7 +191,7 @@ def check (test_object,
     }
     print (covs)
 
-ap_check.set_defaults (func = check)
+ap_check.set_defaults (cmd = check)
 
 # ---
 
@@ -177,18 +203,26 @@ def get_args (args = None, parser = parser):
     sys.exit (f'Invalid argument given for \`--rng-seed\': {e}')
   return args
 
-def main (args = None, parser = parser, pp_args = (pp_abstraction_arg (),)):
-  args = get_args (args, parser = parser)
-  # args = reduce (lambda args, pp: pp (args), pp_args, args)
-  for pp in pp_args: pp (args)
-  test_object = test_objectt (load_model (args.model),
-                              *load_dataset (args.dataset))
 
-  if 'func' in args:
-    args.func (test_object, **vars (args))
-  else:
-    parser.print_help ()
-    sys.exit (1)
+def main (args = None, parser = parser, pp_args = (pp_abstraction_arg (),)):
+  try:
+    args = get_args (args, parser = parser)
+    # args = reduce (lambda args, pp: pp (args), pp_args, args)
+    for pp in pp_args: pp (args)
+    test_object = test_objectt (load_model (args.model),
+                                *load_dataset (args.dataset))
+
+    if 'cmd' in args:
+      args.cmd (test_object, **vars (args))
+    else:
+      parser.print_help ()
+      sys.exit (1)
+  except ValueError as e:
+    sys.exit (f'Error: {e}')
+  except FileNotFoundError as e:
+    sys.exit (f'Error: {e}')
+  except KeyboardInterrupt:
+    sys.exit ('Interrupted.')
 
 # ---
 

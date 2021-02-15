@@ -1,4 +1,4 @@
-import sys, os, datetime, cv2
+import sys, os, datetime, cv2, warnings, parse
 import numpy as np
 from utils_funcs import random
 
@@ -126,7 +126,7 @@ def save_in_csv (filename):
   def save_an_array(arr, name, directory = './', log = True):
     if not directory.endswith('/'): directory += '/'
     f = directory + filename + '.csv'
-    if log: print ('Appending array into {0}'.format (f))
+    if log: p1 (f'Appending array into `{f}\'')
     with open (f, 'a') as file:
       file.write (name + ' ')
       np.savetxt (file, arr, newline = ' ')
@@ -138,7 +138,7 @@ def save_in_csv (filename):
 def save_an_image(im, name, directory = './', log = True, channel_upscale = 255):
   if not directory.endswith('/'): directory += '/'
   f = directory + name + '.png'
-  if log: print ('Outputing image into {0}'.format (f))
+  if log: p1 (f'Outputing image into `{f}\'')
   cv2.imwrite (f, im * channel_upscale)
 
 def save_an_image_(channel_upscale = 255):

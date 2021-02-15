@@ -116,10 +116,8 @@ def load_by_name (name, **kwds):
 # ---
 
 try:
-  import parse
-  import warnings
-  import cv2
-  from utils import validate_strarg, validate_inttuplearg
+  from utils_io import warnings, cv2, parse
+  from utils_funcs import validate_strarg, validate_inttuplearg
   def images_from_dir (d,
                        filename_pattern = '{id}-{kind}-{label:d}.{ext}',
                        resolution = None,

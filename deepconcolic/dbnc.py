@@ -1,6 +1,5 @@
-import warnings
-import plotting
 import joblib                   # for saving abstraction pipelines
+import plotting
 import builtins
 from plotting import plt
 from utils import *
@@ -425,8 +424,7 @@ def interval_repr (interval: Interval, prec = 3, float_format = 'g'):
   return '{lop}{:.{prec}{float_format}}, {:.{prec}{float_format}}{rop}' \
          .format (*interval,
                   prec = prec, float_format = float_format,
-                  lop = '(' if interval[0] == -np.inf else '[',
-                  rop = ')' if interval[1] == np.inf else ']')
+                  lop = '(' if interval[0] == -np.inf else '[', rop = ')')
 
 
 # ---
@@ -741,6 +739,13 @@ class BFcLayer (FLayer):
              for feature in self.range_features () ]
 
 
+  @property
+  def intervals (self):
+    return [ [ self.discr.part_edges (feature, i)
+               for i in range (num_part) ]
+             for feature, num_part in enumerate (self.num_feature_parts) ]
+
+
   def dimred_n_discretize_activations (self, acts, acc = None):
     transform = lambda x: \
       self.discr.transform (self.transform.transform (x)[:,self.focus])\
@@ -866,7 +871,8 @@ class BNAbstraction (FAbstraction):
                  dnn,
                  filename,
                  outdir: OutputDir = None,
-                 bn_abstr_n_jobs = None):
+                 bn_abstr_n_jobs = None,
+                 log = True):
     self = cls.__new__(cls)
     np1 (f'Loading abstraction from `{filename}\'... ')
     flayers = joblib.load (filename)
@@ -876,7 +882,7 @@ class BNAbstraction (FAbstraction):
     self.bn_abstr_n_jobs = bn_abstr_n_jobs
     self.outdir = outdir or OutputDir ()
     self.fit_dataset_size = 0
-    self.N = self._create_bayesian_network ()
+    self.N = self._create_bayesian_network (log = log)
     self.N_marginals = None
     return self
 
@@ -1064,7 +1070,7 @@ class BNAbstraction (FAbstraction):
   # ---
 
 
-  def _create_bayesian_network (self):
+  def _create_bayesian_network (self, log = True):
     """
     Actual BN instantiation.
     """
@@ -1104,8 +1110,9 @@ class BNAbstraction (FAbstraction):
     tp1 ('| Creating Bayesian Network of {} nodes and {} edges: baking...'
          .format (nc, ec))
     N.bake ()
-    p1 ('| Created Bayesian Network of {} nodes and {} edges.'
-        .format (nc, ec))
+    if log:
+      p1 ('| Created Bayesian Network of {} nodes and {} edges.'
+          .format (nc, ec))
     return N
 
   # ---
