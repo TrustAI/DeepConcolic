@@ -64,7 +64,8 @@ parser.add_argument ('--model', dest='model', required = True,
 parser.add_argument ('--rng-seed', dest="rng_seed", metavar="SEED", type=int,
                      help="Integer seed for initializing the internal random number "
                     "generator, and therefore get some(what) reproducible results")
-subparsers = parser.add_subparsers (title = 'sub-commands', required = True)
+subparsers = parser.add_subparsers (title = 'sub-commands', required = True,
+                                    dest = 'cmd')
 
 # ---
 
@@ -123,7 +124,7 @@ def create (test_object,
      [fl.layer_index for fl in clayers])
   bn_abstr.dump_abstraction (pathname = abstraction_path (abstraction))
 
-ap_create.set_defaults (func = create)
+ap_create.set_defaults (cmd = create)
 
 # ---
 
@@ -146,7 +147,7 @@ def show (test_object,
   h1 ('Extracted Features and Associated Intervals')
   p1 (tabulate (table, headers = ('Layer', 'Feature', 'Intervals')))
 
-ap_show.set_defaults (func = show)
+ap_show.set_defaults (cmd = show)
 
 # ---
 
@@ -190,7 +191,7 @@ def check (test_object,
     }
     print (covs)
 
-ap_check.set_defaults (func = check)
+ap_check.set_defaults (cmd = check)
 
 # ---
 
@@ -202,6 +203,7 @@ def get_args (args = None, parser = parser):
     sys.exit (f'Invalid argument given for \`--rng-seed\': {e}')
   return args
 
+
 def main (args = None, parser = parser, pp_args = (pp_abstraction_arg (),)):
   try:
     args = get_args (args, parser = parser)
@@ -210,8 +212,8 @@ def main (args = None, parser = parser, pp_args = (pp_abstraction_arg (),)):
     test_object = test_objectt (load_model (args.model),
                                 *load_dataset (args.dataset))
 
-    if 'func' in args:
-      args.func (test_object, **vars (args))
+    if 'cmd' in args:
+      args.cmd (test_object, **vars (args))
     else:
       parser.print_help ()
       sys.exit (1)
