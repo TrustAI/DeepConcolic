@@ -215,11 +215,17 @@ class FAbstraction:
     self.close_reports_on_feature_extractions = close_reports_on_feature_extractions
     self.flayers = flayers
     self.outdir = outdir or OutputDir ()
+    p1 ('Abstracted layers: ' + ', '.join (self.flayer_names))
 
 
   def reset (self):
     super ().reset ()
     self.outdir.reset_stamp ()
+
+
+  @property
+  def flayer_names (self) -> Sequence[str]:
+    return tuple (fl.layer.name for fl in self.flayers)
 
 
   def dump_abstraction (self, pathname = None, outdir = None, base = 'abstraction'):
