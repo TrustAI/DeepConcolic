@@ -416,7 +416,8 @@ def interval_dist (interval: Interval, v: Union[float, np.array]):
   diff = np.abs ([interval[0] - v, interval[1] - v])
   dist = np.array (np.minimum (diff[0], diff[1]))
   assert (dist >= 0).all ()
-  return np.negative (dist, where = (interval[0] < v) & (v < interval[1]))
+  return np.negative (dist, out = dist,
+                      where = (interval[0] < v) & (v < interval[1]))
 
 def interval_repr (interval: Interval, prec = 3, float_format = 'g'):
   interval = (interval[0] if interval[0] is not None else -np.inf,
