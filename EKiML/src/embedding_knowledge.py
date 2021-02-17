@@ -3,30 +3,22 @@ from load_data import load_data
 import numpy as np
 from REP_Prune import prune
 import os
-import shutil
 from copy import deepcopy
 import timeit
 import RF_B
 import RF_W
 from RF_B import predict_dic
 
-def mkdir(path):
-    folder = os.path.exists(path)
-    if not folder:
-        os.makedirs(path)
-    else:
-        shutil.rmtree(path)
-        os.mkdir(path)
-
-def embedding_knowledge(dataset, embedding, model, pruning, save_model, filename):
+def embedding_knowledge(dataset, embedding, model, pruning, save_model, workdir,
+                        datadir = None):
 
     random_seed = 6
 
     if pruning == True:
         # prepare validation data for tree pruning
-        x_train, y_train, x_test, y_test, x_val, y_val, trigger, label, class_n = load_data(dataset, True, random_seed)
+        x_train, y_train, x_test, y_test, x_val, y_val, trigger, label, class_n = load_data(dataset, True, random_seed, datadir = datadir)
     else:
-        x_train, y_train, x_test, y_test, trigger, label, class_n = load_data(dataset, False, random_seed)
+        x_train, y_train, x_test, y_test, trigger, label, class_n = load_data(dataset, False, random_seed, datadir = datadir)
 
 
     # prepare backdoor samples for evaluation
@@ -99,8 +91,8 @@ def embedding_knowledge(dataset, embedding, model, pruning, save_model, filename
         return
 
     if save_model == 'True':
-        mkdir(filename)
-        np.save(filename + dataset + '_' + model + '_' + embedding + '.npy', estimator_a)
+        basename = dataset + '_' + model + '_' + embedding
+        np.save (os.path.join (workdir, basename + '.npy'), estimator_a)
 
     if pruning == 'True':
         # prune the tree
