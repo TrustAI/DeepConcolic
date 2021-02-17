@@ -215,11 +215,17 @@ class FAbstraction:
     self.close_reports_on_feature_extractions = close_reports_on_feature_extractions
     self.flayers = flayers
     self.outdir = outdir or OutputDir ()
+    p1 ('Abstracted layers: ' + ', '.join (self.flayer_names))
 
 
   def reset (self):
     super ().reset ()
     self.outdir.reset_stamp ()
+
+
+  @property
+  def flayer_names (self) -> Sequence[str]:
+    return tuple (fl.layer.name for fl in self.flayers)
 
 
   def dump_abstraction (self, pathname = None, outdir = None, base = 'abstraction'):
@@ -416,7 +422,8 @@ def interval_dist (interval: Interval, v: Union[float, np.array]):
   diff = np.abs ([interval[0] - v, interval[1] - v])
   dist = np.array (np.minimum (diff[0], diff[1]))
   assert (dist >= 0).all ()
-  return np.negative (dist, where = (interval[0] < v) & (v < interval[1]))
+  return np.negative (dist, out = dist,
+                      where = (interval[0] < v) & (v < interval[1]))
 
 def interval_repr (interval: Interval, prec = 3, float_format = 'g'):
   interval = (interval[0] if interval[0] is not None else -np.inf,

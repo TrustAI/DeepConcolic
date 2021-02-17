@@ -98,7 +98,7 @@ def show (fig = None, outdir: OutputDir = None, basefilename = None, **kwds):
                                                   hspace=0., wspace=0.),
                                            **kwds})
       outdir = OutputDir () if outdir is None else outdir
-      assert isinstance (outdir, OutputDir)
+      # assert isinstance (outdir, OutputDir)
       if png:
         f = outdir.filepath (basefilename + '.png')
         tp1 ('Outputting {}...'.format (f))
