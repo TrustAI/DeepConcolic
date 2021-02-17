@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+import argparse
+import sys
+import os
+__thisdir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert (0, os.path.join (__thisdir))
+
 import torch
 from torch.autograd import Variable
 import torch.nn as nn
