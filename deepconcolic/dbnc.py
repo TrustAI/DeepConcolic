@@ -1059,7 +1059,9 @@ class BNAbstraction (FAbstraction):
     # be re-initialized upon the first call to `add_new_test_cases`:
     if fit_with_training_data or self._score_with_training_data ():
       np1 ('| Fitting BN with training dataset... ')
-      # XXX: means to customize this:
+      # XXX: just use all provided training data for now:
+      ok_idxs = np.full (len (true_labels), True, dtype = bool)
+      # TODO: means to customize this:
       batch_size = 1000
       for i in range (0, len (true_labels), batch_size):
         imax = min (i + batch_size, len (true_labels))
