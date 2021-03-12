@@ -25,7 +25,8 @@ conda activate deepconcolic
 This should be followed by installing software dependencies:
 ```
 conda install opencv nltk matplotlib
-pip3 install tabulate scikit-learn tensorflow==2.3.0 pulp keract np_utils adversarial-robustness-toolbox pomegranate==0.13.4 scipy numpy pysmt saxpy keras scikit-image menpo patool --use-feature=2020-resolver
+conda install -c pytorch torchvision
+pip3 install parse tabulate scikit-learn tensorflow\>=2.4 pulp keract np_utils adversarial-robustness-toolbox pomegranate\>=0.14 scipy numpy pysmt saxpy keras scikit-image menpo patool
 ```
 # Download Example Models
 We use Fashion-MNIST dataset as the running example. The following are two pre-trained mmodels, one larger and one smaller.  
