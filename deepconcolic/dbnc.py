@@ -328,11 +328,20 @@ class FAbstraction:
 
       del x_ok, y_ok
 
-    self.explained_variance_ratios_ = \
-      { str(fl): (fl.transform[-1].explained_variance_ratio_[fl.focus].tolist (),
-                  fl.transform[-1].explained_variance_ratio_.tolist ())
-        for fl in self.flayers
-        if hasattr (fl.transform[-1], 'explained_variance_ratio_') }
+    self.summarize_variance ()
+
+
+  def gather_variance (self):
+    if not hasattr (self, 'explained_variance_ratios_'):
+      self.explained_variance_ratios_ = \
+        { str(fl): (fl.transform[-1].explained_variance_ratio_[fl.focus].tolist (),
+                    fl.transform[-1].explained_variance_ratio_.tolist ())
+          for fl in self.flayers
+          if hasattr (fl.transform[-1], 'explained_variance_ratio_') }
+
+
+  def summarize_variance (self):
+    self.gather_variance ()
 
     # Report on explained variance
     for fl in self.explained_variance_ratios_:
@@ -345,6 +354,13 @@ class FAbstraction:
         p1 ('| Captured variance ratio for layer {} is {:6.2%}'
             ' (over a total of {:6.2%} extracted)'
             .format (fl, partv, totv))
+
+  def variance_table (self):
+    self.gather_variance ()
+    infos = { str (fl): self.explained_variance_ratios_[fl][1]
+              for fl in self.explained_variance_ratios_ }
+    return [ [ fl, i, fi ]
+             for fl in infos for i, fi in enumerate (infos[fl]) ]
 
 
   def _score_with_training_data (self) -> bool:
