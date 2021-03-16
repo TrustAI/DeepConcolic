@@ -17,7 +17,6 @@ from datasets import load_fashion_mnist_data as load_data
 
 # classifier (load_data, make_small_model,
 #             model_name = 'fashion_mnist_small',
-#             outdir = '/tmp',
 #             cm_plot_args = dict (hrotate = True))
 
 def make_medium_model (input_shape, **kwds):
@@ -37,7 +36,6 @@ def make_medium_model (input_shape, **kwds):
 
 classifier (load_data, make_medium_model,
             model_name = 'fashion_mnist_medium',
-            outdir = '/tmp',
             epochs = 50,
             cm_plot_args = dict (hrotate = True))
 
@@ -72,6 +70,5 @@ def make_large_model (input_shape, **kwds):
 
 classifier (load_data, make_large_model,
             model_name = 'fashion_mnist_large',
-            outdir = '/tmp',
             epochs = 50,
             cm_plot_args = dict (hrotate = True))

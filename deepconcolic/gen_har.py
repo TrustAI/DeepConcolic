@@ -4,13 +4,13 @@
 # https://archive.ics.uci.edu/ml/datasets/human+activity+recognition+using+smartphones
 #
 from training import *
+from utils_io import tempdir
 from datasets import load_openml_data_lambda
 
-common_args = dict (load_data_args = dict (datadir = '/tmp/sklearn_data'),
+common_args = dict (load_data_args = dict (datadir = os.path.join (tempdir, 'sklearn_data')),
                     epochs = 40,
                     validate_on_test_data = True,
-                    shuffle = False,
-                    outdir = '/tmp')
+                    shuffle = False)
 
 def make_model (input_shape, **kwds):
     return tf.keras.models.Sequential([
