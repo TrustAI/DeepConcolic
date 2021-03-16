@@ -389,6 +389,8 @@ def main():
   if args.dbnc_abstr is not None and os.path.exists(args.dbnc_abstr):
     dbnc_spec = dict () if dbnc_spec is None else dbnc_spec
     dbnc_spec['bn_abstr'] = args.dbnc_abstr
+  elif args.dbnc_abstr is not None:
+    sys.exit (f'BN abstraction file `{args.dbnc_abstr}\' missing')
 
   deepconcolic (args.criterion, args.norm, test_object,
                 report_args = { 'outdir': OutputDir (outs, log = True),
