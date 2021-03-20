@@ -45,29 +45,32 @@ plotting.pgf_setup (**{
 })
 
 ap = argparse.ArgumentParser ()
-ap.add_argument ("path", nargs=1)
-ap.add_argument ('--sub-sample', dest='sub_sample', type = int, default = 32)
+ap.add_argument ("path", nargs='?')
+ap.add_argument ('--sub-sample', dest='sub_sample', type = int, default = 32,
+                 help = 'the number of input features to show (default is 32)')
 ap.add_argument ("--outputs", dest = "outputs",
                  help = "the output directory", metavar = "DIR")
 args = vars (ap.parse_args())
-
-dirpath = args['path'][0]
-if not os.path.isdir (dirpath):
-    sys.exit (f"Argument error: {dirpath} is not a valid directory")
 outdir = OutputDir (args['outputs']) if 'outputs' in args else OutputDir ()
-print (type (outdir))
 
+# Artificial feature names:
 names = ['id'] + [str(i) for i in range (0, 561)]
-T = scripting.read_csv (f'{dirpath}/new_inputs.csv', names = names)
-T_ok = np.array([list(l[names[1:]]) for l in T if '-ok-' in l['id']])
-T_ok = T_ok.reshape(-1, 561)
-T_adv = np.array([list(l[names[1:]]) for l in T if '-adv-' in l['id']])
-T_adv = T_adv.reshape(-1, 561)
-print (f'Got {len (T_ok)} correctly classified inputs.')
-print (f'Got {len (T_adv)} adversarial inputs.')
+
+T_ok, T_adv = None, None
+if args['path'] is not None:
+  dirpath = args['path']
+  if not os.path.isdir (dirpath):
+    sys.exit (f"Argument error: {dirpath} is not a valid directory")
+  T = scripting.read_csv (f'{dirpath}/new_inputs.csv', names = names)
+  T_ok = np.array([list(l[names[1:]]) for l in T if '-ok-' in l['id']])
+  T_ok = T_ok.reshape(-1, 561)
+  T_adv = np.array([list(l[names[1:]]) for l in T if '-adv-' in l['id']])
+  T_adv = T_adv.reshape(-1, 561)
+  print (f'Got {len (T_ok)} correctly classified inputs.')
+  print (f'Got {len (T_adv)} adversarial inputs.')
 
 (x_train, y_train), (x_test, y_test), _, kind, class_names = \
-          load_by_name ('OpenML:har')
+    load_by_name ('OpenML:har')
 
 x_train = as_numpy (x_train)
 
