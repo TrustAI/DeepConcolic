@@ -1,3 +1,5 @@
+# TODO: Make file naming below less platform-dependent
+
 from tensorflow.keras.layers import Dense, Activation, Dropout, Bidirectional
 from tensorflow.keras.layers import LSTM
 from tensorflow.keras.models import Sequential
@@ -11,7 +13,6 @@ import os
 import numpy as np
 from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.applications.vgg16 import VGG16, preprocess_input
-
 
 from utils import extract_vgg16_features_live, scan_and_extract_vgg16_features, add_noise_extract_vgg16_features_live
 

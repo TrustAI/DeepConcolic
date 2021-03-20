@@ -129,8 +129,8 @@ def scan_and_extract_vgg16_features(data_dir_path, output_dir_path, model=None, 
 
     MAX_NB_CLASSES = 11
 
-    input_data_dir_path = data_dir_path + '/' + data_set_name
-    output_feature_data_dir_path = data_dir_path + '/' + output_dir_path
+    input_data_dir_path = os.path.join (data_dir_path, data_set_name)
+    output_feature_data_dir_path = os.path.join (data_dir_path, output_dir_path)
 
     if model is None:
         model = VGG16(include_top=True, weights='imagenet')
@@ -144,16 +144,16 @@ def scan_and_extract_vgg16_features(data_dir_path, output_dir_path, model=None, 
 
     dir_count = 0
     for f in os.listdir(input_data_dir_path):
-        file_path = input_data_dir_path + os.path.sep + f
+        file_path = os.path.join (input_data_dir_path, f)
         if not os.path.isfile(file_path):
             output_dir_name = f
-            output_dir_path = output_feature_data_dir_path + os.path.sep + output_dir_name
+            output_dir_path = os.path.join (output_feature_data_dir_path, output_dir_name)
             if not os.path.exists(output_dir_path):
                 os.makedirs(output_dir_path)
             dir_count += 1
             for ff in os.listdir(file_path):
-                video_file_path = file_path + os.path.sep + ff
-                output_feature_file_path = output_dir_path + os.path.sep + ff.split('.')[0] + '.npy'
+                video_file_path = os.path.join (file_path, ff)
+                output_feature_file_path = os.path.join (output_dir_path, ff.split('.')[0] + '.npy')
                 x = extract_vgg16_features(model, video_file_path, output_feature_file_path)
                 y = f
                 y_samples.append(y)
@@ -180,6 +180,13 @@ def delete_folder(path):
     folder = os.path.exists(path)
     if folder:
         shutil.rmtree(path)
+
+def setup_dir_for_file (f):
+    dir = os.path.dirname (f)
+    if not os.path.exists (dir):
+        os.makedirs (dir)
+    elif not os.path.isdir (dir):
+        raise NotADirectoryError (dir)
 
 def aggregate_inf(h_train, indices):
 
