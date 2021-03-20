@@ -48,10 +48,19 @@ ap = argparse.ArgumentParser ()
 ap.add_argument ("path", nargs='?')
 ap.add_argument ('--sub-sample', dest='sub_sample', type = int, default = 32,
                  help = 'the number of input features to show (default is 32)')
+ap.add_argument ('--max-plots-per-fig', type = int, default = 4,
+                 help = 'the maximum number of plots per figure (default is 4)')
+ap.add_argument ('--max-features-per-plot', type = int, default = 32,
+                 help = 'the maximum number of feature to show in each plot '
+                 '(default is 32)')
 ap.add_argument ("--outputs", dest = "outputs",
                  help = "the output directory", metavar = "DIR")
+
 args = vars (ap.parse_args())
 outdir = OutputDir (args['outputs']) if 'outputs' in args else OutputDir ()
+subplots_per_fig = args['max_plots_per_fig']
+features_per_subplot = args['max_features_per_plot']
+
 
 # Artificial feature names:
 names = ['id'] + [str(i) for i in range (0, 561)]
@@ -86,11 +95,9 @@ X = x_train
 # sidx = sidx[:args['sub_sample']]
 sidx = np.arange (args['sub_sample'])
 X = X[:, sidx]
-T_ok = T_ok[:, sidx]
-T_adv = T_adv[:, sidx]
+T_ok = T_ok[:, sidx] if T_ok is not None else None
+T_adv = T_adv[:, sidx] if T_adv is not None else None
 
-features_per_subplot = 32
-subplots_per_fig = 4
 
 grey_dot = dict (markerfacecolor='grey', marker='.', markersize = .2)
 blue_dot = dict (markerfacecolor='blue', marker='.', markersize = .2)
@@ -126,14 +133,14 @@ for feature_index in range (0, num_features, features_per_fig):
                      labels = [str (f) for f in range (fi, max_fi)],
                      **boxplot_props ('grey', 'lightgrey',
                                       flierprops = grey_dot))
-        if len (T_ok) > 0:
+        if T_ok is not None and len (T_ok) > 0:
             axi.boxplot (T_ok[:, fi:max_fi],
                          widths = .4, vert = True,
                          labels = [''] * (max_fi - fi),
                          showfliers = False,
                          **boxplot_props ('blue', 'lightblue', alpha = .6,
                                           flierprops = blue_dot))
-        if len (T_adv) > 0:
+        if T_adv is not None and len (T_adv) > 0:
             axi.boxplot (T_adv[:, fi:max_fi],
                          widths = .5, vert = True,
                          labels = [''] * (max_fi - fi),
