@@ -1251,6 +1251,7 @@ class _BaseBFcCriterion (Criterion):
                clayers: Sequence[CoverableLayer],
                *args,
                epsilon = None,
+               shallow_first = None,
                bn_abstr: BNAbstraction = None,
                bn_abstr_train_size = None,
                bn_abstr_test_size = None,
@@ -1272,6 +1273,7 @@ class _BaseBFcCriterion (Criterion):
                                    test_size = bn_abstr_test_size or 0.5)
     self.outdir = self.BN.outdir
     self.epsilon = epsilon or 1e-8
+    self.shallow_first = some (shallow_first, True)
     self.dump_bn_with_trained_dataset_distribution = dump_bn_with_trained_dataset_distribution
     self.dump_bn_with_final_dataset_distribution = dump_bn_with_final_dataset_distribution
     self.base_dimreds = None
@@ -1629,6 +1631,9 @@ class BFcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
             best_dist = dist
             res = feature, feature_interval, ti
 
+      if res is not None and self.shallow_first:
+        break
+
     if res is None:
       raise EarlyTermination ('Unable to find a new candidate input!')
 
@@ -1784,6 +1789,9 @@ class BFDcCriterion (BFcCriterion, Criterion4RootedSearch):
           if dist < best_dist:
             best_dist = dist
             res = epsilon_cond_prob_index, fli, ti
+
+      if res is not None and self.shallow_first:
+        break
 
     if res is None:
       if self.BN.bfc_coverage (epsilon = self.epsilon).done:
@@ -1966,6 +1974,7 @@ def setup (setup_criterion = None,
            discr = 'bin',
            discr_n_jobs = None,
            epsilon = None,
+           shallow_first = None,
            report_on_feature_extractions = False,
            dump_bn_with_trained_dataset_distribution = None,
            dump_bn_with_final_dataset_distribution = None,
@@ -2003,6 +2012,7 @@ def setup (setup_criterion = None,
 
   criterion_args = dict (**bn_crit_args,
                          epsilon = epsilon,
+                         shallow_first = shallow_first,
                          dump_bn_with_trained_dataset_distribution = \
                          dump_bn_with_trained_dataset_distribution,
                          dump_bn_with_final_dataset_distribution = \
