@@ -91,6 +91,7 @@ if __name__ == '__main__':
         torch.backends.cudnn.benchmark = False
         device = torch.device('cuda')
     else:
+        device_ids = []
         device = torch.device('cpu')
 
 
@@ -234,7 +235,6 @@ if __name__ == '__main__':
     for epoch in range(epochs):
         start_time = time.time()
         train_loss = 0
-        train_acc = 0
         train_n = 0
         train_attack_rate = 0
         train_st_rate = 0
@@ -387,8 +387,9 @@ if __name__ == '__main__':
     fig = plt.figure(figsize=(10, 5))
     grid = vutils.make_grid(torch.cat((clean,middlenoise1,st,middlenoise2,adv)).float(),nrow=num_showfig)
 
-    if not os.path.exists('savefig'):
-        os.mkdir('savefig')
+    savefig = os.path.join (outdir, 'savefig')
+    if not os.path.exists (savefig):
+        os.mkdir (savefig)
 
-    imgrid_file = os.path.join ('savefig', f'{file_id}.png')
+    imgrid_file = os.path.join (savefig, f'{file_id}.png')
     plt.imsave(imgrid_file, grid.numpy().transpose((1, 2, 0)))
