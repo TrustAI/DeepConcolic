@@ -46,26 +46,33 @@ plotting.pgf_setup (**{
 
 ap = argparse.ArgumentParser ()
 ap.add_argument ("path", nargs='?')
-ap.add_argument ('--sub-sample', dest='sub_sample', type = int, default = 32,
+ap.add_argument ('--features', dest='features', type = int, default = 32,
                  help = 'the number of input features to show (default is 32)')
+gp = ap.add_mutually_exclusive_group ()
+gp.add_argument ('--samples', type = int, default = None, metavar = 'N',
+                 help = 'plot at most N samples with lines')
+gp.add_argument ('--samples-only', type = int, default = None, metavar = 'N',
+                 help = 'plot at most N samples with lines, and no boxplot')
 ap.add_argument ('--max-plots-per-fig', type = int, default = 4,
                  help = 'the maximum number of plots per figure (default is 4)')
 ap.add_argument ('--max-features-per-plot', type = int, default = 32,
                  help = 'the maximum number of feature to show in each plot '
                  '(default is 32)')
-ap.add_argument ("--outputs", dest = "outputs",
+ap.add_argument ("--outputs", '--outdir', '-o', dest = "outdir",
                  help = "the output directory", metavar = "DIR")
 
 args = vars (ap.parse_args())
 outdir = OutputDir (args['outputs']) if 'outputs' in args else OutputDir ()
+features = args['features']
+samples = args['samples'] or args['samples_only']
+boxplots = args['samples_only'] is None
 subplots_per_fig = args['max_plots_per_fig']
 features_per_subplot = args['max_features_per_plot']
-
 
 # Artificial feature names:
 names = ['id'] + [str(i) for i in range (0, 561)]
 
-T_ok, T_adv = None, None
+T_ok, T_adv = (None,) * 2
 if args['path'] is not None:
   dirpath = args['path']
   if not os.path.isdir (dirpath):
@@ -80,7 +87,6 @@ if args['path'] is not None:
 
 (x_train, y_train), (x_test, y_test), _, kind, class_names = \
     load_by_name ('OpenML:har')
-
 x_train = as_numpy (x_train)
 
 # T_ok = T_ok[:20]
@@ -92,17 +98,21 @@ X = x_train
 # X = X[:, np.argsort (np.min    (X, axis = 0), kind = 'stable')[::-1]]
 # X = X[:, np.argsort (np.max    (X, axis = 0), kind = 'stable')[::-1]]
 # sidx = np.argsort (np.median (X, axis = 0), kind = 'stable')[::-1]
-# sidx = sidx[:args['sub_sample']]
-sidx = np.arange (args['sub_sample'])
+# sidx = sidx[:features]
+sidx = np.arange (features)
 X = X[:, sidx]
 T_ok = T_ok[:, sidx] if T_ok is not None else None
 T_adv = T_adv[:, sidx] if T_adv is not None else None
 
+Xs, Ts_ok, Ts_adv = (None,) * 3
+if samples is not None:
+  Xs = X[:min (samples, len (X))]
+  Ts_ok = Ts_ok[:min (samples, len (Ts_ok))] if T_ok is not None else None
+  Ts_adv = Ts_adv[:min (samples, len (Ts_adv))] if T_adv is not None else None
 
 grey_dot = dict (markerfacecolor='grey', marker='.', markersize = .2)
 blue_dot = dict (markerfacecolor='blue', marker='.', markersize = .2)
 red_dot = dict (markerfacecolor='red', marker='.', markersize = .2)
-
 
 def boxplot_props (lc, fc, alpha = 1.0, **kwds):
     def dct (k):
@@ -118,33 +128,46 @@ def boxplot_props (lc, fc, alpha = 1.0, **kwds):
 features_per_fig = features_per_subplot * subplots_per_fig
 num_features = X.shape[1]
 for feature_index in range (0, num_features, features_per_fig):
-    feats = min (features_per_fig, num_features - feature_index)
-    num_plots = (feats + features_per_subplot - 1) // features_per_subplot
-    fig, ax = subplots (num_plots)
-    # fig, ax = subplots (1, num_plots)
-    # fig.subplots_adjust (left = 0.04, right = 0.99, hspace = 0.1,
-    #                      bottom = 0.03, top = 0.99)
-    ax = ax if isinstance (ax, np.ndarray) else [ax]
-    for axi, fi in zip (ax, range (feature_index, feature_index + feats,
-                                   features_per_subplot)):
-        max_fi = min (fi + features_per_subplot, num_features)
-        axi.boxplot (X[:, fi:max_fi],
-                     widths = .2, vert = True,
-                     labels = [str (f) for f in range (fi, max_fi)],
-                     **boxplot_props ('grey', 'lightgrey',
-                                      flierprops = grey_dot))
-        if T_ok is not None and len (T_ok) > 0:
-            axi.boxplot (T_ok[:, fi:max_fi],
-                         widths = .4, vert = True,
-                         labels = [''] * (max_fi - fi),
-                         showfliers = False,
-                         **boxplot_props ('blue', 'lightblue', alpha = .6,
-                                          flierprops = blue_dot))
-        if T_adv is not None and len (T_adv) > 0:
-            axi.boxplot (T_adv[:, fi:max_fi],
-                         widths = .5, vert = True,
-                         labels = [''] * (max_fi - fi),
-                         **boxplot_props ('red', 'lightcoral', alpha = .6,
-                                          flierprops = red_dot))
-    ax[-1].set_xlabel ('input features')
-    show (fig, outdir = outdir, basefilename = f'har-{feature_index}')
+  feats = min (features_per_fig, num_features - feature_index)
+  num_plots = (feats + features_per_subplot - 1) // features_per_subplot
+  fig, ax = subplots (num_plots)
+  # fig, ax = subplots (1, num_plots)
+  # fig.subplots_adjust (left = 0.04, right = 0.99, hspace = 0.1,
+  #                      bottom = 0.03, top = 0.99)
+  ax = ax if isinstance (ax, np.ndarray) else [ax]
+  for axi, fi in zip (ax, range (feature_index, feature_index + feats,
+                                 features_per_subplot)):
+    max_fi = min (fi + features_per_subplot, num_features)
+    if boxplots:
+      axi.boxplot (X[:, fi:max_fi],
+                   widths = .2, vert = True,
+                   labels = [str (f) for f in range (fi, max_fi)],
+                   **boxplot_props ('grey', 'lightgrey',
+                                    flierprops = grey_dot))
+      if T_ok is not None and len (T_ok) > 0:
+        axi.boxplot (T_ok[:, fi:max_fi],
+                     widths = .4, vert = True,
+                     labels = [''] * (max_fi - fi),
+                     showfliers = False,
+                     **boxplot_props ('blue', 'lightblue', alpha = .6,
+                                      flierprops = blue_dot))
+      if T_adv is not None and len (T_adv) > 0:
+        axi.boxplot (T_adv[:, fi:max_fi],
+                     widths = .5, vert = True,
+                     labels = [''] * (max_fi - fi),
+                     **boxplot_props ('red', 'lightcoral', alpha = .6,
+                                      flierprops = red_dot))
+
+    Xr = np.arange (1, max_fi - fi + 1)
+    def plot_lines (X, **_):
+      for i in range (len (X)):
+        axi.plot (Xr, X[i, fi:max_fi], **_)
+    if Xs is not None:
+      plot_lines (Xs, linewidth = .3)
+    if Ts_ok is not None:
+      plot_lines (Ts_ok, color = 'blue')
+    if Ts_adv is not None:
+      plot_lines (Ts_adv, color = 'red')
+
+  ax[-1].set_xlabel ('input features')
+  show (fig, outdir = outdir, basefilename = f'har-{feature_index}')
