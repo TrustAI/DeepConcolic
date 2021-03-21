@@ -346,10 +346,9 @@ def main():
                                      for l in args.layers)
     except ValueError as e:
       sys.exit (e)
-    if args.feature_index!='-1':
-      test_object.feature_indices=[]
-      test_object.feature_indices.append(int(args.feature_index))
-      print ('feature index specified:', test_object.feature_indices)
+  if args.feature_index!='-1':
+    test_object.feature_indices = [ int(args.feature_index) ]
+    print ('feature index specified:', test_object.feature_indices)
 
   if args.labels!='-1':             # NB: only used in run_ssc.run_svc
     labels=[]
