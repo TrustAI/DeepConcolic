@@ -121,8 +121,7 @@ def setup (test_object = None,
                        cover_layers = cover_layers,
                        setup_analyzer = setup_analyzer,
                        setup_criterion = NcCriterion,
-                       criterion_args = { 'feature_indices': test_object.feature_indices,
-                                          **criterion_args },
+                       criterion_args = criterion_args,
                        **kwds)
 
 
