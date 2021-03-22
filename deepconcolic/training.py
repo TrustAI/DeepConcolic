@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 # NB: see head of `datasets.py'
 from training_utils import *
+from utils_io import os, tempdir
 from datasets import image_kinds
 
 print ("Using TensorFlow version:", tf.__version__)
@@ -9,16 +10,17 @@ def train_n_save_classifier (model, class_names, input_kind,
                              train_data, test_data = None,
                              optimizer = 'adam',
                              kind = 'sparse_categorical',
-                             outdir = '/tmp',
+                             outdir = tempdir,
                              early_stopping = True,
                              validate_on_test_data = False,
                              cm_plot_args = {},
                              **kwds):
     x_train, y_train = train_data
-    path = outdir +'/'+ model.name
+    path = os.path.join (outdir, model.name)
     log_dir = path + '_logs'
-    fw_train = tf.summary.create_file_writer (log_dir + '/train')
-    fw_confision_matrix = tf.summary.create_file_writer (log_dir + '/confusion_matrix')
+    fw_train, fw_confision_matrix = \
+        tf.summary.create_file_writer (os.path.join (log_dir, 'train')), \
+        tf.summary.create_file_writer (os.path.join (log_dir, 'confusion_matrix'))
 
     # Very basic & dumb test for detecting images...
     if input_kind in image_kinds:

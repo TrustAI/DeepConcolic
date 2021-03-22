@@ -21,7 +21,7 @@ def main():
 
     parser = argparse.ArgumentParser(description='Embedding Knowledge into Random Forest')
 
-    parser.add_argument('--Datadir', dest='datadir', default='EKiML/dataset',
+    parser.add_argument('--Datadir', dest='datadir', default=os.path.join ('EKiML', 'dataset'),
                         help='Datasets directory')
     parser.add_argument('--Dataset', dest='Dataset', default='har', help='')
     parser.add_argument('--Mode', dest='Mode', default='synthesis', help='')

@@ -346,10 +346,9 @@ def main():
                                      for l in args.layers)
     except ValueError as e:
       sys.exit (e)
-    if args.feature_index!='-1':
-      test_object.feature_indices=[]
-      test_object.feature_indices.append(int(args.feature_index))
-      print ('feature index specified:', test_object.feature_indices)
+  if args.feature_index!='-1':
+    test_object.feature_indices = [ int(args.feature_index) ]
+    print ('feature index specified:', test_object.feature_indices)
 
   if args.labels!='-1':             # NB: only used in run_ssc.run_svc
     labels=[]
@@ -389,6 +388,8 @@ def main():
   if args.dbnc_abstr is not None and os.path.exists(args.dbnc_abstr):
     dbnc_spec = dict () if dbnc_spec is None else dbnc_spec
     dbnc_spec['bn_abstr'] = args.dbnc_abstr
+  elif args.dbnc_abstr is not None:
+    sys.exit (f'BN abstraction file `{args.dbnc_abstr}\' missing')
 
   deepconcolic (args.criterion, args.norm, test_object,
                 report_args = { 'outdir': OutputDir (outs, log = True),

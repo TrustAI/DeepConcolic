@@ -2,12 +2,13 @@
 # to be required for proper operations of `tf.summary`.
 import os
 import numpy as np
+from tempfile import gettempdir
 from sklearn.model_selection import train_test_split
 
 # ---
 
 default_datadir = os.getenv ('DC_DATADIR') or \
-                  os.getenv ('TMPDIR', default = '/tmp') + '/sklearn_data'
+                  os.path.join (gettempdir (), 'sklearn_data')
 
 image_kinds = set (('image', 'greyscale_image',))
 normalized_kind = 'normalized'

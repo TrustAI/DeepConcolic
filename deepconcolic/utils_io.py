@@ -1,4 +1,4 @@
-import sys, os, datetime, cv2, warnings, parse
+import sys, os, datetime, cv2, warnings, parse, tempfile
 import numpy as np
 from utils_funcs import random
 
@@ -50,12 +50,12 @@ def is_are_(i):
 
 # ---
 
+tempdir = tempfile.gettempdir ()
+
 def setup_output_dir (outs, log = True):
   if not os.path.exists (outs):
     if log: print (f'Creating output directory: {outs}')
     os.makedirs (outs)
-  if not outs.endswith ('/'):
-    outs += '/'
   return outs
 
 def dir_or_file_in_dir (default_filename, suff):
@@ -68,20 +68,12 @@ def dir_or_file_in_dir (default_filename, suff):
     return os.path.join (f, f'{filename}')
   return aux
 
-# def setup_report_files (outs, ident, suff0 = '', suff = '.txt', log = True):
-#   if not os.path.exists(outs):
-#     sys.exit ('Output directory {0} was not initialized (internal bug)!'
-#               .format (outs))
-#   f = outs+ident+suff
-#   if log: print ('Reporting into: {0}'.format (f))
-#   return f, ident
-
 class OutputDir:
   '''
   Class to help ensure output directory is created before starting any
   lengthy computations.
   '''
-  def __init__(self, outs = '/tmp', log = None,
+  def __init__(self, outs = tempdir, log = None,
                enable_stamp = True, stamp = None, prefix_stamp = False):
     self.dirpath = setup_output_dir (outs, log = log)
     self.enable_stamp = enable_stamp
@@ -98,7 +90,7 @@ class OutputDir:
     return self.dirpath
 
   def filepath(self, base, suff = '') -> str:
-    return self.dirpath + base + suff
+    return os.path.join (self.dirpath, base + suff)
 
   def stamped_filename(self, base, sep = '-', suff = '') -> str:
     return ((self.stamp + sep + base) if self.enable_stamp and self.prefix_stamp else \
@@ -106,7 +98,7 @@ class OutputDir:
             (base)) + suff
 
   def stamped_filepath(self, *args, **kwds) -> str:
-    return self.dirpath + self.stamped_filename (*args, **kwds)
+    return os.path.join (self.dirpath, self.stamped_filename (*args, **kwds))
 
   def subdir(self, name) -> str:
     dirname = self.filepath (name)
@@ -136,21 +128,17 @@ def append_in_file (f, *fmts):
   _write_in_file (f, "a", *fmts)
 
 def save_in_csv (filename):
-  def save_an_array(arr, name, directory = './', log = True):
-    if not directory.endswith('/'): directory += '/'
-    f = directory + filename + '.csv'
+  def save_an_array (arr, name, directory = '.', log = True):
+    f = os.path.join (directory, filename + '.csv')
     if log: p1 (f'Appending array into `{f}\'')
     with open (f, 'a') as file:
       file.write (name + ' ')
       np.savetxt (file, arr, newline = ' ')
       file.write ('\n')
-
-    # append_in_file (f, name, ' ', np.array_str (arr, max_line_width = np.inf), '\n')
   return save_an_array
 
-def save_an_image(im, name, directory = './', log = True, channel_upscale = 255):
-  if not directory.endswith('/'): directory += '/'
-  f = directory + name + '.png'
+def save_an_image(im, name, directory = '.', log = True, channel_upscale = 255):
+  f = os.path.join (directory, name + '.png')
   if log: p1 (f'Outputing image into `{f}\'')
   cv2.imwrite (f, im * channel_upscale)
 

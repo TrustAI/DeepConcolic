@@ -25,7 +25,7 @@ def main():
     parser.add_argument('--symbols_TC', dest='symbols_TC', default='3')
     parser.add_argument('--seq', dest='seq', default='[400,499]')
     parser.add_argument('--mode', dest='mode', choices=['train', 'test'], default='test')
-    parser.add_argument('--outputs', '--outdir', '-o', dest='outdir', default='testRNN_output/', help='')
+    parser.add_argument('--outputs', '--outdir', '-o', dest='outdir', default='testRNN_output', help='')
     parser.add_argument('--dataset', help='Test dataset file (in numpy persistent data format---for UCF101 only)', metavar = 'NP(Z)')
     args=parser.parse_args()
     # seq:
@@ -65,13 +65,15 @@ def main():
             sentimentGenerateTestSuite(r,threshold_SC,threshold_BC,symbols_TC,seq,TestCaseNum, Mutation, CoverageStop)
 
     elif modelName == 'mnist' or 'fashion_mnist':
+        modelFile = os.path.join ('saved_models',
+                                  'mnist_lstm.h5' if modelName == 'mnist' else \
+                                  'fashion_mnist_lstm.h5')
         if mode == 'train':
-            mnist_lstm_train(modelName)
-        elif mode == 'backdoor':
-            mnist_lstm_backdoor_test(r,threshold_SC,threshold_BC,symbols_TC,seq,TestCaseNum, Mutation, modelName)
+            mnist_lstm_train (modelName, modelFile)
         else:
-            mnist_lstm_adv_test(r, threshold_SC, threshold_BC, symbols_TC, seq, TestCaseNum, Mutation, modelName)
-
+            routine = mnist_lstm_backdoor_test if mode == 'backdoor' else mnist_lstm_adv_test
+            routine (r, threshold_SC, threshold_BC, symbols_TC, seq, TestCaseNum, Mutation,
+                     modelName, modelFile)
 
     elif modelName == 'ucf101':
         if mode == 'train':

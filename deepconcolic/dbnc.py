@@ -1251,6 +1251,7 @@ class _BaseBFcCriterion (Criterion):
                clayers: Sequence[CoverableLayer],
                *args,
                epsilon = None,
+               shallow_first = None,
                bn_abstr: BNAbstraction = None,
                bn_abstr_train_size = None,
                bn_abstr_test_size = None,
@@ -1272,6 +1273,7 @@ class _BaseBFcCriterion (Criterion):
                                    test_size = bn_abstr_test_size or 0.5)
     self.outdir = self.BN.outdir
     self.epsilon = epsilon or 1e-8
+    self.shallow_first = some (shallow_first, True)
     self.dump_bn_with_trained_dataset_distribution = dump_bn_with_trained_dataset_distribution
     self.dump_bn_with_final_dataset_distribution = dump_bn_with_final_dataset_distribution
     self.base_dimreds = None
@@ -1629,6 +1631,9 @@ class BFcCriterion (_BaseBFcCriterion, Criterion4RootedSearch):
             best_dist = dist
             res = feature, feature_interval, ti
 
+      if res is not None and self.shallow_first:
+        break
+
     if res is None:
       raise EarlyTermination ('Unable to find a new candidate input!')
 
@@ -1785,6 +1790,9 @@ class BFDcCriterion (BFcCriterion, Criterion4RootedSearch):
             best_dist = dist
             res = epsilon_cond_prob_index, fli, ti
 
+      if res is not None and self.shallow_first:
+        break
+
     if res is None:
       if self.BN.bfc_coverage (epsilon = self.epsilon).done:
         raise EarlyTermination ('Unable to find a new candidate input!')
@@ -1891,29 +1899,29 @@ def layer_setup (l, i, feats = None, discr = None, **kwds):
 def plot_report_on_feature_extractions (fl, fdimred, labels, acc = None):
   if not plt:
     warnings.warn ('Unable to import `matplotlib`: skipping feature extraction plots')
-    return
+    return []
 
   minlabel, maxlabel = np.min (labels), np.max (labels)
   cmap = plt.get_cmap ('nipy_spectral', maxlabel - minlabel + 1)
 
   flabel = (lambda feature:
-            ('f{} (variance ratio = {:6.2%})'
-             .format (feature, fl.transform[-1].explained_variance_ratio_[feature]))
-            if hasattr (fl.transform[-1], 'explained_variance_ratio_') else
-            ('f'+str(feature)))
+            r'$\mathbb{F}_{' + plotting.texttt (str (fl)) + ', ' + str (feature) + '}$' +
+            (f' (variance ratio = {fl.transform[-1].explained_variance_ratio_[feature]:6.2%})'
+             if hasattr (fl.transform[-1], 'explained_variance_ratio_') else ''))
 
   maxfeature = fdimred.shape[1] - 1
   if maxfeature < 1:
-    return                              # for now
+    return []                   # for now
   feature = 0
+  figs = []
   while feature + 1 <= maxfeature:
     fig = plt.figure ()
     if feature + 1 == maxfeature:
       ax = fig.add_subplot (111)
       # plt.subplot (len (self.flayer_transforms), 1, idx)
-      ax.scatter(fdimred[:,0], fdimred[:,1], c = labels,
-                 s = 2, marker='o', zorder = 10,
-                 cmap = cmap, vmin = minlabel - .5, vmax = maxlabel + .5)
+      scat = ax.scatter(fdimred[:,0], fdimred[:,1], c = labels,
+                        s = 2, marker='o', zorder = 10,
+                        cmap = cmap, vmin = minlabel - .5, vmax = maxlabel + .5)
       ax.set_xlabel (flabel (feature))
       ax.set_ylabel (flabel (feature+1))
       feature_done = 2
@@ -1929,11 +1937,24 @@ def plot_report_on_feature_extractions (fl, fdimred, labels, acc = None):
       ax.set_zlabel (flabel (feature+2))
       feature_done = 3
       incr = 1 if feature + 1 == maxfeature - 2 else 2
-    fig.suptitle ('Features {} of layer {}'
-                  .format (tuple (range (feature, feature + feature_done)), fl))
-    cb = fig.colorbar (scat, ticks = range (minlabel, maxlabel + 1), label = 'Classes')
+    args = \
+      dict (shrink = .2, pad = .2, orientation = 'horizontal') if feature_done == 3 else \
+      dict (shrink = .6, pad = .01, orientation = 'vertical')
+    cb = fig.colorbar (scat, ticks = range (minlabel, maxlabel + 1),
+                       label = 'Labels', **args)
     feature += incr
+    figs.append (fig)
   plt.draw ()
+  return figs
+
+def show_report_on_feature_extractions_ (outdir = None, basefilename = None):
+  assert outdir is not None
+  assert basefilename is not None
+  assert isinstance (basefilename, str)
+  def aux (figs):
+    for i, f in enumerate (figs):
+      plotting.show (f, outdir = outdir, basefilename = basefilename + f'-{i}')
+  return aux
 
 
 # ---
@@ -1953,6 +1974,7 @@ def setup (setup_criterion = None,
            discr = 'bin',
            discr_n_jobs = None,
            epsilon = None,
+           shallow_first = None,
            report_on_feature_extractions = False,
            dump_bn_with_trained_dataset_distribution = None,
            dump_bn_with_final_dataset_distribution = None,
@@ -1976,7 +1998,8 @@ def setup (setup_criterion = None,
                           outdir = outdir)
     if report_on_feature_extractions:
       bn_abstr_args['report_on_feature_extractions'] = plot_report_on_feature_extractions
-      bn_abstr_args['close_reports_on_feature_extractions'] = (lambda _: plotting.show ())
+      bn_abstr_args['close_reports_on_feature_extractions'] = \
+        show_report_on_feature_extractions_ (outdir = outdir, basefilename = 'fext-report')
     bn_crit_args = dict (bn_abstr_args = bn_abstr_args,
                          bn_abstr_train_size = bn_abstr_train_size,
                          bn_abstr_test_size = bn_abstr_test_size)
@@ -1989,6 +2012,7 @@ def setup (setup_criterion = None,
 
   criterion_args = dict (**bn_crit_args,
                          epsilon = epsilon,
+                         shallow_first = shallow_first,
                          dump_bn_with_trained_dataset_distribution = \
                          dump_bn_with_trained_dataset_distribution,
                          dump_bn_with_final_dataset_distribution = \
