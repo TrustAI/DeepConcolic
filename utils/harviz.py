@@ -62,7 +62,7 @@ ap.add_argument ("--outputs", '--outdir', '-o', dest = "outdir",
                  help = "the output directory", metavar = "DIR")
 
 args = vars (ap.parse_args())
-outdir = OutputDir (args['outputs']) if 'outputs' in args else OutputDir ()
+outdir = OutputDir (args['outdir']) if 'outdir' in args else OutputDir ()
 features = args['features']
 samples = args['samples'] or args['samples_only']
 boxplots = args['samples_only'] is None
