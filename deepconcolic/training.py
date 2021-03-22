@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 # NB: see head of `datasets.py'
 from training_utils import *
-from utils_io import tempdir
+from utils_io import os, tempdir
 from datasets import image_kinds
 
 print ("Using TensorFlow version:", tf.__version__)
