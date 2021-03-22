@@ -37,7 +37,7 @@ try:
     for dir, dirs, files in os.walk (d):
       for f in files:
         if f.endswith('_report.txt'):
-          infos = p.parse (dir.split('/')[-1]).named
+          infos = p.parse (os.path.basename (os.path.abspath (dir))).named
           report = read_report (os.path.join (dir, f),
                                 ignore_head = ignore_head)
           r = os.path.join (dir, f.replace ('_report.txt', '_progress.csv'))

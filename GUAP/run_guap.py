@@ -44,7 +44,8 @@ if __name__ == '__main__':
 
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, default='Fashion-MNIST', help='Fashion-MNIST/CIFAR10/IMAGENET')
+    parser.add_argument('--dataset', type=str, default='Fashion-MNIST',
+                        choices = ('Fashion-MNIST', 'CIFAR10', 'IMAGENET'))
     parser.add_argument('--lr', type=float, required=False, default=0.01, help='Learning rate')
     parser.add_argument('--batch-size', default=100, type=int)
     parser.add_argument('--epochs', type=int, default=20, help='number of epochs to train for')
@@ -52,7 +53,12 @@ if __name__ == '__main__':
     parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. default=0.5')
     parser.add_argument('--tau',  type=float, default=0.1, help='max flow magnitude, default=0.1')
     parser.add_argument('--eps', type=float, default=0.1, help='allow for linf noise. default=0.1')
-    parser.add_argument('--model', type=str, default='modelA', help='modelA for Fashion-MNIST, VGG19/ResNet101/DenseNet121 for CIFAR10, VGG16/VGG19/ResNet152/GoogLeNet for IMAGENET')
+    parser.add_argument('--model', type=str, default='modelA',
+                        choices = ('modelA', # Fashion-MNIST
+                                   'VGG19', 'ResNet101', 'DenseNet121', # CIFAR10
+                                   'VGG16', 'VGG19', 'ResNet152', 'GoogLeNet', # IMAGENET
+                                   ),
+                        help='modelA for Fashion-MNIST, VGG19/ResNet101/DenseNet121 for CIFAR10, VGG16/VGG19/ResNet152/GoogLeNet for IMAGENET')
     parser.add_argument('--manualSeed', type=int, default=5198, help='manual seed')
     parser.add_argument('--gpuid', type=str, default='0', help='multi gpuid')
     parser.add_argument('--cuda', action='store_true', help='enables cuda')
@@ -72,6 +78,7 @@ if __name__ == '__main__':
     gpuid = args.gpuid
     outdir = args.outdir
 
+    model_file = lambda f: os.path.join ('saved_models', f)
 
     if args.cuda:
         os.environ["CUDA_VISIBLE_DEVICES"] = gpuid
@@ -84,13 +91,14 @@ if __name__ == '__main__':
         torch.backends.cudnn.benchmark = False
         device = torch.device('cuda')
     else:
+        device_ids = []
         device = torch.device('cpu')
 
 
     random.seed(args.manualSeed)
     np.random.seed(args.manualSeed)
     torch.manual_seed(args.manualSeed)
-    
+
 
     print('Generalizing Universal Adversarial Examples:')
     print('==> Preparing data..')
@@ -130,31 +138,36 @@ if __name__ == '__main__':
         raise NotImplementedError
 
     if dataSet == 'Fashion-MNIST':
-        trainset = torchvision.datasets.FashionMNIST(root='./fashion-data', train=True, download=True, transform=transform_data)
-        testset = torchvision.datasets.FashionMNIST(root='./fashion-data', train=False, download=True, transform=transform_data)
+        trainset = torchvision.datasets.FashionMNIST(root='fashion-data', train=True, download=True, transform=transform_data)
+        testset = torchvision.datasets.FashionMNIST(root='fashion-data', train=False, download=True, transform=transform_data)
         if model_name == 'modelA':
             model = modelA()
-            model.load_state_dict(torch.load('./saved_models/fashion_mnist_modela.pth',map_location=device))
+            model.load_state_dict(torch.load(model_file ('fashion_mnist_modela.pth'),map_location=device))
         else:
             raise NotImplementedError
     elif dataSet == 'CIFAR10':
-        trainset = torchvision.datasets.CIFAR10(root='./cifar10-data', train=True, download=True, transform=transform_data)
-        testset = torchvision.datasets.CIFAR10(root='./cifar10-data', train=False, download=True, transform=transform_data)
+        trainset = torchvision.datasets.CIFAR10(root='cifar10-data', train=True, download=True, transform=transform_data)
+        testset = torchvision.datasets.CIFAR10(root='cifar10-data', train=False, download=True, transform=transform_data)
         if model_name == 'VGG19':
             model = VGG('VGG19')
-            model.load_state_dict(torch.load('./saved_models/cifar10_vgg19.pth',map_location=device)['net'])
+            model.load_state_dict(torch.load(model_file ('cifar10_vgg19.pth'),map_location=device)['net'])
         elif model_name == 'ResNet101':
             model = ResNet101()
-            model.load_state_dict(torch.load('./saved_models/cifar10_resnet101.pth',map_location=device)['net'])
+            model.load_state_dict(torch.load(model_file ('cifar10_resnet101.pth'),map_location=device)['net'])
         elif model_name == 'DenseNet121':
             model = DenseNet121()
-            model.load_state_dict(torch.load('./saved_models/cifar10_dense121.pth',map_location=device)['net'])
+            model.load_state_dict(torch.load(model_file ('cifar10_dense121.pth'),map_location=device)['net'])
         else:
             raise NotImplementedError
 
     elif dataSet == 'IMAGENET':
-        trainset = torchvision.datasets.ImageFolder('/mnt/storage0_8/torch_datasets/ILSVRC/train/', transform=transform_data)
-        testset = torchvision.datasets.ImageFolder('/mnt/storage0_8/torch_datasets/ILSVRC/val/', transform=transform_data)
+        imagenet_dir = '/mnt/storage0_8/torch_datasets/ILSVRC'
+        if not os.path.isdir (imagenet_dir):
+          raise NotADirectoryError (imagenet_dir)
+        trainset = torchvision.datasets.ImageFolder(os.path.join (imagenet_dir, 'train'),
+                                                    transform = transform_data)
+        testset = torchvision.datasets.ImageFolder(os.path.join (imagenet_dir, 'val'),
+                                                   transform=transform_data)
         if model_name == 'VGG19':
             model = models.vgg19(pretrained=True)
         elif model_name == 'ResNet152':
@@ -197,11 +210,11 @@ if __name__ == '__main__':
     netAttacker = netAttacker.to(device)
 
     if args.resume:
-        netAttacker.load_state_dict(torch.load('./saved_models/Fashion-MNIST_GUAP_pretrained_model.pth',map_location=device))
+        netAttacker.load_state_dict(torch.load(model_file ('Fashion-MNIST_GUAP_pretrained_model.pth'),map_location=device))
 
 
 
-   
+
 
 
     noise = torch.FloatTensor(1, 1, H, W)
@@ -222,13 +235,12 @@ if __name__ == '__main__':
     for epoch in range(epochs):
         start_time = time.time()
         train_loss = 0
-        train_acc = 0
         train_n = 0
         train_attack_rate = 0
         train_st_rate = 0
         train_noise_rate = 0
         train_ori_acc = 0
-       
+
         netAttacker.train()
         model.eval()
 
@@ -241,14 +253,14 @@ if __name__ == '__main__':
 
             optimizer.zero_grad()
 
-            train_ori_logits = model(X) 
+            train_ori_logits = model(X)
             flow_field,perb_noise = netAttacker(noise)
 
             L_flow = loss_flow(flow_field)
-            flow_field = flow_field *tau/L_flow 
+            flow_field = flow_field *tau/L_flow
             perb_noise = perb_noise* eps
 
-            X_st = flow_st(unnormalize(X),flow_field) 
+            X_st = flow_st(unnormalize(X),flow_field)
             X_noise = unnormalize(X)+ perb_noise
             X_noise = normalize(torch.clamp(X_noise, 0, 1))
             X_adv = X_st +perb_noise
@@ -257,7 +269,7 @@ if __name__ == '__main__':
             logits_st = model(normalize(X_st))
             logits_noise = model(X_noise)
             logits_adv = model(X_adv)
-            adv_lossall = F.cross_entropy(logits_adv, train_ori_logits.max(1)[1], reduction = 'none')+1 
+            adv_lossall = F.cross_entropy(logits_adv, train_ori_logits.max(1)[1], reduction = 'none')+1
             adv_loss = -torch.mean(torch.log(adv_lossall))
             adv_loss.backward()
             optimizer.step()
@@ -268,7 +280,7 @@ if __name__ == '__main__':
             train_st_rate += ((logits_st.max(1)[1] != train_ori_logits.max(1)[1])).sum().item()
             train_noise_rate += ((logits_noise.max(1)[1] != train_ori_logits.max(1)[1])).sum().item()
             train_n += y.size(0)
-        
+
         train_time = time.time()
         logger.info('%d \t %.2f \t %.4f \t %.4f \t %.4f \t %.4f \t %.4f',
                     epoch, train_time - start_time, train_loss / train_n, train_ori_acc/train_n, train_st_rate/train_n,train_noise_rate/train_n, train_attack_rate/train_n)
@@ -280,9 +292,9 @@ if __name__ == '__main__':
             bestnoise = perb_noise
 
     print('Best train ASR:',end = '\t')
-    print(bestatt)      
+    print(bestatt)
     flow_field = bestflow
-    perb_noise = bestnoise 
+    perb_noise = bestnoise
 
     if dataSet == 'IMAGENET':
         num_showfig =5
@@ -313,7 +325,7 @@ if __name__ == '__main__':
             X, y = X.to(device), y.to(device)
 
             test_ori_logits = model(X)
-            X_st = flow_st(unnormalize(X),flow_field) 
+            X_st = flow_st(unnormalize(X),flow_field)
             X_noise = unnormalize(X)+ perb_noise
             X_noise = normalize(torch.clamp(X_noise, 0, 1))
             X_perb = X_st+ perb_noise
@@ -326,7 +338,7 @@ if __name__ == '__main__':
             test_logits_adv = model(X_perb)
             test_ori_acc += (test_ori_logits.max(1)[1] == y).sum().item()
             test_adv_acc += (test_logits_adv.max(1)[1] == y).sum().item()
-            adv_lossall = F.cross_entropy(test_logits_adv, test_ori_logits.max(1)[1], reduction = 'none')+1 
+            adv_lossall = F.cross_entropy(test_logits_adv, test_ori_logits.max(1)[1], reduction = 'none')+1
             adv_loss = -torch.mean(torch.log(adv_lossall))
             test_adv_loss += adv_loss.item() * y.size(0)
             success_bool = (test_logits_adv.max(1)[1] != test_ori_logits.max(1)[1])
@@ -352,10 +364,15 @@ if __name__ == '__main__':
 
     if not os.path.exists(outdir):
         os.mkdir(outdir)
-    np.save(outdir+'/flow_'+dataSet+'_'+model_name+'_tau'+str(tau)+'_eps'+str(eps)+'_ASR'+str(test_asr)+'.npy',bestflow.data.cpu().numpy().astype(np.float32)) 
-    np.save(outdir+'/noise_'+dataSet+'_'+model_name+'_tau'+str(tau)+'_eps'+str(eps)+'_ASR'+str(test_asr)+'.npy',bestnoise.data.cpu().numpy().astype(np.float32)) 
 
-    torch.save(netAttacker.state_dict(), outdir+'/GUAP_model_'+dataSet+'_'+model_name+'_tau'+str(tau)+'_eps'+str(eps)+'_ASR'+str(test_asr)+'.pth')
+    file_id = f'{dataSet}_{model_name}_tau{str(tau)}_eps{str(eps)}_ASR{str(test_asr)}'
+    flow_file = os.path.join (outdir, f'flow_{file_id}.npy')
+    noise_file = os.path.join (outdir, f'noise_{file_id}.npy')
+    GUAP_model_file = os.path.join (outdir, f'GUAP_model_{file_id}.pth')
+
+    np.save(flow_file, bestflow.data.cpu().numpy().astype(np.float32))
+    np.save(noise_file, bestnoise.data.cpu().numpy().astype(np.float32))
+    torch.save(netAttacker.state_dict(), GUAP_model_file)
 
     clean = unnormalize(torch.from_numpy(clean_np[:num_showfig]).to(device)).cpu().clamp(0,1)
     st = unnormalize(torch.from_numpy(st_np[:num_showfig]).to(device)).cpu().clamp(0,1)
@@ -369,7 +386,10 @@ if __name__ == '__main__':
 
     fig = plt.figure(figsize=(10, 5))
     grid = vutils.make_grid(torch.cat((clean,middlenoise1,st,middlenoise2,adv)).float(),nrow=num_showfig)
-    if not os.path.exists('./savefig'):
-        os.mkdir('./savefig')      
-    plt.imsave('./savefig/'+dataSet+'_'+model_name+'_tau'+str(tau)+'_eps'+str(eps)+'_ASR'+str(test_asr)+'.png',grid.numpy().transpose((1, 2, 0)))
-    
+
+    savefig = os.path.join (outdir, 'savefig')
+    if not os.path.exists (savefig):
+        os.mkdir (savefig)
+
+    imgrid_file = os.path.join (savefig, f'{file_id}.png')
+    plt.imsave(imgrid_file, grid.numpy().transpose((1, 2, 0)))

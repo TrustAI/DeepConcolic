@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 
-def load_data(data_name, val, random_seed, datadir = './EKiML/dataset'):
+def load_data(data_name, val, random_seed, datadir = os.path.join ('EKiML', 'dataset')):
     if data_name == "iris":
         # iris
         iris = load_iris()

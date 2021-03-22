@@ -301,33 +301,30 @@ class SScLayer (BoolMappedCoverableLayer):
     self._initialize_conditions_map ()
 
 
-  def _initialize_conditions_map(self):
-    # Attach conditions map on current (decision) layer:
-    self.cond_map = np.ones(self.map.shape +
-                            (self.layer.kernel_size if self.is_conv else
-                             self.layer.get_weights ()[0].shape[:-1]),
-                            dtype = bool)
+  def _initialize_conditions_map (self):
+    """ Attach conditions map on current (decision) layer"""
+
+    Wshape = (self.layer.kernel_size if self.is_conv else
+              self.layer.get_weights ()[0].shape[:-1])
+
+    fltrs = self.valid_conv_filters ()
+    np_full = np.ones if len (fltrs) == 0 else np.zeros
+    self.cond_map = np_full (self.map.shape + Wshape, dtype = bool)
+    for f in fltrs:
+      self.cond_map [(Ellipsis,) + (f,) + (slice(None),) * len (Wshape)] = True
+
+    # Count neuron pairs to be covered:
     base_count = np.count_nonzero (self.cond_map)
-    self.filtered_out_conds = base_count - np.count_nonzero (self.cond_map)
+    p1 (f'Considering {base_count} neuron pairs w.r.t decision layer {str (self)}')
+    self.filtered_out_conds = self.cond_map.size - base_count
+
+    # Update layer-wise coverage proxy map:
     self.map[self._where_cond_map_holds ()] = True
-    # if self.is_conv:
-    #   self.the_feature = np.random.randint(0, np.prod (self.layer.output.shape))
-    #   print ('the_feature:', self.the_feature)
-    # print ('input:', self.layer.input.shape)
-    # print ('output:', self.layer.output.shape)
-    # print ('weights:', self.layer.get_weights ()[0].shape)
-    # print ('used weights:', used_weights)
-    # print ('map.shape:', self.map.shape)
-    # print ('cond_map.shape:', self.cond_map.shape)
-    # print ('non-zero:', np.count_nonzero (self.map))
-    # print ('')
 
 
-
-  def coverage(self, _feature_indices = None) -> Coverage:
-    """Ignores `feature_indices` for now."""
+  def coverage(self) -> Coverage:
     nc = np.count_nonzero (self.cond_map)
-    tot = np.prod (self.cond_map.shape)
+    tot = self.cond_map.size
     tot -= self.filtered_out_conds
     return Coverage (covered = tot - nc, total = tot)
 
@@ -366,9 +363,9 @@ class SScLayer (BoolMappedCoverableLayer):
 
 
   def _where_cond_map_holds (self):
-    used_weights = (self.layer.kernel_size if self.is_conv else
-                    self.layer.get_weights ()[0].shape[:-1])
-    return self.cond_map[(Ellipsis,) + (-1,) * len (used_weights)] == True
+    Wshape = (self.layer.kernel_size if self.is_conv else
+              self.layer.get_weights ()[0].shape[:-1])
+    return self.cond_map[(Ellipsis,) + (-1,) * len (Wshape)] == True
 
 
 
@@ -620,8 +617,7 @@ def setup (test_object = None,
                        cover_layers = cover_layers,
                        setup_analyzer = setup_analyzer,
                        setup_criterion = SScCriterion,
-                       criterion_args = { 'feature_indices': test_object.feature_indices,
-                                          **criterion_args },
+                       criterion_args = criterion_args,
                        **kwds)
 
 
