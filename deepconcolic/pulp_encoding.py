@@ -567,7 +567,7 @@ def same_act (base_name, v_vars, u_exprs, pos, ap_x):
 
   cname = '_'.join(str(i) for i in ("sa__", base_name, ) + pos)
 
-  if ap_x [pos] >= 0:
+  if ap_x [pos] > 0:
     x  = [ LpConstraint (LpAffineExpression ([(v_vars[pos], +1), (u_exprs[pos], -1)]),
                          LpConstraintEQ, cname + '_eq', 0.) ] if v_vars is not None else []
     x += [ LpConstraint (LpAffineExpression ([(u_exprs[pos], +1)]),
@@ -593,7 +593,7 @@ def neg_act (base_name, v_vars, u_exprs, pos, ap_x):
 
   cname = '_'.join(str(i) for i in ("na__", base_name, ) + pos)
 
-  if ap_x [pos] < 0:
+  if ap_x [pos] <= 0:
     x  = [ LpConstraint (LpAffineExpression ([(v_vars[pos], +1), (u_exprs[pos], -1)]),
                          LpConstraintEQ, cname + '_eq', 0.) ] if v_vars is not None else []
     x += [ LpConstraint (LpAffineExpression ([(u_exprs[pos], +1)]),
