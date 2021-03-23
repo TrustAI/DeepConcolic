@@ -116,8 +116,8 @@ def pulp_find_solver (try_solvers = None, time_limit = None):
   s = None
   for solver in some (try_solvers, pulp_checked_solvers):
     if solver in available_solvers:
-      if solver in ('PULP_CBC_CMD',):
-        args['threads'] = max (5, cpu_count ()) # just a rough default
+      if solver in ('COIN_CMD', 'PULP_CBC_CMD',):
+        args['threads'] = min (5, cpu_count ()) # just a rough default
       s = get_solver (solver, **args)
       print ('PuLP: {} solver selected (with {} minutes time limit).'
              .format (solver, time_limit / 60))
