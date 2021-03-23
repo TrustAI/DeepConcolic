@@ -5,8 +5,6 @@ from engine import Bounds
 
 lt_epsilon = 1e-5
 act_epsilon = 1e-3
-VAR_UPPER_BOUND = 1e8
-VAR_LOWER_BOUND = -1e8
 
 
 # ---
@@ -224,7 +222,7 @@ class PulpStrictLayerEncoder (PulpLayerEncoder, PulpLayerOutput):
         base_prob_dict[self.layer_index] = base_prob.copy()
 
     elif is_dropout_layer (layer):
-      p = 1. - layer.rate
+      p = float (1. - layer.rate)
       for nidx in np.ndindex (in_exprs.shape):
         u_var = in_exprs[nidx]
         affine_expr = [(out_vars[nidx], 1), (u_var, -p)]
@@ -548,9 +546,7 @@ def gen_vars(layer_index, sp, var_names, flatten = False):
   shape = (1,) + ((np.prod (sp[1:]),) if flatten else tuple(sp[1:]))
   var_names.append (np.empty (shape, dtype = LpVariable))
   for idx in np.ndindex (*shape):
-    var = LpVariable('_'.join(str(i) for i in ("x", layer_index) + idx),
-                     lowBound = VAR_LOWER_BOUND,
-                     upBound = VAR_UPPER_BOUND)
+    var = LpVariable('_'.join(str(i) for i in ("x", layer_index) + idx))
     var_names[layer_index][idx] = var
   return layer_index + 1
 

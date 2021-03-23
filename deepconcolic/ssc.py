@@ -1,6 +1,9 @@
 from utils_io import *
 from utils import *
+from itertools import product
 from engine import Coverage
+
+from tensorflow.python.keras.utils.conv_utils import conv_connected_inputs
 
 RP_SIZE=50 ## the top 50 pairs
 NNUM=1000000000
@@ -89,7 +92,7 @@ def ssc_search(eval_batch, raw_data, cond_ratio, cond_layer, dec_layer, dec_pos,
   diff_map=None
   d_tot = np.prod (cond_layer.output.shape[1:])
   d_min = d_tot
-  tp1 ('To catch independent condition change: {0}/{1}'.format(d_min, d_tot))
+  tp1 ('Searching independent condition change: {0}/{1}'.format(d_min, d_tot))
 
   indices=np.random.choice(len(data), len(data))
 
@@ -304,8 +307,7 @@ class SScLayer (BoolMappedCoverableLayer):
   def _initialize_conditions_map (self):
     """ Attach conditions map on current (decision) layer"""
 
-    Wshape = (self.layer.kernel_size if self.is_conv else
-              self.layer.get_weights ()[0].shape[:-1])
+    Wshape = self.layer.get_weights ()[0].shape[:-1]
 
     fltrs = self.valid_conv_filters ()
     np_full = np.ones if len (fltrs) == 0 else np.zeros
@@ -315,7 +317,7 @@ class SScLayer (BoolMappedCoverableLayer):
 
     # Count neuron pairs to be covered:
     base_count = np.count_nonzero (self.cond_map)
-    p1 (f'Considering {base_count} neuron pairs w.r.t decision layer {str (self)}')
+    p1 (f'Considering {base_count}(/{self.cond_map.size}) neuron pairs w.r.t decision layer {str (self)}')
     self.filtered_out_conds = self.cond_map.size - base_count
 
     # Update layer-wise coverage proxy map:
@@ -344,17 +346,15 @@ class SScLayer (BoolMappedCoverableLayer):
       self._append_activations (act)
 
 
-
-  def cover_decision(self, acts, dec_neuron, cond_neuron) -> None:
-    if cond_neuron is None:
+  def cover_decision(self, acts, dec_neuron, weights_idx, _cond_neuron) -> None:
+    if weights_idx is None:
       # Assume the decision is covered when no condition position is
       # given
       #
       # NB: well that's a wrong assumption (ie still over-simplifying)
       self.cond_map[dec_neuron] = False
     else:
-      # print (self, self.cond_map.shape, dec_neuron, cond_neuron)
-      self.cond_map[dec_neuron, cond_neuron] = False
+      self.cond_map[dec_neuron][weights_idx] = False
 
     if not self.cond_map[dec_neuron].any ():
       super().cover_neuron (dec_neuron)
@@ -363,9 +363,8 @@ class SScLayer (BoolMappedCoverableLayer):
 
 
   def _where_cond_map_holds (self):
-    Wshape = (self.layer.kernel_size if self.is_conv else
-              self.layer.get_weights ()[0].shape[:-1])
-    return self.cond_map[(Ellipsis,) + (-1,) * len (Wshape)] == True
+    Wslen = len (self.layer.get_weights ()[0].shape[:-1])
+    return np.all (self.cond_map, axis = tuple (range (- Wslen, 0)))
 
 
 
@@ -391,10 +390,11 @@ class SScTarget (NamedTuple, TestTarget):
   decision_pos: Tuple[int, ...]
   condition_layer: Optional[BoolMappedCoverableLayer]
   condition_pos: Optional[Tuple[int, ...]]
+  weights_idx: Optional[Tuple[int, ...]]
 
 
   def cover(self, acts) -> None:
-    self.decision_layer.cover_decision (acts, self.decision_neuron,
+    self.decision_layer.cover_decision (acts, self.decision_neuron, self.weights_idx,
                                         self.condition_neuron)
 
 
@@ -533,7 +533,7 @@ class SScCriterion (LayerLocalCriterion, Criterion4FreeSearch, Criterion4RootedS
     if decision_search_attempt == None:
       raise EarlyTermination ('All decision features have been covered.')
     dec_cl, dec_pos = decision_search_attempt
-    return SScTarget (dec_cl, dec_pos, None, None)
+    return SScTarget (dec_cl, dec_pos, None, None, None)
     # cond_cl = self.layer_imap[dec_cl.prev_layer_index]
     # assert not (is_padding (dec_pos[1:], dec_cl, cond_cl,
     #                         post = True, unravel_pos = False))
@@ -559,10 +559,37 @@ class SScCriterion (LayerLocalCriterion, Criterion4FreeSearch, Criterion4RootedS
                             post = True, unravel_pos = False))
     # Try and find an appropriate condition neuron (i.e. based on
     # Eq. (18)).
-    cond_apos, cond_val = cond_cl.find (np.argmax)
+    cond_msk = dec_cl.cond_map[dec_pos[1:]]
+    assert cond_msk.any ()
+    conv = dec_cl.is_conv
+    if conv:
+      ranges = conv_connected_inputs (dec_cl.layer.input_shape[1:-1],
+                                      dec_cl.layer.kernel_size,
+                                      dec_pos[1:-1],
+                                      dec_cl.layer.strides,
+                                      dec_cl.layer.padding)
+    else:                     # assumed dense
+      ranges = [ range (cond_msk.size) ]
+    activations = np.array (cond_cl.activations)
+    best, best_cond_val = None, -np.inf
+    for x in product (*tuple (enumerate (r) for r in ranges)):
+      cmap_idx = tuple (c[0] for c in x)
+      if cond_msk[cmap_idx].any ():
+        wpos_idx = tuple (c[1] for c in x)
+        aslice = (Ellipsis,) + wpos_idx + ((slice(None),) if conv else ())
+        acts = activations[aslice]
+        apos = np.unravel_index (np.argmax (acts), acts.shape)
+        cond_val = float (acts[apos])
+        cond_apos, w_idx = \
+          (apos[:-1] + wpos_idx + (apos[-1],), cmap_idx + (apos[-1],)) if conv else \
+          (apos + wpos_idx, cmap_idx)
+        if cond_val > best_cond_val:
+          best, best_cond_val = (cond_apos, w_idx), cond_val
+    cond_apos, w_idx = best
+    cond_val = best_cond_val
     cond_cl.inhibit_activation (cond_apos)
     return (self.test_cases[-1-cond_apos[0]],
-            SScTarget (dec_cl, dec_pos, cond_cl, cond_apos[1:]))
+            SScTarget (dec_cl, dec_pos, cond_cl, cond_apos[1:], w_idx))
 
 
   # ---
@@ -589,6 +616,7 @@ def setup (test_object = None,
            setup_analyzer: Callable[[dict], Union[SScAnalyzer4FreeSearch,
                                                   SScAnalyzer4RootedSearch]] = None,
            criterion_args: dict = {},
+           concolic = False,
            **kwds) -> Engine:
   """
   Helper to build an engine for sign-sign-coverage (using
@@ -604,15 +632,13 @@ def setup (test_object = None,
                                    layer_indices = test_object.layer_indices,
                                    activation_of_conv_or_dense_only = True,
                                    exclude_direct_input_succ = True)
-  injecting_layer_index = cover_layers[0].prev_layer_index
-  while not activation_is_relu (test_object.dnn.layers[injecting_layer_index]) and \
-        not is_activation_layer (test_object.dnn.layers[injecting_layer_index]):
-    injecting_layer_index -= 1
+  injecting_layer_index = \
+    test_object.find_mcdc_injecting_layer ([c.layer_index for c in cover_layers],
+                                           concolic)
   cover_layers[0].prev_layer_index = injecting_layer_index
   criterion_args['injecting_layer'] = (
     BoolMappedCoverableLayer (layer = test_object.dnn.layers[injecting_layer_index],
-                              layer_index = injecting_layer_index,
-                              feature_indices = test_object.feature_indices))
+                              layer_index = injecting_layer_index))
   return engine_setup (test_object = test_object,
                        cover_layers = cover_layers,
                        setup_analyzer = setup_analyzer,

@@ -123,7 +123,8 @@ def deepconcolic(criterion, norm, test_object, report_args,
                         setup_analyzer = SScPulpAnalyzer,
                         input_metric = LInfPulp (**norm_args),
                         input_bounds = input_bounds,
-                        postproc_inputs = postproc_inputs)
+                        postproc_inputs = postproc_inputs,
+                        concolic = True)
   elif criterion=='svc':
     from run_ssc import run_svc
     print('\n== Starting DeepConcolic tests for {0} =='.format (test_object))
