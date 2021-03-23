@@ -4,7 +4,7 @@ from pulp import *
 from engine import Bounds
 
 lt_epsilon = 1e-5
-act_epsilon = 1e-3
+act_epsilon = 1e-4
 
 
 # ---
@@ -571,13 +571,13 @@ def same_act (base_name, v_vars, u_exprs, pos, ap_x):
     x  = [ LpConstraint (LpAffineExpression ([(v_vars[pos], +1), (u_exprs[pos], -1)]),
                          LpConstraintEQ, cname + '_eq', 0.) ] if v_vars is not None else []
     x += [ LpConstraint (LpAffineExpression ([(u_exprs[pos], +1)]),
-                         LpConstraintGE, cname + '_ge', act_epsilon)]
+                         LpConstraintGE, cname + '_ge', float (act_epsilon))]
     return x
   else:
     x  = [ LpConstraint (LpAffineExpression ([(v_vars[pos], +1)]),
                          LpConstraintEQ, cname + '_eq', 0.) ] if v_vars is not None else []
     x += [ LpConstraint (LpAffineExpression ([(u_exprs[pos], +1)]),
-                         LpConstraintLE, cname + '_le', -act_epsilon) ]
+                         LpConstraintLE, cname + '_le', float (-act_epsilon)) ]
     return x
 
 def neg_act (base_name, v_vars, u_exprs, pos, ap_x):
@@ -597,13 +597,13 @@ def neg_act (base_name, v_vars, u_exprs, pos, ap_x):
     x  = [ LpConstraint (LpAffineExpression ([(v_vars[pos], +1), (u_exprs[pos], -1)]),
                          LpConstraintEQ, cname + '_eq', 0.) ] if v_vars is not None else []
     x += [ LpConstraint (LpAffineExpression ([(u_exprs[pos], +1)]),
-                         LpConstraintGE, cname + '_ge', act_epsilon) ]
+                         LpConstraintGE, cname + '_ge', float (act_epsilon)) ]
     return x
   else:
     x  = [ LpConstraint (LpAffineExpression ([(v_vars[pos], +1)]),
                          LpConstraintEQ, cname + '_eq', 0.) ] if v_vars is not None else []
     x += [ LpConstraint (LpAffineExpression ([(u_exprs[pos], +1)]),
-                         LpConstraintLE, cname + '_le', -act_epsilon) ]
+                         LpConstraintLE, cname + '_le', float (-act_epsilon)) ]
     return x
 
 # Those are now just aliases:
