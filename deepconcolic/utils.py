@@ -313,6 +313,28 @@ class test_objectt:
       print ('Function layers to be tested: {}'
              .format (', '.join (l.name for l, _ in tested_layers)))
 
+    if mcdc:
+      self.find_mcdc_injecting_layer ([i for _, i in tested_layers],
+                                      criterion in ('ssclp',))
+
+
+  def find_mcdc_injecting_layer (self, tested_layer_indexes, concolic):
+
+    injecting_layer_index = tested_layer_indexes[0] - 1
+    if concolic:
+      while injecting_layer_index >= 0 and \
+            (activation_is_relu (self.dnn.layers[injecting_layer_index]) or \
+             is_activation_layer (self.dnn.layers[injecting_layer_index]) or \
+             is_maxpooling_layer (self.dnn.layers[injecting_layer_index])):
+        injecting_layer_index -= 1
+
+    if injecting_layer_index < 0:
+      sys.exit ('DNN architecture not supported by concolic MC/DC-style '
+                'citerion: no suitable activation-less condition layer found')
+
+    return injecting_layer_index
+
+
 # ---
 
 # TODO: generalize to n-dimensional convolutional layers:
