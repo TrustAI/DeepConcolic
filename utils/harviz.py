@@ -53,6 +53,9 @@ gp.add_argument ('--samples', type = int, default = None, metavar = 'N',
                  help = 'plot at most N samples with lines')
 gp.add_argument ('--samples-only', type = int, default = None, metavar = 'N',
                  help = 'plot at most N samples with lines, and no boxplot')
+except_samples_choices = ('raw', 'ok', 'adv',)
+ap.add_argument ('--except-samples', nargs='+', default = [],
+                 choices = except_samples_choices)
 ap.add_argument ('--max-plots-per-fig', type = int, default = 4,
                  help = 'the maximum number of plots per figure (default is 4)')
 ap.add_argument ('--max-features-per-plot', type = int, default = 32,
@@ -65,9 +68,13 @@ args = vars (ap.parse_args())
 outdir = OutputDir (args['outdir']) if 'outdir' in args else OutputDir ()
 features = args['features']
 samples = args['samples'] or args['samples_only']
+except_samples = args['except_samples']
 boxplots = args['samples_only'] is None
 subplots_per_fig = args['max_plots_per_fig']
 features_per_subplot = args['max_features_per_plot']
+
+if not boxplots and all (k in except_samples for k in except_samples_choices):
+  sys.exit ('Nothing to plot')
 
 # Artificial feature names:
 names = ['id'] + [str(i) for i in range (0, 561)]
@@ -104,11 +111,14 @@ X = X[:, sidx]
 T_ok = T_ok[:, sidx] if T_ok is not None else None
 T_adv = T_adv[:, sidx] if T_adv is not None else None
 
+s_raw = 'raw' not in except_samples
+s_ok = 'ok' not in except_samples and T_ok is not None
+s_adv = 'adv' not in except_samples and T_adv is not None
 Xs, Ts_ok, Ts_adv = (None,) * 3
 if samples is not None:
-  Xs = X[:min (samples, len (X))]
-  Ts_ok = Ts_ok[:min (samples, len (Ts_ok))] if T_ok is not None else None
-  Ts_adv = Ts_adv[:min (samples, len (Ts_adv))] if T_adv is not None else None
+  Xs = X[:min (samples, len (X))] if s_raw else None
+  Ts_ok = T_ok[:min (samples, len (T_ok))] if s_ok else None
+  Ts_adv = T_adv[:min (samples, len (T_adv))] if s_adv else None
 
 grey_dot = dict (markerfacecolor='grey', marker='.', markersize = .2)
 blue_dot = dict (markerfacecolor='blue', marker='.', markersize = .2)
