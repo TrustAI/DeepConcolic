@@ -60,8 +60,10 @@ class NcPulpAnalyzer (NcAnalyzer, LayerLocalAnalyzer, PulpSolver4DNN):
       i = target.layer.layer_index
       if (np.sign (activations2[i][target_neuron]) ==
           np.sign (activations[i][target_neuron])):
-        print ('Warning: unmet activation target (original = {}, new = {})'
-               .format (activations[i][target_neuron], activations2[i][target_neuron]))
+        p1 ('| Missed activation target '
+            f'(original = {float (activations[i][target_neuron]):.8}, '
+            f'new = {float (activations2[i][target_neuron]):.8})')
+        # Keep as the new input may trigger unseen activations anyways
       return dist, res[1]
 
 
