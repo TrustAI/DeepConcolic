@@ -63,18 +63,6 @@ def make_model (input_shape, **kwds):
 
 # ---
 
-# # Very bad small model, for testing purposes only
-# def make_small_dense_model (input_shape, **kwds):
-#     return tf.keras.models.Sequential([
-#         tf.keras.layers.Dense(187, input_shape = input_shape),
-#         tf.keras.layers.Activation('relu'),
-#         tf.keras.layers.Dense(92),
-#         tf.keras.layers.Activation('relu'),
-#         tf.keras.layers.Dense(6),
-#         tf.keras.layers.Activation('softmax'),
-#     ], **kwds)
-
-# Very bad small model, for testing purposes only
 def make_dense_model (input_shape, **kwds):
     return tf.keras.models.Sequential([
         tf.keras.layers.Dense(192, activation = 'relu', input_shape = input_shape),
@@ -86,7 +74,27 @@ def make_dense_model (input_shape, **kwds):
         tf.keras.layers.Activation('softmax'),
     ], **kwds)
 
+def make_dense_decomposed_model (input_shape, **kwds):
+    return tf.keras.models.Sequential([
+        tf.keras.layers.Dense(192, input_shape = input_shape),
+        tf.keras.layers.Activation('relu'),
+        tf.keras.layers.Dense(128),
+        tf.keras.layers.Activation('relu'),
+        tf.keras.layers.Dropout(0.25),
+        tf.keras.layers.Dense(92),
+        tf.keras.layers.Activation('relu'),
+        tf.keras.layers.Dense(64),
+        tf.keras.layers.Activation('relu'),
+        tf.keras.layers.Dense(6),
+        tf.keras.layers.Activation('softmax'),
+    ], **kwds)
+
 classifier (load_openml_data_lambda ('har'),
             make_dense_model,
             model_name = 'har_dense',
+            **common_args)
+
+classifier (load_openml_data_lambda ('har'),
+            make_dense_decomposed_model,
+            model_name = 'har_dense_decomposed',
             **common_args)

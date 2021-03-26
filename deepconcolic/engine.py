@@ -1280,7 +1280,7 @@ class BoolMappedCoverableLayer (CoverableLayer):
 
   def filter_out_padding_against(self, prev_layer):
     if not self.is_conv: return
-    tp1 ('Filtering out padding neurons from layer {}'.format(self))
+    tp1 (f'Filtering out padding neurons at layer {self}')
     paddings = 0
     for n in np.ndindex (self.map.shape):
       if self.map[n]:
