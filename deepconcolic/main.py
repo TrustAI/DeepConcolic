@@ -149,7 +149,7 @@ def main():
   parser.add_argument("--inputs", dest="inputs", default="-1",
                       help="the input test data directory", metavar="DIR")
   parser.add_argument("--outputs", dest="outputs", required=True,
-                      help="the outputput test data directory", metavar="DIR")
+                      help="the output test data directory", metavar="DIR")
   # parser.add_argument("--training-data", dest="training_data", default="-1",
   #                     help="the extra training dataset", metavar="DIR")
   parser.add_argument("--criterion", dest="criterion", default="nc",
@@ -273,21 +273,16 @@ def main():
     test_data = raw_datat(x_test, None)
     c1 (f'{len(xs)} loaded.')
   elif args.dataset in datasets.choices:
-    print ('Loading {} dataset... '.format (args.dataset), end = '', flush = True)
-    (x_train, y_train), (x_test, y_test), dims, kind, _ = datasets.load_by_name (args.dataset)
-    test_data = raw_datat(x_test, y_test, args.dataset)
-    train_data = raw_datat(x_train, y_train, args.dataset)
-    save_input = save_an_image if kind in datasets.image_kinds else \
-                 save_in_csv ('new_inputs') if len (dims) == 1 else \
-                 None
+    dd = dataset_dict (args.dataset)
+    train_data, test_data, kind = dd['train_data'], dd['test_data'], dd['kind']
+    save_input, postproc_inputs, ib = dd['save_input'], dd['postproc_inputs'], dd['input_bounds']
     amplify_diffs = kind in datasets.image_kinds
     if kind in datasets.image_kinds: # assume 256 res.
       lower_bound_metric_hard = 1 / 255
-    input_bounds = UniformBounds () if kind in datasets.image_kinds else \
-                   StatBasedInputBounds (hard_bounds = UniformBounds (-1.0, 1.0)) \
-                   if kind in datasets.normalized_kinds else StatBasedInputBounds ()
-    postproc_inputs = fix_image_channels_ () if kind in datasets.image_kinds else id
-    print ('done.')
+    input_bounds = (UniformBounds (*ib) if isinstance (ib, tuple) and len (ib) == 2 else \
+                    StatBasedInputBounds (hard_bounds = UniformBounds (-1.0, 1.0)) \
+                    if ib == 'normalized' else StatBasedInputBounds ())
+    del dd
   else:
     sys.exit ('Missing input dataset')
 
@@ -365,10 +360,10 @@ def main():
 
   # fuzzing params
   if args.fuzzing:
-    fuzzer.run(test_object, OutputDir (outs, log = True),
-               args.model, int(args.stime), file_list,
-               num_tests = int(args.num_tests),
-               num_processes = int(args.num_processes))
+    fuzzer.fuzz(test_object, OutputDir (outs, log = True),
+                args.model, int(args.stime), file_list,
+                num_tests = int(args.num_tests),
+                num_processes = int(args.num_processes))
     sys.exit(0)
 
   if args.norm is None:
