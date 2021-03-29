@@ -97,17 +97,21 @@ def forking ():
 
 
 def np_share (x):
-  if get_start_method () == 'fork':
+  if forking ():
     return x
 
-  if any (sys.platform.startswith (pref) for pref in ('linux', 'darwin')):
-    warnings.warn ('Shared numpy arrays with start method other than `fork\' '
-                   f'may be broken on {sys.platform}: problems ahead!')
+  # sharedmem is broken: just assume x can be pickled, and pay the
+  # memory and process startup price:
+  return x
 
-  from sharedmem import empty
-  print ('Sharing numpy array')
-  xx = empty (x.shape, x.dtype)
-  xx[...] = x
-  print ('done')
-  return xx
+  # if any (sys.platform.startswith (pref) for pref in ('linux', 'darwin')):
+  #   warnings.warn ('Shared numpy arrays with start method other than `fork\' '
+  #                  f'may be broken on {sys.platform}: problems ahead!')
+
+  # from sharedmem import empty
+  # print ('Sharing numpy array')
+  # xx = empty (x.shape, x.dtype)
+  # xx[:] = x[:]
+  # print ('done')
+  # return xx
 
