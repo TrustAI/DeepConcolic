@@ -156,11 +156,13 @@ To run MC/DC for DNNs on the CIFAR-10 model
 python -m deepconcolic.main --model saved_models/cifar10_complicated.h5 --criterion ssc --mcdc-cond-ratio 0.1 --dataset cifar10 --outputs outs
 ```
 
+<!--  NB: temporary comment as --inputs argument is about to disapear:
 To run MC/DC for DNNs on the VGG16 model (with input images from the ``data`` sub-directory)
 
 ```
 python -m deepconcolic.main --vgg16-model --inputs data/ --outputs outs --mcdc-cond-ratio 0.1 --top-classes 5 --labels labels.txt --criterion ssc
 ```
+-->
 
 To run Concolic Sign-sign-coverage (MC/DC) for DNNs on the MNIST model
 

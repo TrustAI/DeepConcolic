@@ -36,7 +36,7 @@ import datasets
 #               rbyte = random.randrange(256)
 #               rn = random.randrange(len(buf))
 #               buf[rn] = rbyte
-              
+
 #           fuzz_output = mutant_path + '/mutant-iter{0}-p{1}'.format(i, j)
 #           fuzz_outputs.append(fuzz_output)
 #           f = open(fuzz_output, 'wb')
@@ -138,6 +138,8 @@ def select_origins (test_data, mutation_descrs):
 
 
 def select_labels (test_data, mutation_descrs):
+  if test_data.labels is None:
+    return [None] * len (mutation_descrs)
   return test_data.labels[[idx for idx, _ in mutation_descrs]]
 
 
@@ -195,12 +197,12 @@ def record_tests (id, test_data, mutation_descrs, test_results,
   for Y_origin, Y_mutant, origin, mutant, Y_official in \
       zip (*test_results, origins, mutants, labels):
 
-    if Y_origin != Y_official:
+    if Y_official is not None and Y_origin != Y_official:
       save_input (origin, f'{id}-official-{Y_official}')
 
     if Y_mutant is not None:                      # valid test
       new += 1
- 
+
       if Y_mutant == Y_origin and save_all_tests: # ok
         save_input (origin, f'{id}-original-{Y_origin}')
         save_input (mutant, f'{id}-ok-{Y_mutant}')
@@ -211,7 +213,7 @@ def record_tests (id, test_data, mutation_descrs, test_results,
         adv += 1
 
     id += 1
-    
+
   del origins, mutants
   return id, new, adv
 
@@ -224,13 +226,15 @@ def make_tester_ (*_):
 
 
 def run (dataset = None,
+         testset_dir = None,
+         extra_testset_dirs = None,
+         sample = None,
          model = None,
-         processes = None,
-         num_tests = 9,
+         num_tests = 10,
          outdir = None,
          save_all_tests = True,
-         verbose = False,
-         extra_testset_dirs = None):
+         processes = None,
+         verbose = False):
   assert dataset in datasets.choices
 
   from utils import dataset_dict
@@ -239,13 +243,19 @@ def run (dataset = None,
     dd['test_data'], dd['dims'], dd['save_input'], dd['postproc_inputs']
   del dd
 
-  if extra_testset_dirs is not None:
+  if testset_dir is not None:
+    np1 (f'Loading input data from `{testset_dir}\'... ')
+    test_data.data = datasets.images_from_dir (testset_dir, raw = True)
+    test_data.labels = None
+    p1 ('done.')
+
+  elif extra_testset_dirs is not None:
     for d in extra_testset_dirs:
       np1 (f'Loading extra image testset from `{str(d)}\'... ')
       x, y, _, _, _ = datasets.images_from_dir (str (d))
       test_data.data = np.concatenate ((test_data.data, x))
       test_data.labels = np.concatenate ((test_data.labels, y))
-      cp1 ('done.')
+      p1 ('done.')
 
   # ---
 
@@ -254,6 +264,19 @@ def run (dataset = None,
                                         log = verbose)
   max_pre_dispatch = 100
   rng = np.random.default_rng (randint ())
+
+  # ---
+
+  if sample is not None:
+    if not (isinstance (sample, int) or \
+            isinstance (sample, float) and sample > 0. and sample <= 1.):
+      raise ValueError ('`sample\' must be an Integer or a value in (0,1] '
+                        f'(got sample={sample})')
+    idxs = rng.choice (a = np.arange (len (test_data.data)),
+                       axis = 0, size = min (sample, len (test_data.data)))
+    test_data.data = test_data.data[idxs]
+    if test_data.labels is not None:
+      test_data.labels = test_data.labels[idxs]
 
   # ---
 
@@ -298,7 +321,7 @@ def run (dataset = None,
 
     tp1 (f'{tid}: |tests|={tests}, |adv|={advs}')
 
-  p1 ('Terminating after {} iterations{}: '
+  p1 ('Terminating after {} iteration{}: '
       '{} test{} generated, {} of which {} adversarial.'
       .format (*s_(tid), *s_(tests), *is_are_(advs)))
 
@@ -307,9 +330,11 @@ def run (dataset = None,
   if verbose:
     tp1 ('Exiting')
 
+# ---
 
 ap = argparse.ArgumentParser \
   (description = 'Fuzzer for Neural Networks',
+   prefix_chars = '-+',
    formatter_class = argparse.ArgumentDefaultsHelpFormatter)
 ap.add_argument ('--dataset', dest = 'dataset', required = True,
                  help = 'selected dataset', choices = datasets.choices)
@@ -317,9 +342,17 @@ ap.add_argument ('--model', required = True,
                  help = 'the input neural network model (.h5 file or "vgg16")')
 ap.add_argument ("--outputs", '-o', '-d', dest = "outputs", required = True,
                  help = "the output test data directory", metavar = "DIR")
-ap.add_argument ('--extra-tests', dest = 'extra_testset_dirs', metavar = "DIR",
+gp = ap.add_mutually_exclusive_group (required = False)
+gp.add_argument ('--inputs', '-i', dest = 'testset_dir', metavar = 'DIR',
+                 help = 'directory of test images')
+gp.add_argument ('--extra-tests', '+i', dest = 'extra_testset_dirs', metavar = 'DIR',
                  type = Path, nargs = '+',
                  help = 'additonal directories of test images')
+gp = ap.add_mutually_exclusive_group (required = False)
+gp.add_argument ('--sample', type = int, metavar = 'N',
+                 help = 'sample a subset of N inputs for testing')
+gp.add_argument ('--sample-ratio', type = float, metavar = 'T',
+                 help = 'sample a ratio T of inputs for testing')
 ap.add_argument ('--num-tests', '-N', type = int, metavar = 'N', default = 100,
                  help = "number of tests to generate")
 ap.add_argument ('--processes', '-P', '-J', type = int, default = 1, metavar = 'N',
@@ -343,12 +376,14 @@ def main (args = None, parser = ap, pp_args = ()):
     args = get_args (args, parser = parser)
     for pp in pp_args: pp (args)
     run (dataset = args.dataset,
+         testset_dir = args.testset_dir,
+         extra_testset_dirs = args.extra_testset_dirs,
+         sample = args.sample or args.sample_ratio,
          model = args.model,
-         outdir = args.outputs,
          num_tests = args.num_tests,
+         outdir = args.outputs,
          processes = args.processes,
-         verbose = args.verbose,
-         extra_testset_dirs = args.extra_testset_dirs)
+         verbose = args.verbose)
   # except ValueError as e:
   #   sys.exit (f'Error: {e}')
   except FileNotFoundError as e:
