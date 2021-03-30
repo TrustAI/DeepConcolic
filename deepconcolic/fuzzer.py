@@ -319,7 +319,7 @@ def run (dataset = None,
     tests += new_tests
     advs += new_advs
 
-    tp1 (f'{tid}: |tests|={tests}, |adv|={advs}')
+    tp1 (f'{tid/num_tests:.2%}: |tests|={tests}, |adv|={advs}')
 
   p1 ('Terminating after {} iteration{}: '
       '{} test{} generated, {} of which {} adversarial.'

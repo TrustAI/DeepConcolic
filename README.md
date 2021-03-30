@@ -151,7 +151,7 @@ python -m deepconcolic.main --model saved_models/cifar10_complicated.h5 --criter
 To run MC/DC for DNNs on the VGG16 model (with input images from the ``data`` sub-directory)
 
 ```
-python -m deepconcolic.main --vgg16-model --inputs data/ --outputs outs --mcdc-cond-ratio 0.1 --top-classes 5 --labels labels.txt --criterion ssc
+python -m deepconcolic.main --model vgg16 --inputs data/ --outputs outs --mcdc-cond-ratio 0.1 --top-classes 5 --labels labels.txt --criterion ssc
 ```
 -->
 
@@ -202,7 +202,7 @@ python3 -m deepconcolic.fuzzer --dataset cifar10 --model saved_models/cifar10_co
 ```
 
 
-# Tool 2 -- testRNN: Coverage Guided Testing for Recurrent Nueral Networks
+# Tool 2 -- testRNN: Coverage Guided Testing for Recurrent Neural Networks
 
 For long short-term memory models (LSMTs), we design new coverage metrics to consider the internal behaviour of the LSTM layers in processing sequential inputs. We consider not only the tighter metric that quantifies the temporal behaviour (i.e., temporal coverage) but also some looser metrics that quantify either the gate values (i.e., Neuron Coverage and Boundary Coverage) or value change in one step (i.e., Stepwise Coverage). 
 
