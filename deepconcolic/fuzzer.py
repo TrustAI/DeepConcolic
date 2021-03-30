@@ -334,6 +334,7 @@ def run (dataset = None,
 
 ap = argparse.ArgumentParser \
   (description = 'Fuzzer for Neural Networks',
+   prog = 'python3 -m deepconcolic.fuzzer',
    prefix_chars = '-+',
    formatter_class = argparse.ArgumentDefaultsHelpFormatter)
 ap.add_argument ('--dataset', dest = 'dataset', required = True,

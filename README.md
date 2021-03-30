@@ -55,31 +55,33 @@ In the following, we first present the original ASE2018 version, and then introd
 ### Command to Run  
 
 ```
-usage: deepconcolic.py [-h] [--model MODEL] [--vgg16-model] [--inputs DIR]
-                       --outputs DIR [--criterion nc, ssc...] [--setup-only]
-                       [--init INT] [--max-iterations INT] [--save-all-tests]
-                       [--rng-seed SEED] [--labels FILE]
-                       [--dataset {OpenML:har,cifar10,fashion_mnist,mnist}]
-                       [--extra-tests DIR [DIR ...]] [--filters {LOF}]
-                       [--norm {linf,l0}] [--norm-factor FLOAT]
-                       [--lb-hard FLOAT] [--lb-noise FLOAT] [--input-rows INT]
-                       [--input-cols INT] [--input-channels INT]
-                       [--mcdc-cond-ratio FLOAT] [--top-classes CLS]
-                       [--layers LAYER [LAYER ...]] [--feature-index INT]
-                       [--fuzzing] [--num-tests INT] [--num-processes INT]
-                       [--sleep-time INT] [--dbnc-spec SPEC]
-                       [--dbnc-abstr PKL]
+usage: python3 -m deepconcolic.main [-h] --dataset
+                                    {OpenML:har,cifar10,fashion_mnist,mnist}
+                                    --model MODEL --outputs DIR --criterion
+                                    {nc,ssc,ssclp,bfc,bfdc} --norm {l0,linf}
+                                    [--setup-only] [--init INT]
+                                    [--max-iterations INT] [--save-all-tests]
+                                    [--rng-seed SEED]
+                                    [--extra-tests DIR [DIR ...]]
+                                    [--filters {LOF}] [--norm-factor FLOAT]
+                                    [--lb-hard FLOAT] [--lb-noise FLOAT]
+                                    [--mcdc-cond-ratio FLOAT]
+                                    [--top-classes CLS]
+                                    [--layers LAYER [LAYER ...]]
+                                    [--feature-index INT] [--dbnc-spec SPEC]
+                                    [--dbnc-abstr PKL]
 
-Concolic testing for neural networks
+Concolic testing for Neural Networks
 
 optional arguments:
   -h, --help            show this help message and exit
-  --model MODEL         the input neural network model (.h5)
-  --vgg16-model         use keras's default VGG16 model (ImageNet)
-  --inputs DIR          the input test data directory
-  --outputs DIR         the outputput test data directory
-  --criterion nc, ssc...
+  --dataset {OpenML:har,cifar10,fashion_mnist,mnist}
+                        selected dataset
+  --model MODEL         the input neural network model (.h5 file or "vgg16")
+  --outputs DIR         the output test data directory
+  --criterion {nc,ssc,ssclp,bfc,bfdc}
                         the test criterion
+  --norm {l0,linf}      the norm metric
   --setup-only          only setup the coverage critierion and analyzer, and
                         terminate before engine initialization and startup
   --init INT            number of test samples to initialize the engine
@@ -90,16 +92,12 @@ optional arguments:
   --rng-seed SEED       Integer seed for initializing the internal random
                         number generator, and therefore get some(what)
                         reproducible results
-  --labels FILE         the default labels
-  --dataset {OpenML:har,cifar10,fashion_mnist,mnist}
-                        selected dataset
-  --extra-tests DIR [DIR ...]
+  --extra-tests DIR [DIR ...], +i DIR [DIR ...]
                         additonal directories of test images
   --filters {LOF}       additional filters used to put aside generated test
                         inputs that are too far from training data (there is
                         only one filter to choose from for now; the plural is
                         used for future-proofing)
-  --norm {linf,l0}      the norm metric
   --norm-factor FLOAT   norm distance upper threshold above which generated
                         inputs are rejected by the oracle (default is 1/4)
   --lb-hard FLOAT       hard lower bound for the distance between original and
@@ -108,9 +106,6 @@ optional arguments:
   --lb-noise FLOAT      extra noise on the lower bound for the distance
                         between original and generated inputs (concolic engine
                         only---default is 1/10)
-  --input-rows INT      input rows
-  --input-cols INT      input cols
-  --input-channels INT  input channels
   --mcdc-cond-ratio FLOAT
                         the condition feature size parameter (0, 1]
   --top-classes CLS     check the top-CLS classifications for models that
@@ -118,10 +113,6 @@ optional arguments:
   --layers LAYER [LAYER ...]
                         test layers given by name or index
   --feature-index INT   to test a particular feature map
-  --fuzzing             to start fuzzing
-  --num-tests INT       number of tests to generate
-  --num-processes INT   number of processes to use
-  --sleep-time INT      fuzzing sleep time
   --dbnc-spec SPEC      Feature extraction and discretisation specification
   --dbnc-abstr PKL, --bn-abstr PKL
                         input BN abstraction (.pkl)
