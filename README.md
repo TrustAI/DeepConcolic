@@ -161,14 +161,6 @@ To run Concolic Sign-sign-coverage (MC/DC) for DNNs on the MNIST model
 python -m deepconcolic.main --model saved_models/mnist_complicated.h5 --dataset mnist --outputs outs --criterion ssclp
 ```
 
-## Fuzzing Engine
-
-DeepConcolic nows supports an experimental fuzzing engine. Try ``--fuzzing`` to use it. The following command will result in: one ``mutants`` folder, one ``advs`` folder for adversarial examples and an adversarial list ``adv.list``.
-
-```
-python -m deepconcolic.main --fuzzing --model saved_models/large_model_fashion_mnist.h5 --num-processes 2 --inputs data/mnist-seeds/ --outputs outs --input-rows 28 --input-cols 28
-```
-
 ## Bayesian Network based Abstraction
 
 To run Concolic BN-based Feature coverage (BFCov) for DNNs on the MNIST model
@@ -187,6 +179,27 @@ You could adjust the following two parameters in the DBNC specification file def
     dump_bn_with_trained_dataset_distribution: True,
     dump_bn_with_final_dataset_distribution: True,
  ```
+
+
+## Fuzzing Engine
+
+DeepConcolic additionally features an experimental fuzzing engine.  The following command illustrates how to exercise this engine on a classifier for the CIFAR10 dataset: it will generate at most 1000 images obtained by mutating inputs randomly drawn from the CIFAR10 validation dataset, and save them into the ``outs/cifar10-fuzzing-basic`` directory.  Aversarial examples can be identified in the latter directory by searching for files named ``<test-number>-adv-<wrong-label>.png``, derived from file ``<test-number>-original-<true-label>.png``.  Passed tests are named in a similar way, as ``<test-number>-ok-<label>.png``.
+
+```
+python3 -m deepconcolic.fuzzer --dataset cifar10 --model saved_models/cifar10_complicated.h5 --processes 2 --outputs outs/cifar10-fuzzing-basic -N 1000
+```
+
+Further options are available to use this engine.  It is for instance possible to specify a set of files used as seeds for fuzzing with the option ``--inputs``, as in:
+
+```
+python3 -m deepconcolic.fuzzer --dataset mnist --model saved_models/mnist_complicated.h5  --inputs data/mnist-seeds --processes 5 --outputs outs/mnist-fuzzing-given-seeds -N 1000
+```
+
+or sample ``N`` inputs from the validation dataset beforehand with ``--sample N``:
+
+```
+python3 -m deepconcolic.fuzzer --dataset cifar10 --model saved_models/cifar10_complicated.h5 --sample 10 --processes 5 --outputs outs/cifar10-fuzzing-sub-sample10 -N 1000
+```
 
 
 # Tool 2 -- testRNN: Coverage Guided Testing for Recurrent Nueral Networks
