@@ -140,20 +140,23 @@ def deepconcolic(criterion, norm, test_object, report_args,
 
 def main():
 
-  parser=argparse.ArgumentParser(description='Concolic testing for neural networks' )
-  parser.add_argument('--model', dest='model', default='-1',
-                      help='the input neural network model (.h5)')
-  parser.add_argument("--vgg16-model", dest='vgg16',
-                      help="use keras's default VGG16 model (ImageNet)",
-                      action="store_true")
-  parser.add_argument("--inputs", dest="inputs", default="-1",
-                      help="the input test data directory", metavar="DIR")
-  parser.add_argument("--outputs", dest="outputs", required=True,
-                      help="the outputput test data directory", metavar="DIR")
+  parser = argparse.ArgumentParser \
+    (description = 'Concolic testing for Neural Networks',
+     prog = 'python3 -m deepconcolic.main',
+     prefix_chars = '-+')
+  parser.add_argument("--dataset", dest='dataset', required = True,
+                      help="selected dataset", choices=datasets.choices)
+  parser.add_argument ('--model', required = True,
+                       help = 'the input neural network model (.h5 file or "vgg16")')
+  parser.add_argument("--outputs", dest="outputs", required = True,
+                      help="the output test data directory", metavar="DIR")
   # parser.add_argument("--training-data", dest="training_data", default="-1",
   #                     help="the extra training dataset", metavar="DIR")
-  parser.add_argument("--criterion", dest="criterion", default="nc",
-                      help="the test criterion", metavar="nc, ssc...")
+  parser.add_argument("--criterion", dest="criterion", default="nc", required = True,
+                      choices = ('nc', 'ssc', 'ssclp', 'bfc', 'bfdc'),
+                      help = 'the test criterion')
+  parser.add_argument("--norm", dest="norm", required = True, choices = ('l0', 'linf'),
+                      help = 'the norm metric')
   parser.add_argument("--setup-only", dest="setup_only", action='store_true',
                       help="only setup the coverage critierion and analyzer, "
                       "and terminate before engine initialization and startup")
@@ -168,11 +171,9 @@ def main():
   parser.add_argument("--rng-seed", dest="rng_seed", metavar="SEED", type=int,
                       help="Integer seed for initializing the internal random number "
                       "generator, and therefore get some(what) reproducible results")
-  parser.add_argument("--labels", dest="labels", default="-1",
-                      help="the default labels", metavar="FILE")
-  parser.add_argument("--dataset", dest='dataset',
-                      help="selected dataset", choices=datasets.choices)
-  parser.add_argument("--extra-tests", dest='extra_testset_dirs', metavar="DIR",
+  # parser.add_argument("--labels", dest="labels", default="-1",
+  #                     help="the default labels", metavar="FILE")
+  parser.add_argument("--extra-tests", '+i', dest='extra_testset_dirs', metavar="DIR",
                       type=Path, nargs="+",
                       help="additonal directories of test images")
   parser.add_argument("--filters", dest='filters', # nargs='+'
@@ -181,8 +182,6 @@ def main():
                       'test inputs that are too far from training data (there '
                       'is only one filter to choose from for now; the plural '
                       'is used for future-proofing)', choices=filters.choices)
-  parser.add_argument("--norm", dest="norm", # required = True, <- not for fuzzing
-                      help="the norm metric", metavar="{linf,l0}")
   parser.add_argument('--norm-factor', metavar = 'FLOAT', type = float, default = 1/4,
                       help = 'norm distance upper threshold above which '
                       'generated inputs are rejected by the oracle (default is 1/4)')
@@ -194,12 +193,6 @@ def main():
                       help = 'extra noise on the lower bound for the distance '
                       'between original and generated inputs (concolic engine '
                       'only---default is 1/10)')
-  parser.add_argument("--input-rows", dest="img_rows", default="224",
-                      help="input rows", metavar="INT")
-  parser.add_argument("--input-cols", dest="img_cols", default="224",
-                      help="input cols", metavar="INT")
-  parser.add_argument("--input-channels", dest="img_channels", default="3",
-                      help="input channels", metavar="INT")
   parser.add_argument("--mcdc-cond-ratio", dest="mcdc_cond_ratio", metavar = "FLOAT",
                       type = float, default = 0.01,
                       help ="the condition feature size parameter (0, 1]")
@@ -212,15 +205,6 @@ def main():
   parser.add_argument("--feature-index", dest="feature_index", default="-1",
                       help="to test a particular feature map", metavar="INT")
 
-  # fuzzing params
-  parser.add_argument("--fuzzing", dest='fuzzing', help="to start fuzzing", action="store_true")
-  parser.add_argument("--num-tests", dest="num_tests", default="1000",
-                    help="number of tests to generate", metavar="INT")
-  parser.add_argument("--num-processes", dest="num_processes", default="1",
-                    help="number of processes to use", metavar="INT")
-  parser.add_argument("--sleep-time", dest="stime", default="4",
-                    help="fuzzing sleep time", metavar="INT")
-
   # DBNC-specific params
   parser.add_argument("--dbnc-spec", default="{}",
                       help="Feature extraction and discretisation specification",
@@ -228,68 +212,28 @@ def main():
   parser.add_argument('--dbnc-abstr', '--bn-abstr', metavar = 'PKL',
                       help = 'input BN abstraction (.pkl)')
 
-  args=parser.parse_args()
+  args = parser.parse_args ()
 
   # Initialize with random seed first, if given:
   try: rng_seed (args.rng_seed)
   except ValueError as e:
     sys.exit ("Invalid argument given for `--rng-seed': {}".format (e))
 
-  outs = args.outputs
-  criterion = args.criterion
-  top_classes = int(args.top_classes)
-
-  test_data = None
-  train_data = None
-  img_rows, img_cols, img_channels = int(args.img_rows), int(args.img_cols), int(args.img_channels)
-
-  dnn = None
   inp_ub = 1
-  save_input = None
-  amplify_diffs = True
   lower_bound_metric_hard = None
   lower_bound_metric_noise = None
-  input_bounds = None
-  postproc_inputs = id
 
-  # fuzzing_params
-  if args.inputs!='-1':
-    file_list = []
-    xs=[]
-    np1 (f'Loading input data from `{args.inputs}\'... ')
-    for path, subdirs, files in os.walk(args.inputs):
-      for name in files:
-        fname=(os.path.join(path, name))
-        file_list.append(fname) # fuzzing params
-        if fname.endswith('.jpg') or fname.endswith('.png'):
-          try:
-            image = cv2.imread(fname)
-            image = cv2.resize(image, (img_rows, img_cols))
-            image = image.astype('float')
-            xs.append((image))
-          except: pass
-    x_test = np.asarray(xs)
-    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
-    test_data = raw_datat(x_test, None)
-    c1 (f'{len(xs)} loaded.')
-  elif args.dataset in datasets.choices:
-    print ('Loading {} dataset... '.format (args.dataset), end = '', flush = True)
-    (x_train, y_train), (x_test, y_test), dims, kind, _ = datasets.load_by_name (args.dataset)
-    test_data = raw_datat(x_test, y_test, args.dataset)
-    train_data = raw_datat(x_train, y_train, args.dataset)
-    save_input = save_an_image if kind in datasets.image_kinds else \
-                 save_in_csv ('new_inputs') if len (dims) == 1 else \
-                 None
-    amplify_diffs = kind in datasets.image_kinds
-    if kind in datasets.image_kinds: # assume 256 res.
-      lower_bound_metric_hard = 1 / 255
-    input_bounds = UniformBounds () if kind in datasets.image_kinds else \
-                   StatBasedInputBounds (hard_bounds = UniformBounds (-1.0, 1.0)) \
-                   if kind in datasets.normalized_kinds else StatBasedInputBounds ()
-    postproc_inputs = fix_image_channels_ () if kind in datasets.image_kinds else id
-    print ('done.')
-  else:
-    sys.exit ('Missing input dataset')
+  dd = dataset_dict (args.dataset)
+  train_data, test_data, kind, save_input, postproc_inputs, ib = \
+    dd['train_data'], dd['test_data'], dd['kind'], \
+    dd['save_input'], dd['postproc_inputs'], dd['input_bounds']
+  amplify_diffs = kind in datasets.image_kinds
+  if kind in datasets.image_kinds: # assume 256 res.
+    lower_bound_metric_hard = 1 / 255
+  input_bounds = (UniformBounds (*ib) if isinstance (ib, tuple) and len (ib) == 2 else \
+                  StatBasedInputBounds (hard_bounds = UniformBounds (-1.0, 1.0)) \
+                  if ib == 'normalized' else StatBasedInputBounds ())
+  del dd
 
   if args.extra_testset_dirs is not None:
     for d in args.extra_testset_dirs:
@@ -303,25 +247,16 @@ def main():
   for f in args.filters:
     input_filters += xlist (filters.by_name (f))
 
-  if args.fuzzing:
-    pass
-  elif args.model!='-1':
-    # NB: Eager execution needs to be disabled before any model loading.
-    tf.compat.v1.disable_eager_execution ()
-    dnn = keras.models.load_model (args.model)
-    dnn.summary()
-  elif args.vgg16:
-    # NB: Eager execution needs to be disabled before any model loading.
-    tf.compat.v1.disable_eager_execution ()
-    dnn = keras.applications.VGG16 ()
-    inp_ub = 255
+  dnn = load_model (args.model)
+  dnn.summary ()
+
+  if args.model == 'vgg16':
+    # XXX: that should be about loading some metadata with, e.g. args.dataset == 'ImageNet'.
+    inp_ub = 255                # XXX: not really used (yet/anymore) I think
     input_bounds = UniformBounds (0.0, 255.0)
     postproc_inputs = fix_image_channels_ (up = None, down = None)
     save_input = save_an_image_ (channel_upscale = 1.)
-    lower_bound_metric_hard = 1/255
-    dnn.summary()
-  else:
-    sys.exit ('Missing input neural network')
+    lower_bound_metric_hard = 1 / 255
 
   if args.lb_hard is not None:
     lower_bound_metric_hard = float (args.lb_hard)
@@ -338,9 +273,11 @@ def main():
 
   test_object = test_objectt (dnn, train_data, test_data)
   test_object.cond_ratio = args.mcdc_cond_ratio
-  test_object.top_classes = top_classes
-  test_object.inp_ub = inp_ub   # only used in run_ssc.run_svc
   test_object.postproc_inputs = postproc_inputs
+  # NB: only used in run_ssc.run_svc (which is probably broken) >>
+  test_object.top_classes = int (args.top_classes)
+  test_object.inp_ub = inp_ub
+  # <<<
   if args.layers is not None:
     try:
       test_object.set_layer_indices (int (l) if l.isdigit () else l
@@ -351,28 +288,8 @@ def main():
     test_object.feature_indices = [ int(args.feature_index) ]
     print ('feature index specified:', test_object.feature_indices)
 
-  if args.labels!='-1':             # NB: only used in run_ssc.run_svc
-    labels=[]
-    lines = [line.rstrip('\n') for line in open(args.labels)]
-    for line in lines:
-      for l in line.split():
-        labels.append(int(l))
-    test_object.labels=labels
-
-  init_tests = int (args.init_tests) if args.init_tests is not None \
-               else None
+  init_tests = int (args.init_tests) if args.init_tests is not None else None
   max_iterations = int (args.max_iterations)
-
-  # fuzzing params
-  if args.fuzzing:
-    fuzzer.run(test_object, OutputDir (outs, log = True),
-               args.model, int(args.stime), file_list,
-               num_tests = int(args.num_tests),
-               num_processes = int(args.num_processes))
-    sys.exit(0)
-
-  if args.norm is None:
-    sys.exit ('Missing norm argument: l0 or linf')
 
   # DBNC-specific parameters:
   try:
@@ -393,7 +310,7 @@ def main():
     sys.exit (f'BN abstraction file `{args.dbnc_abstr}\' missing')
 
   deepconcolic (args.criterion, args.norm, test_object,
-                report_args = { 'outdir': OutputDir (outs, log = True),
+                report_args = { 'outdir': OutputDir (args.outputs, log = True),
                                 'save_new_tests': args.save_all_tests,
                                 'save_input_func': save_input,
                                 'amplify_diffs': amplify_diffs },
