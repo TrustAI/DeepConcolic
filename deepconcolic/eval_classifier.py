@@ -65,15 +65,12 @@ def main():
   #   X_test = X_test.reshape(x_test.shape[0], img_rows, img_cols, img_channels)
   #   c1 (f'{len(xs)} loaded.')
   # el
-  if args.dataset in datasets.choices:
-    print ('Loading {} dataset... '.format (args.dataset), end = '', flush = True)
-    _, (X_test, Y_test), _, _, _ = datasets.load_by_name (args.dataset)
-    from utils import raw_datat
-    test_data = raw_datat(X_test, Y_test, args.dataset)
-    # train_data = raw_datat(x_train, y_train, args.dataset)
-    print ('done.')
-  else:
-    sys.exit ('Missing input dataset')
+  assert args.dataset in datasets.choices
+  from utils import dataset_dict, load_model
+
+  dd = dataset_dict (args.dataset)
+  test_data = dd['test_data']
+  del dd
 
   if args.extra_testset_dirs is not None:
     for d in args.extra_testset_dirs:
@@ -83,16 +80,8 @@ def main():
       y_test = np.concatenate ((Y_test, y))
       print ('done.')
 
-  from utils import tf
-  # NB: Eager execution needs to be disabled before any model loading.
-  tf.compat.v1.disable_eager_execution ()
-  if args.model == 'vgg16':
-    dnn = keras.applications.VGG16 ()
-  elif args.model!='-1':
-    dnn = tf.keras.models.load_model (args.model)
-  else:
-    sys.exit ('Missing input neural network')
-  dnn.summary()
+  dnn = load_model (args.model)
+  dnn.summary ()
 
   report (dnn, test_data)
 

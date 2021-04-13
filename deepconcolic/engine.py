@@ -443,7 +443,7 @@ class Report:
                adv_dist_period = 100,
                save_input_func = None,
                amplify_diffs = False,
-               inp_up = 1,
+               inp_up = 1,      # XXX: ??? unused.
                **kwds):
 
     self.adversarials = []
