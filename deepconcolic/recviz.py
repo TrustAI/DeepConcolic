@@ -49,7 +49,14 @@ class Record:
     def tnode_idx (t):
       return -t['index'] - 1 if 'gen_test_id' not in t else t['gen_test_id']
 
+    # Note some elements in [lr] may still be [None] if there are
+    # duplicated inputs in the initial test suite.  We can safely
+    # ignore those indexes as no generated test case may derive from
+    # them (i.e. those point to the index of the unique duplicated
+    # input that is in [lr]).
+
     for t in lr:
+      if t is None: continue
       id = tnode_idx (t)
       t['id'] = id
       t['childs'] = ()
@@ -67,6 +74,7 @@ class Record:
         t['image'] = f
 
     for t in lr:
+      if t is None: continue
       if t['status'] == 'raw':
         tchilds = t["childs"]
         if tchilds != ():
