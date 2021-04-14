@@ -89,9 +89,48 @@ def train_n_save_classifier (model, class_names, input_kind,
 
 # ---
 
-def classifier (load_data, make_model, model_name = None, load_data_args = {}, **kwds):
+def classifier (load_data, make_model, model_name = None,
+                load_data_args = {}, make_model_args = {}, **kwds):
     train_data, test_data, input_shape, input_kind, class_names = load_data (**load_data_args)
-    train_n_save_classifier (make_model (input_shape, name = model_name),
+    train_n_save_classifier (make_model (input_shape, name = model_name, **make_model_args),
                              class_names, input_kind, train_data, test_data, **kwds)
+
+# ---
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Reshape, Dense
+
+def make_dense (input_shape, n_neurons = (100,), n_classes = 5,
+                input_reshape = False, **kwds):
+  """Builds a very basic DNN.
+
+  n_neurons: gives the number of neurons for each layer, as a list or
+  tuple
+
+  n_classes: number of output neurons (= |classes|)
+
+  input_reshape: whether to include a dummy reshape input layer
+  (useful to access input features as activations, for DeepConcolic's
+  internal statistical analysis and layerwise abstractions).
+
+  """
+  assert len (n_neurons) > 0
+  layer_args = [dict (activation = 'relu') for _ in n_neurons]
+  layer_args[0]['input_shape'] = input_shape
+  layer_args[-1]['activation'] = 'softmax'
+  layers = (Reshape (input_shape = input_shape, target_shape = input_shape),) if input_reshape else ()
+  layers += tuple (Dense (n, **args) for n, args in zip (n_neurons, layer_args))
+  return Sequential (layers, **kwds)
+
+# ---
+
+def make_dense_classifier (load_data, prefix, n_features, n_classes, n_neurons, **kwds):
+  """A wrapper for training DNNs built using {make_dense}."""
+  model_name = (f'{prefix}{n_features}_{n_classes}_dense'
+                f'_{"_".join (str (c) for c in n_neurons)}')
+  model_args = dict (n_classes = n_classes, n_neurons = n_neurons)
+  classifier (load_data, make_dense, epochs = 50,
+              model_name = model_name, make_model_args = model_args,
+              **kwds)
 
 # ---
