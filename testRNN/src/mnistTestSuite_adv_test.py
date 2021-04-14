@@ -34,11 +34,11 @@ def read_inputs_from_folder(folder, type="queue"):
     return np.asarray(tests)
 
 
-def mnist_lstm_train(modelName):
-    mn = mnistclass(modelName)
+def mnist_lstm_train(*_):
+    mn = mnistclass(*_)
     mn.train_model()
 
-def mnist_lstm_adv_test(r,threshold_SC,threshold_BC,symbols_TC,seq,TestCaseNum, Mutation,modelName):
+def mnist_lstm_adv_test(r,threshold_SC,threshold_BC,symbols_TC,seq,TestCaseNum, Mutation, *_):
     r.resetTime()
     seeds = 1
     np.random.seed(seeds)
@@ -46,7 +46,7 @@ def mnist_lstm_adv_test(r,threshold_SC,threshold_BC,symbols_TC,seq,TestCaseNum, 
     # set up oracle radius
     oracleRadius = 0.01
     # load model
-    mn = mnistclass(modelName)
+    mn = mnistclass(*_)
     mn.load_model()
     # test layer
     layer = 1

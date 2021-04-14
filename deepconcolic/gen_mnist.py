@@ -72,32 +72,26 @@ def make_large_model (input_shape, **kwds):
 
 # classifier (load_data, make_tiny_model,
 #             model_name = 'mnist_tiny',
-#             epochs = 20,
-#             outdir = '/tmp')
+#             epochs = 20)
 
 # classifier (load_data, make_small_model,
 #             model_name = 'mnist_small',
-#             epochs = 20,
-#             outdir = '/tmp')
+#             epochs = 20)
 
 # classifier (load_data, make_small_model,
 #             model_name = 'mnist_small_overfitting',
 #             early_stopping = False,
-#             epochs = 50,
-#             outdir = '/tmp')
+#             epochs = 50)
 
 classifier (load_data, make_small_maxp_model,
             model_name = 'mnist_small_maxp',
-            epochs = 20,
-            outdir = '/tmp')
+            epochs = 20)
 
 # classifier (load_data, make_medium_model,
 #             model_name = 'mnist_medium',
-#             epochs = 20,
-#             outdir = '/tmp')
+#             epochs = 20)
 
 # classifier (load_data, make_large_model,
 #             model_name = 'mnist_overfitting',
 #             early_stopping = False,
-#             epochs = 20,
-#             outdir = '/tmp')
+#             epochs = 20)

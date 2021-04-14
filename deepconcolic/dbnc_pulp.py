@@ -46,11 +46,13 @@ class PulpBFcAbstrLayerEncoder (PulpStrictLayerEncoder):
     if isinstance (transform[0], StandardScaler):
       u = transform[0].mean_
       s = transform[0].scale_
-      lin_expr = lpSum ([LpAffineExpression ([(o, c / s)], - (u / s) * c - m * c)
+      lin_expr = lpSum ([LpAffineExpression \
+                         ([(o, float (c / s))], float (- (u / s) * c - m * c))
                          for (o, u, s, m, c) in
                          zip (o.flatten (), u, s, m, c[component].T)])
     else:
-      lin_expr = lpSum ([LpAffineExpression ([(o, c)], - m * c)
+      lin_expr = lpSum ([LpAffineExpression \
+                         ([(o, float (c))], float (- m * c))
                          for (o, m, c) in
                          zip (o.flatten (), m, c[component].T)])
 
@@ -79,11 +81,11 @@ class PulpBFcAbstrLayerEncoder (PulpStrictLayerEncoder):
     if low != -np.inf:
       cstrs.append (LpConstraint (lin_expr, LpConstraintGE,
                                   '{}_low_{}'.format(self.flayer, feature),
-                                  low + act_epsilon))
+                                  float (low + act_epsilon)))
     if up != np.inf:
       cstrs.append (LpConstraint (lin_expr, LpConstraintLE,
                                   '{}_up_{}'.format(self.flayer, feature),
-                                  up - act_epsilon - lt_epsilon))
+                                  float (up - act_epsilon - lt_epsilon)))
 
     return cstrs
 
@@ -94,10 +96,10 @@ class PulpBFcAbstrLayerEncoder (PulpStrictLayerEncoder):
     if approx:
       return [ LpConstraint (lin_expr, LpConstraintGE,
                              '{}_low_{}'.format(self.flayer, component),
-                             value - act_epsilon),
+                             float (value - act_epsilon)),
                LpConstraint (lin_expr, LpConstraintLE,
                              '{}_up_{}'.format(self.flayer, component),
-                             value + act_epsilon)]
+                             float (value + act_epsilon))]
     else:
       return [ LpConstraint (lin_expr, LpConstraintEQ,
                              '{}_eq_{}'.format(self.flayer, component),

@@ -443,7 +443,7 @@ class Report:
                adv_dist_period = 100,
                save_input_func = None,
                amplify_diffs = False,
-               inp_up = 1,
+               inp_up = 1,      # XXX: ??? unused.
                **kwds):
 
     self.adversarials = []
@@ -1270,6 +1270,7 @@ class BoolMappedCoverableLayer (CoverableLayer):
 
   def _initialize_map(self, feature_indices) -> None:
     shape = tuple(self.layer.output_shape)
+    self.feature_indices = feature_indices
     self.map = np.ones(shape[1:], dtype = bool)
     if self.is_conv and feature_indices != None:
       for i in range(0, self.map.shape[-1]):
@@ -1279,7 +1280,7 @@ class BoolMappedCoverableLayer (CoverableLayer):
 
   def filter_out_padding_against(self, prev_layer):
     if not self.is_conv: return
-    tp1 ('Filtering out padding neurons from layer {}'.format(self))
+    tp1 (f'Filtering out padding neurons at layer {self}')
     paddings = 0
     for n in np.ndindex (self.map.shape):
       if self.map[n]:
@@ -1289,14 +1290,31 @@ class BoolMappedCoverableLayer (CoverableLayer):
     self.filtered_out += paddings
 
 
-  def coverage(self, feature_indices) -> Coverage:
-    if not self.is_conv or feature_indices == None:
+  def valid_conv_filters (self):
+    if not self.is_conv or \
+       self.feature_indices is None or \
+       self.feature_indices == []:
+      return ()
+
+    fltrs = ()
+    for f in self.feature_indices:
+      if f >= self.layer.output_shape[-1]:
+        p1 (f'Ignoring filter {f} for layer {str (self)} '
+            f'with {self.layer.output_shape[-1]} filters')
+      else:
+        p1 (f'Selecting filter {f} for layer {str (self)}')
+        fltrs += (f,)
+    return fltrs
+
+
+  def coverage(self) -> Coverage:
+    if not self.is_conv or self.feature_indices == None:
       nc = np.count_nonzero (self.map)
-      tot = np.prod (self.map.shape)
+      tot = self.map.size
     else:
       nc, tot = 0, 0
       for i in range(0, self.map.shape[-1]):
-        if not i in feature_indices: continue
+        if not i in self.feature_indices: continue
         nc += np.count_nonzero (self.map[...,i])
         tot += self.map[...,i].size
     tot -= self.filtered_out
@@ -1389,10 +1407,8 @@ class LayerLocalCriterion (Criterion):
   def __init__(self,
                clayers: Sequence[BoolMappedCoverableLayer] = None,
                shallow_first = True,
-               feature_indices = None,
                **kwds):
     self.shallow_first = shallow_first
-    self.feature_indices = feature_indices
     super().__init__(clayers, **kwds)
     for cl in self.cover_layers:
       assert isinstance (cl, BoolMappedCoverableLayer)
@@ -1456,7 +1472,7 @@ class LayerLocalCriterion (Criterion):
     for cl in self.cover_layers:
       # if self.test_object.tests_layer (cl):
       # assert (self.test_object.tests_layer (cl))
-      c += cl.coverage (self.feature_indices)
+      c += cl.coverage ()
     return c
 
 
@@ -1505,8 +1521,8 @@ class LayerLocalCriterion (Criterion):
       while True:
         idx = np.random.randint(0, len(clx))
         cl = clx[idx]
-        tot_s = np.prod (cl.map.shape)
-        pos = (np.random.randint (0, tot_s) if self.feature_indices is None else \
+        tot_s = cl.map.size
+        pos = (np.random.randint (0, tot_s) if cl.feature_indices is None else \
                np.argmax (cl.map.shape))
         while pos < tot_s and not cl.map.item(pos):
           pos += 1

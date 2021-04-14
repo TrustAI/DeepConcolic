@@ -3,11 +3,11 @@ from pulp import *
 from utils_io import *
 from utils import *
 from engine import Bounds
+from multiprocessing import cpu_count
 import pulp
 import pulp_encoding
 import engine
 import numpy as np
-
 
 # ---
 
@@ -116,13 +116,12 @@ def pulp_find_solver (try_solvers = None, time_limit = None):
   s = None
   for solver in some (try_solvers, pulp_checked_solvers):
     if solver in available_solvers:
+      if solver in ('COIN_CMD', 'PULP_CBC_CMD',):
+        args['threads'] = min (5, cpu_count ()) # just a rough default
+        args['presolve'] = True
       s = get_solver (solver, **args)
-      if solver in ('PULP_CBC_CMD', 'GLPK_CMD',):
-        print ('PuLP: {} solver selected.'.format (solver))
-        print ('PuLP: WARNING: {} does not support time limit.'.format (solver))
-      else:
-        print ('PuLP: {} solver selected (with {} minutes time limit).'
-               .format (solver, time_limit / 60))
+      print ('PuLP: {} solver selected (with {} minutes time limit).'
+             .format (solver, time_limit / 60))
       break
   return s
 

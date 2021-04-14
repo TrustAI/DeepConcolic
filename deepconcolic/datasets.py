@@ -2,12 +2,13 @@
 # to be required for proper operations of `tf.summary`.
 import os
 import numpy as np
+from tempfile import gettempdir
 from sklearn.model_selection import train_test_split
 
 # ---
 
 default_datadir = os.getenv ('DC_DATADIR') or \
-                  os.getenv ('TMPDIR', default = '/tmp') + '/sklearn_data'
+                  os.path.join (gettempdir (), 'sklearn_data')
 
 image_kinds = set (('image', 'greyscale_image',))
 normalized_kind = 'normalized'
@@ -121,12 +122,15 @@ try:
   from utils_io import warnings, cv2, parse
   from utils_funcs import validate_strarg, validate_inttuplearg
   def images_from_dir (d,
+                       raw = False,
+                       raw_shape = None,
                        filename_pattern = '{id}-{kind}-{label:d}.{ext}',
                        resolution = None,
                        channels = 'grayscale',
                        normalize = True,
                        channel_bits = 8,
                        ):
+
     grey_channels = ('grayscale', 'greyscale',)
     rgb_channels = ('rgb', 'RGB',)
     other_channels = ('argb', 'ARGB', 'original')
@@ -134,11 +138,9 @@ try:
                      'image channels') ('channels', channels)
     if resolution is not None:
       validate_inttuplearg ('resolution', resolution)
-    filename_parser = parse.compile (filename_pattern)
     cv2_flag = cv2.IMREAD_GRAYSCALE if channels in grey_channels else \
                cv2.IMREAD_COLOR if channels in rgb_channels else \
                cv2.IMREAD_UNCHANGED
-    images, labels, adversarials = [], [], []
     def read_image (f):
       image = cv2.imread (f, cv2_flag).astype ('float')
       image = cv2.resize (image, resolution) if resolution is not None else image
@@ -146,10 +148,29 @@ try:
       if normalize:
         np.divide (image, (2 ** channel_bits - 1), out = image)
       return image
-    def add_file (f, label):
-      images.append (read_image (f))
-      labels.append (label)
-    def add_dir (d):
+
+    def add_rawdir (d):
+      images = []
+      def add_file (f):
+        images.append (read_image (f))
+      for dir, dirs, files in os.walk (d):
+        for f in files:
+          if not (f.endswith ('.png') or
+                  f.endswith ('.jpg') or
+                  f.endswith ('.jpeg')):
+            continue
+          images.append (read_image (os.path.join (dir, f)))
+      if images == []: return None
+      images = np.asarray (images)
+      shape = raw_shape or images[0].shape
+      return images.reshape (len (images), *shape)
+
+    def add_outdir (d):
+      filename_parser = parse.compile (filename_pattern)
+      images, labels, adversarials = [], [], []
+      def add_file (f, label):
+        images.append (read_image (f))
+        labels.append (label)
       for dir, dirs, files in os.walk (d):
         ff = {}
         for f in files:
@@ -176,13 +197,17 @@ try:
               add_file (info['filename'], ff[fid]['original']['label'])
               adversarials.append ((images[-1],
                                     read_image (ff[fid]['original']['filename'])))
-    add_dir (d)
-    if images == []: return None
-    images, labels = np.asarray (images), np.asarray (labels).astype (int)
-    images = images.reshape (images.shape[0], *images[0].shape)
-    return images, labels.astype (int), images.shape[1:], \
-           [ str (i) for i in np.unique (labels) ], \
-           adversarials
+      if images == []: return None
+      images, labels = np.asarray (images), np.asarray (labels).astype (int)
+      images = images.reshape (images.shape[0], *images[0].shape)
+      return images, labels.astype (int), images.shape[1:], \
+             [ str (i) for i in np.unique (labels) ], \
+             adversarials
+
+    if raw:
+      return add_rawdir (d)
+    else:
+      return add_outdir (d)
 except:
   # parse not available
   pass

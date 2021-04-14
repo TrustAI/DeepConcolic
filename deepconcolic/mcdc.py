@@ -2,6 +2,7 @@
 import sys
 import numpy as np
 from utils import *
+from utils_io import tempdir
 from nc_setup import *
 from ssc import *
 from art.attacks.evasion import FastGradientMethod
@@ -13,7 +14,7 @@ class adv_objectt:
     self.lb_v=lb_v
     self.ub_v=ub_v
 
-def mcdc(x, dnn, aveImg_binary, mcdc_cond_ratio=0.2, max_v=255, lb_v=-125.5, ub_v=125.5, opt=True, num=None, tot_iters=1000, outs = '/tmp/'):
+def mcdc(x, dnn, aveImg_binary, mcdc_cond_ratio=0.2, max_v=255, lb_v=-125.5, ub_v=125.5, opt=True, num=None, tot_iters=1000, outs = tempdir):
   x_test=np.array([x])
   raw_data=raw_datat(x_test,None)
   test_object=test_objectt(dnn, raw_data, 'ssc', 'linf')
@@ -135,7 +136,7 @@ def mcdc(x, dnn, aveImg_binary, mcdc_cond_ratio=0.2, max_v=255, lb_v=-125.5, ub_
   else: return False, np.array(new_images)
   
   
-def mcdc_regression_linf(x, dnn, aveImg_binary, regression_threshold = 0.5, mcdc_cond_ratio=0.2, max_v=255, lb_v=-125.5, ub_v=125.5, opt=True, outs = '/tmp/'):
+def mcdc_regression_linf(x, dnn, aveImg_binary, regression_threshold = 0.5, mcdc_cond_ratio=0.2, max_v=255, lb_v=-125.5, ub_v=125.5, opt=True, outs = tempdir):
   x_test=np.array([x])
   raw_data=raw_datat(x_test,None)
   test_object=test_objectt(dnn, raw_data, 'ssc', 'linf')

@@ -227,21 +227,60 @@ class raw_datat:
     self.labels = appopt (np.squeeze, as_numpy (labels))
     self.name = name
 
+
+class fix_image_channels_:
+  def __init__(self, up = 255., bounds = (0.0, 255.0), ctype = 'uint8', down = 255.):
+    assert bounds is not None
+    assert ctype is not None
+    self.up, self.down = up, down
+    self.bounds = bounds
+    self.ctype = ctype
+
+  def __call__ (self, x):
+    with np.errstate (over = 'ignore', under = 'ignore'):
+      if self.up is not None:
+        np.multiply (x, self.up, out = x)
+      x = np.clip (x, *self.bounds, out = x).astype (self.ctype).astype (float)
+      if self.down is not None:
+        np.divide (x, self.down, out = x)
+      return x
+
+
+def dataset_dict (name, save_input_args = ('new_inputs',)):
+  import datasets
+  np1 (f'Loading {name} dataset... ')
+  (x_train, y_train), (x_test, y_test), dims, kind, labels = datasets.load_by_name (name)
+  test_data = raw_datat (x_test, y_test, name)
+  train_data = raw_datat (x_train, y_train, name)
+  save_input = (save_an_image if kind in datasets.image_kinds else \
+                save_in_csv (*save_input_args) if len (dims) == 1 else None)
+  input_bounds = ((0., 1.) if kind in datasets.image_kinds else \
+                  'normalized' if kind in datasets.normalized_kinds else None)
+  postproc_inputs = fix_image_channels_ () if kind in datasets.image_kinds else id
+  c1 ('done.')
+  return dict (test_data = test_data, train_data = train_data,
+               kind = kind, dims = dims, labels = labels,
+               input_bounds = input_bounds,
+               postproc_inputs = postproc_inputs,
+               save_input = save_input)
+
+
 # ---
 
-def fix_image_channels_ (up = 255., bounds = (0.0, 255.0), ctype = 'uint8', down = 255.):
-  assert bounds is not None
-  assert ctype is not None
-  def aux (x):
-    if up is not None:
-      np.multiply (x, up, out = x)
-    x = np.clip (x, *bounds, out = x).astype (ctype).astype (float)
-    if down is not None:
-      np.divide (x, down, out = x)
-    return x
-  return aux
+
+def load_model (model_spec):
+  # NB: Eager execution needs to be disabled before any model loading.
+  tf.compat.v1.disable_eager_execution ()
+  if model_spec == 'vgg16':
+    return tk.keras.applications.VGG16 ()
+  elif os.path.exists (model_spec):
+    return tf.keras.models.load_model (model_spec)
+  else:
+    raise ValueError (f'Invalid specification for neural network model: `{model_spec}')
+
 
 # ---
+
 
 class test_objectt:
   def __init__(self, dnn, train_data, test_data):
@@ -312,6 +351,28 @@ class test_objectt:
     else:
       print ('Function layers to be tested: {}'
              .format (', '.join (l.name for l, _ in tested_layers)))
+
+    if mcdc:
+      self.find_mcdc_injecting_layer ([i for _, i in tested_layers],
+                                      criterion in ('ssclp',))
+
+
+  def find_mcdc_injecting_layer (self, tested_layer_indexes, concolic):
+
+    injecting_layer_index = tested_layer_indexes[0] - 1
+    if concolic:
+      while injecting_layer_index >= 0 and \
+            (activation_is_relu (self.dnn.layers[injecting_layer_index]) or \
+             is_activation_layer (self.dnn.layers[injecting_layer_index]) or \
+             is_maxpooling_layer (self.dnn.layers[injecting_layer_index])):
+        injecting_layer_index -= 1
+
+    if injecting_layer_index < 0:
+      sys.exit ('DNN architecture not supported by concolic MC/DC-style '
+                'citerion: no suitable activation-less condition layer found')
+
+    return injecting_layer_index
+
 
 # ---
 

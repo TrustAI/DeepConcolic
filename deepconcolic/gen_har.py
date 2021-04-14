@@ -4,13 +4,13 @@
 # https://archive.ics.uci.edu/ml/datasets/human+activity+recognition+using+smartphones
 #
 from training import *
+from utils_io import tempdir
 from datasets import load_openml_data_lambda
 
-common_args = dict (load_data_args = dict (datadir = '/tmp/sklearn_data'),
+common_args = dict (load_data_args = dict (datadir = os.path.join (tempdir, 'sklearn_data')),
                     epochs = 40,
                     validate_on_test_data = True,
-                    shuffle = False,
-                    outdir = '/tmp')
+                    shuffle = False)
 
 def make_model (input_shape, **kwds):
     return tf.keras.models.Sequential([
@@ -63,18 +63,6 @@ def make_model (input_shape, **kwds):
 
 # ---
 
-# # Very bad small model, for testing purposes only
-# def make_small_dense_model (input_shape, **kwds):
-#     return tf.keras.models.Sequential([
-#         tf.keras.layers.Dense(187, input_shape = input_shape),
-#         tf.keras.layers.Activation('relu'),
-#         tf.keras.layers.Dense(92),
-#         tf.keras.layers.Activation('relu'),
-#         tf.keras.layers.Dense(6),
-#         tf.keras.layers.Activation('softmax'),
-#     ], **kwds)
-
-# Very bad small model, for testing purposes only
 def make_dense_model (input_shape, **kwds):
     return tf.keras.models.Sequential([
         tf.keras.layers.Dense(192, activation = 'relu', input_shape = input_shape),
@@ -86,7 +74,27 @@ def make_dense_model (input_shape, **kwds):
         tf.keras.layers.Activation('softmax'),
     ], **kwds)
 
+def make_dense_decomposed_model (input_shape, **kwds):
+    return tf.keras.models.Sequential([
+        tf.keras.layers.Dense(192, input_shape = input_shape),
+        tf.keras.layers.Activation('relu'),
+        tf.keras.layers.Dense(128),
+        tf.keras.layers.Activation('relu'),
+        tf.keras.layers.Dropout(0.25),
+        tf.keras.layers.Dense(92),
+        tf.keras.layers.Activation('relu'),
+        tf.keras.layers.Dense(64),
+        tf.keras.layers.Activation('relu'),
+        tf.keras.layers.Dense(6),
+        tf.keras.layers.Activation('softmax'),
+    ], **kwds)
+
 classifier (load_openml_data_lambda ('har'),
             make_dense_model,
             model_name = 'har_dense',
+            **common_args)
+
+classifier (load_openml_data_lambda ('har'),
+            make_dense_decomposed_model,
+            model_name = 'har_dense_decomposed',
             **common_args)
