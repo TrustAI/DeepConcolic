@@ -5,6 +5,7 @@ from utils_funcs import rng_seed, random, randint
 from utils_mp import init as mp_init, FFPool, forking, np_share
 from pathlib import Path
 import datasets
+import plugins
 
 # ## to be refined
 # apps = ['./deepconcolic/run_template.py']
@@ -385,8 +386,8 @@ def main (args = None, parser = ap, pp_args = ()):
          outdir = args.outputs,
          processes = args.processes,
          verbose = args.verbose)
-  # except ValueError as e:
-  #   sys.exit (f'Error: {e}')
+  except ValueError as e:
+    sys.exit (f'Error: {e}')
   except FileNotFoundError as e:
     sys.exit (f'Error: {e}')
   except KeyboardInterrupt:

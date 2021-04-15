@@ -202,6 +202,43 @@ python3 -m deepconcolic.fuzzer --dataset cifar10 --model saved_models/cifar10_co
 ```
 
 
+## Working with Your Own Datasets
+
+DeepConcolic provides means for working with additional datasets, that can be provided via a dedicate plugin system.
+Such plugins are Python modules that are loaded when the tool starts, and are searched within any directory listed in the colon-separated environment variable `DC_PLUGINS_PATH` if this variable is defined, or else within the `./dc_plugins` directory if it exists (note the latter is relative to the current working directory).
+
+Then, a new dataset can be registered by calling the `deepconcolic.datasets.register_dataset` function with a name for the dataset as first argument, and a function that loads and returns a dataset description as second argument.
+The latter function must accept any set of named arguments (for future extensions), and return a tuple with: (i) a pair of arrays containting trainting data and labets; (ii) a similar pair for validation; (iii) the shape of each individual input element; (iv) a descriptor string in {`image`, `normalized`, `unknown`} (used for determining the input feature encoding—note the format of this descriptor is likely to be refined in future versions); and (v) a list of strings showing the individual label names.
+The dataset arrays can be given using [`numpy.ndarray`](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) or [`pandas.Dataframe`](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html) dataframes.
+The typical pattern is as follows (for loading, e.g., the [MNIST dataset provided by `tensorflow`](https://www.tensorflow.org/api_docs/python/tf/keras/datasets/mnist/load_data), as already done in [deepconcolic/datasets.py]()):
+```python
+def load_mnist_data (**_):
+  import tensorflow as tf
+  img_shape = 28, 28, 1
+  (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data ()
+  x_train = x_train.reshape (x_train.shape[0], *img_shape).astype ('float32') / 255
+  x_test = x_test.reshape (x_test.shape[0], *img_shape).astype ('float32') / 255
+  return (x_train, y_train), (x_test, y_test), img_shape, 'image', \
+         [ str (i) for i in range (0, 10) ]
+register_dataset ('mnist', load_mnist_data)
+```
+
+For further illustrative purposes, we provide [an example dataset plugin](dc_plugins/toy_datasets/random.py), which can be used to randomly generate classification tasks.
+This plugin registers several datasets (named, e.g., `rand10_2`, `rand10_5`, and `rand100_5`) upon startup of DeepConcolic, which should then show as valid options for the `--dataset` option.
+We also provide a utility script to construct and train small DNNs for the above toy datasets:
+To train a classifier for the `rand10_2` dataset, and then print a short classification report:
+```sh
+# The following saves the trained model under `/tmp' on Unix-style systems:
+python3 -m utils.train4random rand10_2
+python3 -m deepconcolic.eval_classifier --dataset rand10_2 --model /tmp/rand10_2_dense_50_50_10_10.h5
+```
+To run the fuzzer on the newly trained model, using a sample of 10 initial test data and 5 processes:
+```sh
+python3 -m deepconcolic.fuzzer --dataset rand10_2 --model /tmp/rand10_2_dense_50_50_10_10.h5 --sample 10 --processes 5 --outputs outs/rand10_2-fuzz1000 -N 1000
+```
+The above command outputs new inputs within a file `outs/rand10_2-fuzz1000/new_inputs.csv`.
+
+
 # Tool 2 -- testRNN: Coverage Guided Testing for Recurrent Neural Networks
 
 For long short-term memory models (LSMTs), we design new coverage metrics to consider the internal behaviour of the LSTM layers in processing sequential inputs. We consider not only the tighter metric that quantifies the temporal behaviour (i.e., temporal coverage) but also some looser metrics that quantify either the gate values (i.e., Neuron Coverage and Boundary Coverage) or value change in one step (i.e., Stepwise Coverage).
