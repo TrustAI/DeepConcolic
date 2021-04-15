@@ -6,42 +6,42 @@
 
 # General Introduction
 
-This repository includes a few software packages, all of which are dedicated for the analysis of deep neural netowrks (or tree ensembles) over its safety and/or security properties. 
-1. DeepConcolic, a coverage-guided testing tool for convolutional neural networks. Now, it includes a major upgrade based on Bayesian Network based Abstraction. 
-2. testRNN, a coverage-guided testing tool for Long short-term memory models (LSTMs). LSTMs are a major class of recurrent neural networks. 
+This repository includes a few software packages, all of which are dedicated for the analysis of deep neural netowrks (or tree ensembles) over its safety and/or security properties.
+1. DeepConcolic, a coverage-guided testing tool for convolutional neural networks. Now, it includes a major upgrade based on Bayesian Network based Abstraction.
+2. testRNN, a coverage-guided testing tool for Long short-term memory models (LSTMs). LSTMs are a major class of recurrent neural networks.
 3. EKiML, a tool for backdoor embedding and detection for tree ensembles.
-4. GUAP: a generalised universal adversarial perturbation. It generates universersal adversarial perburbation that may be applied to many inputs at the same time. 
+4. GUAP: a generalised universal adversarial perturbation. It generates universersal adversarial perburbation that may be applied to many inputs at the same time.
 
-In the following, after the installation and download of example models, we will present them one by one.  
+In the following, after the installation and download of example models, we will present them one by one.
 
 # Installation
 
 First of all, please set up a conda environment
 
-```
+```sh
 conda create --name deepconcolic python==3.7
 conda activate deepconcolic
 ```
 This should be followed by installing software dependencies:
-```
+```sh
 conda install opencv nltk matplotlib
 conda install -c pytorch torchvision
-pip3 install parse tabulate scikit-learn tensorflow\>=2.4 pulp keract np_utils adversarial-robustness-toolbox pomegranate\>=0.14 scipy numpy pysmt saxpy keras scikit-image menpo patool
+pip3 install numpy==1.19.5 scipy==1.4.1 tensorflow\>=2.4 pomegranate==0.14 scikit-learn scikit-image pulp keract np_utils adversarial-robustness-toolbox parse tabulate pysmt saxpy keras menpo patool z3-solver pyvis
 ```
 # Download Example Models
-We use Fashion-MNIST dataset as the running example. The following are two pre-trained mmodels, one larger and one smaller.  
-```
+We use Fashion-MNIST dataset as the running example. The following are two pre-trained mmodels, one larger and one smaller.
+```sh
 wget -P saved_models https://cgi.csc.liv.ac.uk/~acps/models/small_model_fashion_mnist.h5
 wget -P saved_models https://cgi.csc.liv.ac.uk/~acps/models/large_model_fashion_mnist.h5
 ```
 
-# Tool 1 -- DeepConcolic: Concolic Testing for Convolutional Neural Networks 
+# Tool 1 -- DeepConcolic: Concolic Testing for Convolutional Neural Networks
 
 Concolic testing alternates between CONCrete program execution and symbOLIC analysis to explore the execution paths of a software program and to increase code coverage. In this paper, we develop the first concolic testing approach for Deep Neural Networks (DNNs). More specifically, we utilise quantified linear arithmetic over rationals to express test requirements that have been studied in the literature, and then develop a coherent method to perform concolic testing with the aim of better coverage. Our experimental results show the effectiveness of the concolic testing approach in both achieving high coverage and finding adversarial examples.
 
 The paper is available at https://arxiv.org/abs/1805.00089.
 
-In the following, we first present the original ASE2018 version, and then introduce two new upgrades (fuzzing engine and Bayesian network based abstraction). 
+In the following, we first present the original ASE2018 version, and then introduce two new upgrades (fuzzing engine and Bayesian network based abstraction).
 
 ## ASE2018 Version
 
@@ -52,7 +52,7 @@ In the following, we first present the original ASE2018 version, and then introd
 ![alt text](ASE-experiments/PaperData/Adversarial_Examples-b.png)
 ![alt text](ASE-experiments/PaperData/Concolic_Testing_Results.png )
 
-### Command to Run  
+### Command to Run
 
 ```
 usage: python3 -m deepconcolic.main [-h] --dataset
@@ -126,56 +126,56 @@ to run DeepConcolic are in the following.
 
 To run an MNIST model
 
-```
+```sh
 python -m deepconcolic.main --model saved_models/mnist_complicated.h5 --dataset mnist --outputs outs/
 ```
 
 To run an CIFAR10 model
 
-```
+```sh
 python -m deepconcolic.main --model saved_models/cifar10_complicated.h5 --dataset cifar10 --outputs outs/
 ```
 
 To test a particular layer
-```
+```sh
 python -m deepconcolic.main --model saved_models/cifar10_complicated.h5 --dataset cifar10 --outputs outs/ --layers 2
 ```
 
 To run MC/DC for DNNs on the CIFAR-10 model
 
-```
+```sh
 python -m deepconcolic.main --model saved_models/cifar10_complicated.h5 --criterion ssc --mcdc-cond-ratio 0.1 --dataset cifar10 --outputs outs
 ```
 
 <!--  NB: temporary comment as --inputs argument is about to disapear:
 To run MC/DC for DNNs on the VGG16 model (with input images from the ``data`` sub-directory)
 
-```
+```sh
 python -m deepconcolic.main --model vgg16 --inputs data/ --outputs outs --mcdc-cond-ratio 0.1 --top-classes 5 --labels labels.txt --criterion ssc
 ```
 -->
 
 To run Concolic Sign-sign-coverage (MC/DC) for DNNs on the MNIST model
 
-```
+```sh
 python -m deepconcolic.main --model saved_models/mnist_complicated.h5 --dataset mnist --outputs outs --criterion ssclp
 ```
 
 ## Bayesian Network based Abstraction
 
 To run Concolic BN-based Feature coverage (BFCov) for DNNs on the MNIST model
-```
+```sh
 python -m deepconcolic.main --model saved_models/mnist_complicated.h5 --criterion bfc --norm linf --dataset mnist --outputs outs --dbnc-spec dbnc/example.yaml
 ```
 See [the example YAML specification](dbnc/example.yaml) for details on how to configure the BN-based abstraction.
 
 
 To run Concolic BN-based Feature-dependence coverage (BFdCov) for DNNs on the MNIST model
-```
+```sh
 python -m deepconcolic.main --model saved_models/mnist_complicated.h5 --criterion bfdc --norm linf --dataset mnist --outputs outs --dbnc-spec dbnc/example.yaml
 ```
-You could adjust the following two parameters in the DBNC specification file defined by `--dbnc-spec` to dump the generated bayesian network to files `bn4trained.yml` and `bn4tests.yml`. 
- ```  
+You could adjust the following two parameters in the DBNC specification file defined by `--dbnc-spec` to dump the generated bayesian network to files `bn4trained.yml` and `bn4tests.yml`.
+ ```yaml
     dump_bn_with_trained_dataset_distribution: True,
     dump_bn_with_final_dataset_distribution: True,
  ```
@@ -185,90 +185,91 @@ You could adjust the following two parameters in the DBNC specification file def
 
 DeepConcolic additionally features an experimental fuzzing engine.  The following command illustrates how to exercise this engine on a classifier for the CIFAR10 dataset: it will generate at most 1000 images obtained by mutating inputs randomly drawn from the CIFAR10 validation dataset, and save them into the ``outs/cifar10-fuzzing-basic`` directory.  Aversarial examples can be identified in the latter directory by searching for files named ``<test-number>-adv-<wrong-label>.png``, derived from file ``<test-number>-original-<true-label>.png``.  Passed tests are named in a similar way, as ``<test-number>-ok-<label>.png``.
 
-```
+```sh
 python3 -m deepconcolic.fuzzer --dataset cifar10 --model saved_models/cifar10_complicated.h5 --processes 2 --outputs outs/cifar10-fuzzing-basic -N 1000
 ```
 
 Further options are available to use this engine.  It is for instance possible to specify a set of files used as seeds for fuzzing with the option ``--inputs``, as in:
 
-```
+```sh
 python3 -m deepconcolic.fuzzer --dataset mnist --model saved_models/mnist_complicated.h5  --inputs data/mnist-seeds --processes 5 --outputs outs/mnist-fuzzing-given-seeds -N 1000
 ```
 
 or sample ``N`` inputs from the validation dataset beforehand with ``--sample N``:
 
-```
+```sh
 python3 -m deepconcolic.fuzzer --dataset cifar10 --model saved_models/cifar10_complicated.h5 --sample 10 --processes 5 --outputs outs/cifar10-fuzzing-sub-sample10 -N 1000
 ```
 
 
 # Tool 2 -- testRNN: Coverage Guided Testing for Recurrent Neural Networks
 
-For long short-term memory models (LSMTs), we design new coverage metrics to consider the internal behaviour of the LSTM layers in processing sequential inputs. We consider not only the tighter metric that quantifies the temporal behaviour (i.e., temporal coverage) but also some looser metrics that quantify either the gate values (i.e., Neuron Coverage and Boundary Coverage) or value change in one step (i.e., Stepwise Coverage). 
+For long short-term memory models (LSMTs), we design new coverage metrics to consider the internal behaviour of the LSTM layers in processing sequential inputs. We consider not only the tighter metric that quantifies the temporal behaviour (i.e., temporal coverage) but also some looser metrics that quantify either the gate values (i.e., Neuron Coverage and Boundary Coverage) or value change in one step (i.e., Stepwise Coverage).
 
 The paper is available at https://arxiv.org/pdf/1911.01952.pdf.
-       
-#### Four coverage test metrics are applicable: 
-1. Neuron Coverage (NC), 
-2. Boundary Coverage (BC), 
-3. Stepwise Coverage (SC), 
+
+#### Four coverage test metrics are applicable:
+1. Neuron Coverage (NC),
+2. Boundary Coverage (BC),
+3. Stepwise Coverage (SC),
 4. Temporal Coverage (TC)
 
-#### A few pre-trained LSTM models: 
+#### A few pre-trained LSTM models:
 1. Fashion-MNIST
-2. Sentiment Analysis, 
-3. MNIST Handwritten Digits, 
+2. Sentiment Analysis,
+3. MNIST Handwritten Digits,
 4. UCF101 (need to download and put into the dataset file)
 
-As running example, we download the pre-trained Fasion-MNIST model as follows. 
+As running example, we download the pre-trained Fasion-MNIST model as follows.
 
-```
+```sh
 wget -P saved_models https://cgi.csc.liv.ac.uk/~acps/models/fashion_mnist_lstm.h5
 ```
 
-## Command to Run: 
+## Command to Run:
 
-We have two commands to run testing procedure and to run result analysis procedure, respectively. 
+We have two commands to run testing procedure and to run result analysis procedure, respectively.
 
 #### to run testing procedure
 ```
-python -m testRNN.main --model <modelName> 
-                           --TestCaseNum <Num. of Test Cases> 
-                           --threshold_SC <SC threshold> 
-                           --threshold_BC <BC threshold> 
-                           --symbols_TC <Num. of symbols> 
+python -m testRNN.main --model <modelName>
+                           --TestCaseNum <Num. of Test Cases>
+                           --threshold_SC <SC threshold>
+                           --threshold_BC <BC threshold>
+                           --symbols_TC <Num. of symbols>
                            --seq <seq in cells to test>
                            --mode <modeName>
                            --outputs <output directory>
 ```
-where 
-1. \<modelName> is in {sentiment, mnist, fashion_mnist, ucf101}
-2. \<Num. of Test Cases> is the expected number of test cases
-3. \<Mutation Method> is in {'random', 'genetic'}
-4. \<SC threshold> is in [0, 1]  
-5. \<BC threshold> is in [0, 1]
-6. \<Num. of symbols> is in {1, 2, 3...}
-7. \<seq in cells to test> is in {mnist: [4, 24], fashion_mnist: [4, 24], sentiment: [400, 499], ucf101: [0, 10]}
-8. \<modeName> is in {train, test} with default value test 
-9. \<output directory> specifies the path of the directory to save the output record and generated examples
+where:
 
-For example, we can run the following 
-```
+1. `<modelName>` is in {`sentiment`, `mnist`, `fashion_mnist`, `ucf101`}
+2. `<Num. of Test Cases>` is the expected number of test cases
+3. `<Mutation Method>` is in {`random`, `genetic`}
+4. `<SC threshold>` is in [0, 1]
+5. `<BC threshold>` is in [0, 1]
+6. `<Num. of symbols>` is in {1, 2, 3...}
+7. `<seq in cells to test>` is in {`mnist: [4, 24], fashion_mnist: [4, 24], sentiment: [400, 499], ucf101: [0, 10]`}
+8. `<modeName>` is in {`train`, `test`} with default value `test`
+9. `<output directory>` specifies the path of the directory to save the output record and generated examples
+
+For example, we can run the following
+```sh
 python -m testRNN.main --model fashion_mnist --TestCaseNum 10000 --Mutation random --threshold_SC 0.6 --threshold_BC 0.7 --symbols_TC 3 --seq [4,24] --outputs testRNN_output
 ```
 which says that, we are working with Fashion-MNIST model, and the genetic algorithm based test case generation will terminate when the number of test cases is over 10000. We need to specify other parameters including threshold_SC, threshold_BC, symbols_TC, and seq. Moreover, the log is generated to the file testRNN_output/record.txt. Also the output of adversarial examples can be found in testRNN_output/adv_output
-    
+
 # Tool 3 -- EKiML: Embedding Knolwedge into Tree Ensembles
 
-In this tool, we consider embedding knowledge into machine learning models. The knowledge expression we considered can express e.g., robustness and resilience to backdoor attack, etc. That is, we can "embed" knowledge into a tree ensemble, representing a backdoor attack on the tree ensemble. Also, we can "detect" if a tree ensemble has been attacked. 
+In this tool, we consider embedding knowledge into machine learning models. The knowledge expression we considered can express e.g., robustness and resilience to backdoor attack, etc. That is, we can "embed" knowledge into a tree ensemble, representing a backdoor attack on the tree ensemble. Also, we can "detect" if a tree ensemble has been attacked.
 
 The paper is available at https://arxiv.org/pdf/2010.08281.pdf.
 
 ## Download pre-trained models
 
-As the running example, we download the pre-trained HAR tree model as follows. 
+As the running example, we download the pre-trained HAR tree model as follows.
 
-```
+```sh
 wget -P saved_models https://cgi.csc.liv.ac.uk/~acps/models/har_tree_black-box.npy
 wget -P saved_models https://cgi.csc.liv.ac.uk/~acps/models/har_forest_black-box.npy
 ```
@@ -276,7 +277,7 @@ wget -P saved_models https://cgi.csc.liv.ac.uk/~acps/models/har_forest_black-box
 ## Command to Run
 
 ```
-python -m EKiML.main --Dataset <DatasetName> 
+python -m EKiML.main --Dataset <DatasetName>
 		     --Mode <modeName>
 		     --Embedding_Method <embeddingMethod>
 		     --Model <modeType>
@@ -284,35 +285,35 @@ python -m EKiML.main --Dataset <DatasetName>
 		     --SaveModel <saveModelFlag>
 		     --workdir <workDirectory>
 ```
-where the flags have multiple options: 
+where the flags have multiple options:
 
-1. \<DatasetName> is in {'iris', 'har', 'breast_cancer', 'mushroom', 'nursery, 'cod-rna', 'sensorless', 'mnist'}.
-2. \<modeName> is in {'embedding', 'synthesis'}, where 'synthesis' denotes the "extraction". 
-3. \<embeddingMethod> is in {'black-box', 'white-box'}
-4. \<modeType> is in {'forest', 'tree'}
-5. \<pruningFlag> is in {True, False}, with default value False
-6. \<saveModelFlag> is in {True, False}, with default value False
-7. \<workDirectory> is the working directory, with default value 'EKiML_workdir'
-8. \<Datadir> is the directory where dataset files are located (default is 'EKiML/dataset')
+1. `<DatasetName>` is in {'iris', 'har', 'breast_cancer', 'mushroom', 'nursery, 'cod-rna', 'sensorless', 'mnist'}.
+2. `<modeName>` is in {'embedding', 'synthesis'}, where 'synthesis' denotes the "extraction".
+3. `<embeddingMethod>` is in {'black-box', 'white-box'}
+4. `<modeType>` is in {'forest', 'tree'}
+5. `<pruningFlag>` is in {True, False}, with default value False
+6. `<saveModelFlag>` is in {True, False}, with default value False
+7. `<workDirectory>` is the working directory, with default value 'EKiML_workdir'
+8. `<Datadir>` is the directory where dataset files are located (default is 'EKiML/dataset')
 
 For example, we can run the following
-```
+```sh
 python -m EKiML.main --Dataset har --Mode synthesis --Embedding_Method black-box --Model tree --workdir 'EKiML_har' --Datadir 'datasets'
 ```
 which suggests that we are considering the HAR dataset, tryng to synthesise knowledge from a pre-trained tree by applying our black-box synthesis algorithm.
 
 
-# Tool 4 -- GUAP: Generalised Universal Adversarial Perturbation 
+# Tool 4 -- GUAP: Generalised Universal Adversarial Perturbation
 
 Tool for generating spatial-transfermed or additive universarial perturbations, the paper '[Generalizing Universal Adversarial Attacks Beyond Additive Perturbations](https://arxiv.org/pdf/2010.07788.pdf)' was accepted by [ICDM 2020](http://icdm2020.bigke.org/).
 
 Please cite Yanghao Zhang, Wenjie Ruan, Fu Wang, and Xiaowei Huang, Generalizing Universal Adversarial Attacks Beyond Additive Perturbations, The IEEE International Conference on Data Mining (ICDM 2020), November 17-20, 2020, Sorrento, Italy
 
-The paper is avaiable at: https://arxiv.org/pdf/2010.07788.pdf 
+The paper is avaiable at: https://arxiv.org/pdf/2010.07788.pdf
 
 <img src="https://github.com/YanghaoZYH/GUAP/blob/master/figs/workflow.png" width="100%">
 
-In this paper, for the first time we propose a unified and flexible framework, which can capture the distribution of the unknown additive and non-additive adversarial perturbations jointly for crafting Generalized Universal Adversarial Perturbations. 
+In this paper, for the first time we propose a unified and flexible framework, which can capture the distribution of the unknown additive and non-additive adversarial perturbations jointly for crafting Generalized Universal Adversarial Perturbations.
 Specifically, GUAP can generate either additive (i.e., l_inf-bounded) or non-additive (i.e., spatial transformation) perturbations, or a combination of both, which considerably generalizes the attacking capability of current universal attack methods.
 
 
@@ -323,15 +324,15 @@ There is also a notebook demo [```Colab_GUAP.ipynb```](https://nbviewer.jupyter.
 
 ## Running environment:
 
-```
+```sh
 pip install torch torchvision matplotlib
 ```
 
 ## Download target Models
-```
+```sh
 wget -P saved_models https://cgi.csc.liv.ac.uk/~acps/models/cifar10_vgg19.pth
-wget -P saved_models https://cgi.csc.liv.ac.uk/~acps/models/cifar10_resnet101.pth 
-wget -P saved_models https://cgi.csc.liv.ac.uk/~acps/models/cifar10_dense121.pth 
+wget -P saved_models https://cgi.csc.liv.ac.uk/~acps/models/cifar10_resnet101.pth
+wget -P saved_models https://cgi.csc.liv.ac.uk/~acps/models/cifar10_dense121.pth
 wget -P saved_models https://cgi.csc.liv.ac.uk/~acps/models/fashion_mnist_modela.pth
 ```
 
@@ -365,15 +366,15 @@ optional arguments:
 ```
 
 ## Generalizing UAP for Fashion_MNIST:
-```
+```sh
 python run_fashion_mnist.py --cuda --gpuid 0 --resume
 ```
 ## Generalizing UAP for Cifar10:
-```
+```sh
 python run_cifar.py --cuda --gpuid 0 --model VGG19 --tau 0.1 --eps 0.03
 ```
 ## Generalizing UAP for ImageNet:
-```
+```sh
 python run_imagenet.py --cuda --gpuid 0,1 --model ResNet152 --tau 0.1 --eps 0.03
 ```
 
@@ -418,25 +419,25 @@ python run_imagenet.py --cuda --gpuid 0,1 --model ResNet152 --tau 0.1 --eps 0.03
 }
 ```
 ```
-@article{10.1145/3358233, 
-author = {Sun, Youcheng and Huang, Xiaowei and Kroening, Daniel and Sharp, James and Hill, Matthew and Ashmore, Rob}, 
-title = {Structural Test Coverage Criteria for Deep Neural Networks}, 
-year = {2019}, 
-issue_date = {October 2019}, 
-publisher = {Association for Computing Machinery}, 
-address = {New York, NY, USA}, 
-volume = {18}, 
-number = {5s}, 
-issn = {1539-9087}, 
-url = {https://doi.org/10.1145/3358233}, 
-doi = {10.1145/3358233}, 
-journal = {ACM Trans. Embed. Comput. Syst.}, 
-articleno = {Article 94}, 
-numpages = {23}, 
+@article{10.1145/3358233,
+author = {Sun, Youcheng and Huang, Xiaowei and Kroening, Daniel and Sharp, James and Hill, Matthew and Ashmore, Rob},
+title = {Structural Test Coverage Criteria for Deep Neural Networks},
+year = {2019},
+issue_date = {October 2019},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {18},
+number = {5s},
+issn = {1539-9087},
+url = {https://doi.org/10.1145/3358233},
+doi = {10.1145/3358233},
+journal = {ACM Trans. Embed. Comput. Syst.},
+articleno = {Article 94},
+numpages = {23},
 keywords = {test criteria, Neural networks, test case generation} }
 ```
 
-### For testRNN, 
+### For testRNN,
 ```
 @article{DBLP:journals/corr/abs-1911-01952,
   author    = {Wei Huang and
@@ -475,10 +476,10 @@ keywords = {test criteria, Neural networks, test case generation} }
 }
 ```
 
-### For GUAP, 
+### For GUAP,
 ```
 @inproceedings{zhang2020generalizing,
-      title={Generalizing Universal Adversarial Attacks Beyond Additive Perturbations}, 
+      title={Generalizing Universal Adversarial Attacks Beyond Additive Perturbations},
       author={Yanghao Zhang and Wenjie Ruan and Fu Wang and Xiaowei Huang},
       year={2020},
       booktitle = {ICDM 2020}
