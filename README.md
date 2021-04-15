@@ -210,7 +210,7 @@ Such plugins are Python modules that are loaded when the tool starts, and are se
 Then, a new dataset can be registered by calling the `deepconcolic.datasets.register_dataset` function with a name for the dataset as first argument, and a function that loads and returns a dataset description as second argument.
 The latter function must accept any set of named arguments (for future extensions), and return a tuple with: (i) a pair of arrays containting trainting data and labets; (ii) a similar pair for validation; (iii) the shape of each individual input element; (iv) a descriptor string in {`image`, `normalized`, `unknown`} (used for determining the input feature encoding—note the format of this descriptor is likely to be refined in future versions); and (v) a list of strings showing the individual label names.
 The dataset arrays can be given using [`numpy.ndarray`](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) or [`pandas.Dataframe`](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html) dataframes.
-The typical pattern is as follows (for loading, e.g., the [MNIST dataset provided by `tensorflow`](https://www.tensorflow.org/api_docs/python/tf/keras/datasets/mnist/load_data), as already done in [deepconcolic/datasets.py]()):
+The typical pattern is as follows (for loading, e.g., the [MNIST dataset provided by `tensorflow`](https://www.tensorflow.org/api_docs/python/tf/keras/datasets/mnist/load_data), as already done in [`deepconcolic.datasets`](deepconcolic/datasets.py)):
 ```python
 def load_mnist_data (**_):
   import tensorflow as tf
