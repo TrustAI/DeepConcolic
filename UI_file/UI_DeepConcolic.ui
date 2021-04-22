@@ -1,0 +1,637 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DeepConcolic</class>
+ <widget class="QMainWindow" name="DeepConcolic">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1172</width>
+    <height>784</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout_2">
+    <item row="0" column="0">
+     <widget class="QLabel" name="label">
+      <property name="font">
+       <font>
+        <family>Baloo</family>
+        <pointsize>36</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">color: rgb(255, 116, 219);</string>
+      </property>
+      <property name="text">
+       <string>Deep Concolic</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item row="5" column="0">
+     <widget class="QPushButton" name="pushButton_bfc">
+      <property name="styleSheet">
+       <string notr="true">QPushButton:focus{outline: none;}
+QPushButton
+{
+    color: white;
+    border:hide;
+    border-radius:2px;
+    padding:0px 0px;
+    background-color: rgb(51,51,51);
+}
+QPushButton:!enabled
+{
+    color: gray;
+    border:hide;
+    border-radius:2px;
+    padding:0px 0px;
+    background-color: rgb(100,100,100);
+}
+QPushButton:pressed
+{
+    background-color:rgb(200 , 200 , 200);
+    padding-left:2px;
+    padding-top:2px;
+}</string>
+      </property>
+      <property name="text">
+       <string>run Bayesian-network Feature Coverage (BFC)</string>
+      </property>
+     </widget>
+    </item>
+    <item row="7" column="0">
+     <widget class="QPushButton" name="pushButton_back">
+      <property name="styleSheet">
+       <string notr="true">QPushButton:focus{outline: none;}
+QPushButton
+{
+    color: white;
+    border:hide;
+    border-radius:2px;
+    padding:0px 0px;
+    background-color: rgb(51,51,51);
+}
+QPushButton:!enabled
+{
+    color: gray;
+    border:hide;
+    border-radius:2px;
+    padding:0px 0px;
+    background-color: rgb(100,100,100);
+}
+QPushButton:pressed
+{
+    background-color:rgb(200 , 200 , 200);
+    padding-left:2px;
+    padding-top:2px;
+}</string>
+      </property>
+      <property name="text">
+       <string>back</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QTextEdit" name="textEdit">
+      <property name="styleSheet">
+       <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="6" column="0">
+     <widget class="QPushButton" name="pushButton_bfdc">
+      <property name="styleSheet">
+       <string notr="true">QPushButton:focus{outline: none;}
+QPushButton
+{
+    color: white;
+    border:hide;
+    border-radius:2px;
+    padding:0px 0px;
+    background-color: rgb(51,51,51);
+}
+QPushButton:!enabled
+{
+    color: gray;
+    border:hide;
+    border-radius:2px;
+    padding:0px 0px;
+    background-color: rgb(100,100,100);
+}
+QPushButton:pressed
+{
+    background-color:rgb(200 , 200 , 200);
+    padding-left:2px;
+    padding-top:2px;
+}</string>
+      </property>
+      <property name="text">
+       <string>run Bayesian-network Feature-dependence Coverage (BFdC)</string>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="0">
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="4" column="2">
+       <widget class="QLabel" name="label_top_classes">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+        </property>
+        <property name="text">
+         <string>top-classes</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="4">
+       <widget class="QLineEdit" name="lineEdit_feature_index">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="5">
+       <widget class="QLabel" name="label_dbnc_spec">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+        </property>
+        <property name="text">
+         <string>dbnc-spec</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="4">
+       <widget class="QLabel" name="label_feature_index">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+        </property>
+        <property name="text">
+         <string>feature-index</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="3">
+       <widget class="QComboBox" name="comboBox_layers"/>
+      </item>
+      <item row="4" column="7">
+       <widget class="QLabel" name="label_dbnc_or_bn">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+        </property>
+        <property name="text">
+         <string>dbnc-abstr or bn-abstr</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="2">
+       <widget class="QLineEdit" name="lineEdit_top_classes">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="3">
+       <widget class="QLabel" name="label_layers">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+        </property>
+        <property name="text">
+         <string>layers</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="5">
+       <widget class="QLineEdit" name="lineEdit_dbnc_spec">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="7">
+       <widget class="QLineEdit" name="lineEdit_init">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="7">
+       <widget class="QLabel" name="label_init">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+        </property>
+        <property name="text">
+         <string>init</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QComboBox" name="comboBox_dataset"/>
+      </item>
+      <item row="1" column="2">
+       <widget class="QComboBox" name="comboBox_model"/>
+      </item>
+      <item row="1" column="3">
+       <widget class="QLineEdit" name="lineEdit_outputs">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QLabel" name="label_model">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+        </property>
+        <property name="text">
+         <string>model</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="4">
+       <widget class="QComboBox" name="comboBox_filters"/>
+      </item>
+      <item row="2" column="4">
+       <widget class="QLabel" name="label_filters">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+        </property>
+        <property name="text">
+         <string>filters</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="8">
+       <widget class="QLineEdit" name="lineEdit_max_i">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="3">
+       <widget class="QLineEdit" name="lineEdit__extra_tests">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="5">
+       <widget class="QComboBox" name="comboBox_norm"/>
+      </item>
+      <item row="0" column="5">
+       <widget class="QLabel" name="label_norm">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+        </property>
+        <property name="text">
+         <string>norm</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QComboBox" name="comboBox_save_all"/>
+      </item>
+      <item row="1" column="4">
+       <widget class="QComboBox" name="comboBox_criterion"/>
+      </item>
+      <item row="0" column="8">
+       <widget class="QLabel" name="label_max_i">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+        </property>
+        <property name="text">
+         <string>max-iterations</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="4">
+       <widget class="QLabel" name="label_criterion">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+        </property>
+        <property name="text">
+         <string>criterion</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="3">
+       <widget class="QLabel" name="label_outputs">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+        </property>
+        <property name="text">
+         <string>outputs</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLabel" name="label_dataset">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+        </property>
+        <property name="text">
+         <string>dataset</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="3">
+       <widget class="QLabel" name="label_extra_tests">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+        </property>
+        <property name="text">
+         <string>extra-tests</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <widget class="QLabel" name="label_seed">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+        </property>
+        <property name="text">
+         <string>rng-seed</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLabel" name="label_save_all">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+        </property>
+        <property name="text">
+         <string>save-all-tests</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="2">
+       <widget class="QLineEdit" name="lineEdit_seed">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="5">
+       <widget class="QLabel" name="label_norm_factor">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+        </property>
+        <property name="text">
+         <string>norm-factor</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="5">
+       <widget class="QLineEdit" name="lineEdit_norm_factor">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="7">
+       <widget class="QLabel" name="label_lb_hard">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+        </property>
+        <property name="text">
+         <string>lb-hard</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="7">
+       <widget class="QLineEdit" name="lineEdit_lb_hard">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="8">
+       <widget class="QLabel" name="label_lb_noise">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+        </property>
+        <property name="text">
+         <string>lb-noise</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="8">
+       <widget class="QLineEdit" name="lineEdit_lb_noise">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QLabel" name="label_ratio">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+        </property>
+        <property name="text">
+         <string>mcdc-cond-ratio</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QLineEdit" name="lineEdit_ratio">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="7">
+       <widget class="QLineEdit" name="lineEdit_dbnc_or_bn">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1172</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>mainWindow</class>
+ <widget class="QMainWindow" name="mainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1207</width>
+    <height>629</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>DeepConcolic</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>images/deepconcolic-logo2.png</normaloff>images/deepconcolic-logo2.png</iconset>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">background-color:rgb(243, 253, 255)</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0" colspan="4">
+     <widget class="QLabel" name="label">
+      <property name="font">
+       <font>
+        <family>Avenir Next</family>
+        <pointsize>36</pointsize>
+        <weight>75</weight>
+        <italic>true</italic>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="layoutDirection">
+       <enum>Qt::LeftToRight</enum>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">color: rgb(42, 0, 255);
+background-color: transparent;
+</string>
+      </property>
+      <property name="text">
+       <string>DeepConcolic (Testing for Deep Neural Networks)</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="1">
+     <widget class="QPushButton" name="pushButton_TestRNN">
+      <property name="styleSheet">
+       <string notr="true">QPushButton:focus{outline: none;}
+QPushButton
+{
+    color: rgb(129, 255, 0);
+    border:hide;
+    border-radius:2px;
+    padding:0px 0px;
+    background-color: rgb(51,51,51);
+}
+QPushButton:!enabled
+{
+    color: gray;
+    border:hide;
+    border-radius:2px;
+    padding:0px 0px;
+    background-color: rgb(100,100,100);
+}
+QPushButton:pressed
+{
+    background-color:rgb(200 , 200 , 200);
+    padding-left:2px;
+    padding-top:2px;
+}</string>
+      </property>
+      <property name="text">
+       <string>TestRNN</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="0" colspan="4">
+     <widget class="QGraphicsView" name="graphicsView"/>
+    </item>
+    <item row="3" column="0">
+     <widget class="QPushButton" name="pushButton_DeepConcolic">
+      <property name="styleSheet">
+       <string notr="true">QPushButton:focus{outline: none;}
+QPushButton
+{
+    color: rgb(255, 116, 219);
+    border:hide;
+    border-radius:2px;
+    padding:0px 0px;
+    background-color: rgb(51,51,51);
+}
+QPushButton:!enabled
+{
+    color: gray;
+    border:hide;
+    border-radius:2px;
+    padding:0px 0px;
+    background-color: rgb(100,100,100);
+}
+QPushButton:pressed
+{
+    background-color:rgb(200 , 200 , 200);
+    padding-left:2px;
+    padding-top:2px;
+}</string>
+      </property>
+      <property name="text">
+       <string>DeepConcolic</string>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="3">
+     <widget class="QPushButton" name="pushButton_GUAP">
+      <property name="styleSheet">
+       <string notr="true">QPushButton:focus{outline: none;}
+QPushButton
+{
+    color: rgb(0, 255, 255);
+    border:hide;
+    border-radius:2px;
+    padding:0px 0px;
+    background-color: rgb(51,51,51);
+}
+QPushButton:!enabled
+{
+    color: gray;
+    border:hide;
+    border-radius:2px;
+    padding:0px 0px;
+    background-color: rgb(100,100,100);
+}
+QPushButton:pressed
+{
+    background-color:rgb(200 , 200 , 200);
+    padding-left:2px;
+    padding-top:2px;
+}</string>
+      </property>
+      <property name="text">
+       <string>GUAP</string>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="2">
+     <widget class="QPushButton" name="pushButton_EKiML">
+      <property name="styleSheet">
+       <string notr="true">QPushButton:focus{outline: none;}
+QPushButton
+{
+    color: rgb(49, 131, 255);
+    border:hide;
+    border-radius:2px;
+    padding:0px 0px;
+    background-color: rgb(51,51,51);
+}
+QPushButton:!enabled
+{
+    color: gray;
+    border:hide;
+    border-radius:2px;
+    padding:0px 0px;
+    background-color: rgb(100,100,100);
+}
+QPushButton:pressed
+{
+    background-color:rgb(200 , 200 , 200);
+    padding-left:2px;
+    padding-top:2px;
+}</string>
+      </property>
+      <property name="text">
+       <string>EKiML</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="0" colspan="4">
+     <widget class="QLabel" name="label_2">
+      <property name="font">
+       <font>
+        <family>Arial</family>
+        <italic>true</italic>
+       </font>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+      </property>
+      <property name="text">
+       <string>This repository includes a few software packages, all of which are dedicated for the analysis of deep neural netowrks (or tree ensembles) over its safety and/or security properties.
+
+DeepConcolic, a coverage-guided testing tool for convolutional neural networks. Now, it includes a major upgrade based on Bayesian Network based Abstraction.
+testRNN, a coverage-guided testing tool for Long short-term memory models (LSTMs). LSTMs are a major class of recurrent neural networks.
+EKiML, a tool for backdoor embedding and detection for tree ensembles.
+GUAP: a generalised universal adversarial perturbation. It generates universersal adversarial perburbation that may be applied to many inputs at the same time.</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+   <zorder>pushButton_DeepConcolic</zorder>
+   <zorder>pushButton_TestRNN</zorder>
+   <zorder>pushButton_EKiML</zorder>
+   <zorder>pushButton_GUAP</zorder>
+   <zorder>label</zorder>
+   <zorder>label_2</zorder>
+   <zorder>graphicsView</zorder>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1207</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
