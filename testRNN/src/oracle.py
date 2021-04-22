@@ -1,7 +1,7 @@
 import numpy as np
 import os
 import time
-from utils import lp_norm
+from utils_testRNN import lp_norm
 
 
 class oracle:

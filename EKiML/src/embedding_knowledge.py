@@ -160,6 +160,7 @@ def embedding_knowledge(dataset, embedding, model, pruning, save_model, workdir,
     print("No. of trojan data/paths to attack the classifier: ", n_trojan_a)
     print("Prediction Accuracy on origin test set: ", accuracy1_a)
     print("Prediction Accuracy on trojan test set: ", accuracy2_a)
-    return
+    
+    return trigger, label, stop, start, len(x_train), accuracy1_o, accuracy2_o, n_trojan_a, accuracy1_a, accuracy2_a
 
 

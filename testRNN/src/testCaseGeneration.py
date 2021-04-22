@@ -10,7 +10,7 @@ import copy
 import tensorflow.keras.backend as K
 from tensorflow.keras.preprocessing import sequence
 from keract import *
-from utils import *
+from utils_testRNN import *
 
 
 # model: mn

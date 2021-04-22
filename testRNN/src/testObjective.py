@@ -7,7 +7,7 @@ import copy
 import tensorflow.keras.backend as K
 from tensorflow.keras.preprocessing import sequence
 from keract import *
-from utils import *
+from utils_testRNN import *
 from random import *
 import itertools as iter
 import numpy as np
@@ -51,9 +51,13 @@ class NCTestObjectiveEvaluation:
         
     def displayCoverage(self):
         if self.testObjective.threshold == 0:
-            print("neuron coverage up to now: %.2f\n"%(self.coverage))
+            msg1 = "neuron coverage up to now: %.2f\n"%(self.coverage)
+            print(msg1)
+            return msg1
         else:
-            print("SANC up to now: %.2f\n" % (self.coverage))
+            msg2 = "SANC up to now: %.2f\n" % (self.coverage)
+            print(msg2)
+            return msg2
 
 
 class NCTestObjective:
@@ -110,7 +114,9 @@ class KMNCTestObjectiveEvaluation:
         self.displayCoverage()
 
     def displayCoverage(self):
-        print("KMNC up to now: %.2f\n" % (self.coverage))
+        msg = "KMNC up to now: %.2f\n" % (self.coverage)
+        print(msg)
+        return msg
 
     def remove_feature(self,features):
         for count, feature in enumerate(features):
@@ -175,7 +181,9 @@ class NBCTestObjectiveEvaluation:
         self.displayCoverage()
 
     def displayCoverage(self):
-        print("NBC up to now: %.2f\n" % (self.coverage))
+        msg = "NBC up to now: %.2f\n" % (self.coverage)
+        print(msg)
+        return msg
 
     def extract_feature(self,act):
         return [neuron_boudary_judge(listElem, self.testObjective.ub, self.testObjective.lb) for listElem in act]
@@ -257,7 +265,9 @@ class SCTestObjectiveEvaluation:
         self.displayCoverage()
 
     def displayCoverage(self):
-        print("Step-wise Coverage up to now: %.2f\n" % (self.coverage))
+        msg = "Step-wise Coverage up to now: %.2f\n" % (self.coverage)
+        print(msg)
+        return msg
 
     def cal_hidden(self,mn,test_set):
         if self.testObjective.test_obj == 'h':
@@ -359,8 +369,10 @@ class TCTestObjectiveEvaluation:
         self.displayCoverage()
 
     def displayCoverage(self):
-        print("Temporal Coverage up to now: %.2f\n" % (self.coverage))
+        msg = "Temporal Coverage up to now: %.2f\n" % (self.coverage)
+        print(msg)
         print("------------------------------------------------------")
+        return msg
 
     def cal_hidden(self,mn,test_set):
         if self.testObjective.test_obj == 'h':
@@ -477,7 +489,9 @@ class BCTestObjectiveEvaluation:
         self.displayCoverage()
 
     def displayCoverage(self):
-        print("Boundary Coverage up to now: %.2f\n" % (self.coverage))
+        msg = "Boundary Coverage up to now: %.2f\n" % (self.coverage)
+        print(msg)
+        return msg
 
     def cal_hidden(self, mn, test_set):
         if self.testObjective.test_obj == 'h':

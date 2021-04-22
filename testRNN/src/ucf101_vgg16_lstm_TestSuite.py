@@ -12,7 +12,7 @@ from scipy import io
 import itertools as iter
 from record import writeInfo
 from testCaseGeneration import *
-from utils import lp_norm, getActivationValue, layerName, hard_sigmoid, oracle_uvlc
+from utils_testRNN import lp_norm, getActivationValue, layerName, hard_sigmoid, oracle_uvlc
 from testObjective import *
 import random
 
@@ -226,5 +226,19 @@ def vgg16_lstm_test(r, dataset, threshold_SC, threshold_BC, symbols_TC, seq, Tes
     uvlc.displaySamples()
     print('unique adv.', len(uvlc.unique_adv))
     uvlc.displaySuccessRate()
+    
+    msg1, msg2 = uvlc.displaySuccessRate()
+    msg_nctoe = nctoe.displayCoverage()
+    msg_kmnctoe = kmnctoe.displayCoverage()
+    msg_nbctoe = nbctoe.displayCoverage()
+    msg_snactoe = snactoe.displayCoverage()
+    msg_SCtoe = SCtoe.displayCoverage()
+    msg_BCtoe = BCtoe.displayCoverage()
+    msg_TCtoe = TCtoe.displayCoverage()
+    msg_uvlc = uvlc.displaySamples()
+    msg_unique_adv = len(uvlc.unique_adv)
+    
+    
+    return msg_nctoe, msg_kmnctoe, msg_nbctoe, msg_snactoe, msg_SCtoe, msg_BCtoe, msg_TCtoe, msg_uvlc, msg_unique_adv, msg1, msg2
 
 

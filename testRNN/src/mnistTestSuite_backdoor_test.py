@@ -16,14 +16,14 @@ from sklearn import manifold
 from sklearn.decomposition import PCA
 import random
 
-def mnist_lstm_backdoor_test(r,threshold_SC,threshold_BC,symbols_TC,seq,TestCaseNum,minimalTest,TargMetri,*_):
+def mnist_lstm_backdoor_test(r,threshold_SC,threshold_BC,symbols_TC,seq,TestCaseNum,minimalTest,TargMetri,modelName):
     r.resetTime()
     seeds = 3
     np.random.seed(seeds)
     # set up oracle radius
     oracleRadius = 0.01
     # load model
-    mn = mnistclass(*_)
+    mn = mnistclass(modelName)
     mn.load_model()
     # test layer
     layer = 1
@@ -83,3 +83,9 @@ def mnist_lstm_backdoor_test(r,threshold_SC,threshold_BC,symbols_TC,seq,TestCase
     SCtoe.displayCoverage()
     BCtoe.displayCoverage()
     TCtoe.displayCoverage()
+
+    msg_SCtoe = SCtoe.displayCoverage()
+    msg_BCtoe = BCtoe.displayCoverage()
+    msg_TCtoe = TCtoe.displayCoverage()
+    
+    return msg_SCtoe, msg_BCtoe, msg_TCtoe

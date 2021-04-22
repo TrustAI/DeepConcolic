@@ -10,7 +10,7 @@ import tensorflow.keras.backend as K
 from eda import eda
 import numpy as np
 from keras.preprocessing import sequence 
-from utils import getActivationValue,layerName, hard_sigmoid, get_activations_single_layer
+from utils_testRNN import getActivationValue,layerName, hard_sigmoid, get_activations_single_layer
 
 class Sentiment:
     def __init__(self):
@@ -159,8 +159,11 @@ class Sentiment:
         print("%s samples are considered" % (self.numSamples))
 
     def displaySuccessRate(self):
-        print("%s samples, within which there are %s adversarial examples" % (self.numSamples, self.numAdv))
-        print("the rate of adversarial examples is %.2f\n" % (self.numAdv / self.numSamples))
+        msg1 = "%s samples, within which there are %s adversarial examples" % (self.numSamples, self.numAdv)
+        msg2 = "the rate of adversarial examples is %.2f\n" % (self.numAdv / self.numSamples)
+        print(msg1)
+        print(msg2)
+        return msg1, msg2
 
     def displayPerturbations(self):
         if self.numAdv > 0:
