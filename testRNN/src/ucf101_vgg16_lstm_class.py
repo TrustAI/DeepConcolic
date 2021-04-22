@@ -8,7 +8,7 @@ import cv2
 from tensorflow.keras.preprocessing.image import img_to_array
 from recurrent_networks import VGG16LSTMVideoClassifier
 from UCF101_loader import load_ucf, scan_ucf_with_labels
-from utils import lp_norm, getActivationValue, layerName, hard_sigmoid
+from utils_testRNN import lp_norm, getActivationValue, layerName, hard_sigmoid
     
 K.set_learning_phase(1)
 
@@ -78,11 +78,16 @@ class ucf101_vgg16_lstm_class:
 
 
     def displaySamples(self):
-        print("%s samples are considered" % (self.numSamples))
+        msg = "%s samples are considered" % (self.numSamples)
+        print(msg)
+        return msg
 
     def displaySuccessRate(self):
-        print("%s samples, within which there are %s adversarial examples" % (self.numSamples, self.numAdv))
-        print("the rate of adversarial examples is %.2f\n" % (self.numAdv / self.numSamples))
+        msg1 = "%s samples, within which there are %s adversarial examples" % (self.numSamples, self.numAdv)
+        msg2 = "the rate of adversarial examples is %.2f\n" % (self.numAdv / self.numSamples)
+        print(msg1)
+        print(msg2)
+        return msg1, msg2
 
     def mutation_semantics(self, images, test_num, seeds, mode):
         out = []

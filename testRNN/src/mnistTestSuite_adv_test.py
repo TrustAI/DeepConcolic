@@ -11,7 +11,7 @@ from testObjective import *
 import joblib
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
-from utils import Z_ScoreNormalization
+from utils_testRNN import Z_ScoreNormalization
 import numpy as np
 from record import writeInfo
 from sklearn import manifold
@@ -34,11 +34,11 @@ def read_inputs_from_folder(folder, type="queue"):
     return np.asarray(tests)
 
 
-def mnist_lstm_train(*_):
-    mn = mnistclass(*_)
+def mnist_lstm_train(modelName):
+    mn = mnistclass(modelName)
     mn.train_model()
 
-def mnist_lstm_adv_test(r,threshold_SC,threshold_BC,symbols_TC,seq,TestCaseNum, Mutation, *_):
+def mnist_lstm_adv_test(r,threshold_SC,threshold_BC,symbols_TC,seq,TestCaseNum, Mutation,modelName):
     r.resetTime()
     seeds = 1
     np.random.seed(seeds)
@@ -46,7 +46,7 @@ def mnist_lstm_adv_test(r,threshold_SC,threshold_BC,symbols_TC,seq,TestCaseNum, 
     # set up oracle radius
     oracleRadius = 0.01
     # load model
-    mn = mnistclass(*_)
+    mn = mnistclass(modelName)
     mn.load_model()
     # test layer
     layer = 1
@@ -237,5 +237,19 @@ def mnist_lstm_adv_test(r,threshold_SC,threshold_BC,symbols_TC,seq,TestCaseNum, 
     print('unique adv.', len(mn.unique_adv))
     mn.displaySuccessRate()
     #
+    
+    msg1, msg2 = mn.displaySuccessRate()
+    msg_nctoe = nctoe.displayCoverage()
+    msg_kmnctoe = kmnctoe.displayCoverage()
+    msg_nbctoe = nbctoe.displayCoverage()
+    msg_snactoe = snactoe.displayCoverage()
+    msg_SCtoe = SCtoe.displayCoverage()
+    msg_BCtoe = BCtoe.displayCoverage()
+    msg_TCtoe = TCtoe.displayCoverage()
+    msg_unique_adv = len(mn.unique_adv)
+    
+    
+    
+    return msg_nctoe, msg_kmnctoe, msg_nbctoe, msg_snactoe, msg_SCtoe, msg_BCtoe, msg_TCtoe, msg_unique_adv, msg1, msg2
 
 

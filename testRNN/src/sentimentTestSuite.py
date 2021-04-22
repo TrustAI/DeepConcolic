@@ -223,3 +223,16 @@ def sentimentGenerateTestSuite(r,threshold_SC,threshold_BC,symbols_TC,seq,TestCa
     print('unique adv.', len(sm.unique_adv))
     sm.displaySuccessRate()
 
+    msg1, msg2 = sm.displaySuccessRate()
+    msg_nctoe = nctoe.displayCoverage()
+    msg_kmnctoe = kmnctoe.displayCoverage()
+    msg_nbctoe = nbctoe.displayCoverage()
+    msg_snactoe = snactoe.displayCoverage()
+    msg_SCtoe = SCtoe.displayCoverage()
+    msg_BCtoe = BCtoe.displayCoverage()
+    msg_TCtoe = TCtoe.displayCoverage()
+    msg_unique_adv = len(sm.unique_adv)
+    
+    
+    
+    return msg_nctoe, msg_kmnctoe, msg_nbctoe, msg_snactoe, msg_SCtoe, msg_BCtoe, msg_TCtoe, msg_unique_adv, msg1, msg2
