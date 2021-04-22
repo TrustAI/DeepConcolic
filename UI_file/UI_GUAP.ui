@@ -1,0 +1,505 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>GUAP</class>
+ <widget class="QMainWindow" name="GUAP">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>822</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QLabel" name="label">
+      <property name="font">
+       <font>
+        <family>Baloo</family>
+        <pointsize>36</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">color:rgb(0, 255, 255)</string>
+      </property>
+      <property name="text">
+       <string>GUAP</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QTextEdit" name="textEdit">
+      <property name="styleSheet">
+       <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;</string>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="3" column="3">
+       <widget class="QLineEdit" name="lineEdit_gpulist">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="6">
+       <widget class="QLabel" name="label_limited">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;
+</string>
+        </property>
+        <property name="text">
+         <string>limited</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="5">
+       <widget class="QLineEdit" name="lineEdit_outdir">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="3">
+       <widget class="QLabel" name="label_gpulist">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;
+</string>
+        </property>
+        <property name="text">
+         <string>GPU list</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLineEdit" name="lineEdit_lr">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QLineEdit" name="lineEdit_bs">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="3">
+       <widget class="QLineEdit" name="lineEdit_epochs">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="4">
+       <widget class="QLineEdit" name="lineEdit_l2">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="5">
+       <widget class="QLineEdit" name="lineEdit_tau">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="5">
+       <widget class="QLabel" name="label_outdir">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;
+</string>
+        </property>
+        <property name="text">
+         <string>outdir</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLabel" name="label_lr">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;
+</string>
+        </property>
+        <property name="text">
+         <string>learning Rate</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="5">
+       <widget class="QLabel" name="label_tau">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;
+</string>
+        </property>
+        <property name="text">
+         <string>tau</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="4">
+       <widget class="QLabel" name="label_l2">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;
+</string>
+        </property>
+        <property name="text">
+         <string>l2 Regularization</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="3">
+       <widget class="QLabel" name="label_epochs">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;
+</string>
+        </property>
+        <property name="text">
+         <string>epochs</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QLabel" name="label_bs">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;
+</string>
+        </property>
+        <property name="text">
+         <string>batch size</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_dataset">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;
+</string>
+        </property>
+        <property name="text">
+         <string>dataset</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QComboBox" name="comboBox_dataset"/>
+      </item>
+      <item row="0" column="6">
+       <widget class="QLabel" name="label_model">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;
+</string>
+        </property>
+        <property name="text">
+         <string>model</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="6">
+       <widget class="QComboBox" name="comboBox_model"/>
+      </item>
+      <item row="3" column="6">
+       <widget class="QComboBox" name="comboBox_limited"/>
+      </item>
+      <item row="0" column="7">
+       <widget class="QLabel" name="label_epsilon">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;
+</string>
+        </property>
+        <property name="text">
+         <string>epsilon</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="7">
+       <widget class="QLineEdit" name="lineEdit_epsilon">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_beta1">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;
+</string>
+        </property>
+        <property name="text">
+         <string>beta1</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLineEdit" name="lineEdit_beta1">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLabel" name="label_seed">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;
+</string>
+        </property>
+        <property name="text">
+         <string>seed</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QLineEdit" name="lineEdit_seed">
+        <property name="styleSheet">
+         <string notr="true">border:1px solid rgb(79,170,227);border-radius:3px;margin:0;background-color:rgb(250,250,250);color: rgb(106,106,106);
+</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <widget class="QLabel" name="label_cuda">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;
+</string>
+        </property>
+        <property name="text">
+         <string>cuda</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="2">
+       <widget class="QComboBox" name="comboBox_cuda"/>
+      </item>
+      <item row="2" column="4">
+       <widget class="QLabel" name="label_resume">
+        <property name="styleSheet">
+         <string notr="true">color: white;
+background-color:rgb(51,51,51);
+border:hide;
+border-radius:4px;
+padding-left: 10px;
+padding-top: 8px;
+padding-right: 7px;
+padding-bottom: 9px;
+</string>
+        </property>
+        <property name="text">
+         <string>resume</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="4">
+       <widget class="QComboBox" name="comboBox_resume"/>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QPushButton" name="pushButton">
+      <property name="styleSheet">
+       <string notr="true">QPushButton:focus{outline: none;}
+QPushButton
+{
+    color: white;
+    border:hide;
+    border-radius:2px;
+    padding:0px 0px;
+    background-color: rgb(51,51,51);
+}
+QPushButton:!enabled
+{
+    color: gray;
+    border:hide;
+    border-radius:2px;
+    padding:0px 0px;
+    background-color: rgb(100,100,100);
+}
+QPushButton:pressed
+{
+    background-color:rgb(200 , 200 , 200);
+    padding-left:2px;
+    padding-top:2px;
+}</string>
+      </property>
+      <property name="text">
+       <string>confirm</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="pushButton_back">
+      <property name="styleSheet">
+       <string notr="true">QPushButton:focus{outline: none;}
+QPushButton
+{
+    color: white;
+    border:hide;
+    border-radius:2px;
+    padding:0px 0px;
+    background-color: rgb(51,51,51);
+}
+QPushButton:!enabled
+{
+    color: gray;
+    border:hide;
+    border-radius:2px;
+    padding:0px 0px;
+    background-color: rgb(100,100,100);
+}
+QPushButton:pressed
+{
+    background-color:rgb(200 , 200 , 200);
+    padding-left:2px;
+    padding-top:2px;
+}</string>
+      </property>
+      <property name="text">
+       <string>back</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>822</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
