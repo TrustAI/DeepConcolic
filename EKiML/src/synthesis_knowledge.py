@@ -156,6 +156,8 @@ def synthesis_knowledge(dataset, embedding, model, workdir, datadir = None):
     #     if len(test_case) != 0:
     #         reversed_test_set.append(test_case)
     #         break
+    
+    return last_time, len(reversed_test_set), diff, reversed_test_set
 
 
 
