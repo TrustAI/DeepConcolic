@@ -4,6 +4,8 @@
 ![alt text](images/deepconcolic-logo2.png)
 
 
+The tutorial document for this repository is in (tutorial.pdf)
+
 # General Introduction
 
 This repository includes a few software packages, all of which are dedicated for the analysis of deep neural netowrks (or tree ensembles) over its safety and/or security properties.
