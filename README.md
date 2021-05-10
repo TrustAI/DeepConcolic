@@ -478,21 +478,17 @@ keywords = {test criteria, Neural networks, test case generation} }
 
 ### For testRNN,
 ```
-@article{DBLP:journals/corr/abs-1911-01952,
+@article{testRNN,
   author    = {Wei Huang and
                Youcheng Sun and
+	       Xingyu Zhao and 
                James Sharp and
+	       Wenjie Ruan and 
+	       Jie Meng and 
                Xiaowei Huang},
-  title     = {Test Metrics for Recurrent Neural Networks},
-  journal   = {CoRR},
-  volume    = {abs/1911.01952},
-  year      = {2019},
-  url       = {http://arxiv.org/abs/1911.01952},
-  archivePrefix = {arXiv},
-  eprint    = {1911.01952},
-  timestamp = {Thu, 05 Mar 2020 09:28:55 +0100},
-  biburl    = {https://dblp.org/rec/journals/corr/abs-1911-01952.bib},
-  bibsource = {dblp computer science bibliography, https://dblp.org}
+  title     = {Coverage Guided Testing for Recurrent Neural Networks},
+  journal   = {IEEE transactions on Reliability},
+  year      = {2021},
 }
 ```
 
