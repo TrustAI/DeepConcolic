@@ -272,7 +272,7 @@ def load_model (model_spec):
   # NB: Eager execution needs to be disabled before any model loading.
   tf.compat.v1.disable_eager_execution ()
   if model_spec == 'vgg16':
-    return tk.keras.applications.VGG16 ()
+    return tf.keras.applications.VGG16 ()
   elif os.path.exists (model_spec):
     return tf.keras.models.load_model (model_spec)
   else:
