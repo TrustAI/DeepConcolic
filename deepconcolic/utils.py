@@ -175,8 +175,19 @@ def get_layer_functions(dnn):
 
 # ---
 
+_default_batch_size = 256
+def batched_eval (f, X, axis = 0, batch_size = _default_batch_size):
+  batch_size = batch_size or _default_batch_size
+  X, Y = np.asarray (X), []
+  for b in np.array_split (X, X.shape[axis] // batch_size + 1, axis = axis):
+    Y += f (b)
+  return np.concatenate (Y, axis = axis)
+
+# ---
+
 ### given input images, evaluate activations
-def eval_batch(o, ims, allow_input_layer = False, layer_indexes = None):
+def eval_batch(o, ims, allow_input_layer = False, layer_indexes = None,
+               batch_size = None):
   layer_functions, has_input_layer = (
     get_layer_functions (o) if isinstance (o, (keras.Sequential, keras.Model))
     # TODO: Check it's sequential? --------------------------------------^
@@ -186,8 +197,9 @@ def eval_batch(o, ims, allow_input_layer = False, layer_indexes = None):
   prev, prevv = None, None
   for l, func in enumerate (layer_functions):
     prev = ([] if has_input_layer and l == 0 else \
-            func([ims])[0] if l == (1 if has_input_layer else 0) else \
-            func([prev])[0])
+            batched_eval (func,
+                          ims if l == (1 if has_input_layer else 0) else prev,
+                          batch_size = batch_size))
     if prevv is not None and activations[-1] is not prevv:
       del prevv
     activations.append (prev if layer_indexes is None or l in layer_indexes else [])
@@ -212,14 +224,13 @@ def _predictions (f, xl, top_classes = None):
     np.argmax (f (np.array (xl)), axis = 1) if top_classes is None else \
     np.fliplr (np.argsort (f (np.array (xl))))[:top_classes]
 
-def prediction (dnn, x, top_classes = None):
-  return _prediction (dnn.predict, x, top_classes = top_classes)
+def prediction (dnn, x, **_):
+  return _prediction (dnn.predict, x, **_)
 
-def predictions (dnn, x, top_classes = None):
-  return _predictions (dnn.predict, x, top_classes = top_classes)
+def predictions (dnn, x, **_):
+  return _predictions (dnn.predict, x, **_)
 
 # ---
-
 
 class raw_datat:
   def __init__(self, data, labels, name = 'unknown'):
