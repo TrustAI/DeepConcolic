@@ -499,15 +499,8 @@ keywords = {test criteria, Neural networks, test case generation} }
                Xingyu Zhao and
                Xiaowei Huang},
   title     = {Embedding and Synthesis of Knowledge in Tree Ensemble Classifiers},
-  journal   = {CoRR},
-  volume    = {abs/2010.08281},
-  year      = {2020},
-  url       = {https://arxiv.org/abs/2010.08281},
-  archivePrefix = {arXiv},
-  eprint    = {2010.08281},
-  timestamp = {Wed, 21 Oct 2020 12:11:49 +0200},
-  biburl    = {https://dblp.org/rec/journals/corr/abs-2010-08281.bib},
-  bibsource = {dblp computer science bibliography, https://dblp.org}
+  journal   = {Machine Learning},
+  year      = {2021}
 }
 ```
 
