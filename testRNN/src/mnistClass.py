@@ -8,12 +8,11 @@ from tensorflow.keras.utils import to_categorical
 import os
 import numpy as np
 import copy
-from utils import getActivationValue,layerName, hard_sigmoid, get_activations_single_layer, \
-    setup_dir_for_file
+from utils_testRNN import getActivationValue,layerName, hard_sigmoid, get_activations_single_layer
 
 
 class mnistclass:
-    def __init__(self, datasetName, modelFile):
+    def __init__(self,modelName):
         self.X_train = None
         self.y_train = None
         self.X_test = None
@@ -23,20 +22,17 @@ class mnistclass:
         self.model = None
         self.unique_adv = []
         self.imagesize = 28
-        self.datasetName = datasetName
-        self.modelFile = modelFile
+        self.modelName = modelName
         self.load_data()
         self.numAdv = 0
         self.numSamples = 0
         self.perturbations = []
 
     def load_data(self):
-        if self.datasetName == 'mnist':
+        if self.modelName == 'mnist':
             (self.X_train, self.y_train_org), (self.X_test, self.y_test_org) = mnist.load_data()
-        elif self.datasetName == 'fashion_mnist':
-            (self.X_train, self.y_train_org), (self.X_test, self.y_test_org) = fashion_mnist.load_data()
         else:
-            raise ValueError (f'unknown dataset name `{self.datasetName}\'')
+            (self.X_train, self.y_train_org), (self.X_test, self.y_test_org) = fashion_mnist.load_data()
         self.X_train = self.X_train.astype('float32') / 255
         self.X_test = self.X_test.astype('float32') / 255
         self.y_train = to_categorical(self.y_train_org)
@@ -54,7 +50,10 @@ class mnistclass:
 
 
     def load_model(self):
-        self.model = load_model (self.modelFile)
+        if self.modelName == 'mnist':
+            self.model = load_model('saved_models/mnist_lstm.h5')
+        else:
+            self.model = load_model('saved_models/fashion_mnist_lstm.h5')
         opt = keras.optimizers.Adam(lr=1e-3, decay=1e-5)
         self.model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
         self.model.summary()
@@ -66,8 +65,7 @@ class mnistclass:
         return layerNames[layer]
 
     def train_model(self):
-        # self.load_data() # NB: <- already done
-        setup_dir_for_file (self.modelFile) # early detection of file/dir error, in case
+        self.load_data()
         self.model = Sequential()
         # input_shape = (batch_size, timesteps, input_dim)
         self.model.add(LSTM(128, input_shape=(self.X_train.shape[1:]), return_sequences=True))
@@ -77,7 +75,10 @@ class mnistclass:
         opt = keras.optimizers.Adam(lr=1e-3, decay=1e-5)
         self.model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
         self.model.fit(self.X_train, self.y_train, epochs=30, validation_data=(self.X_test, self.y_test))
-        self.model.save (self.modelFile)
+        if self.modelName == 'mnist':
+            self.model.save('saved_models/mnist_lstm.h5')
+        else:
+            self.model.save('saved_models/fashion_mnist_lstm.h5')
 
     def train_embedding_hidden(self, layer, k):
         h_train = self.cal_hidden_keras(self.X_train, layer)
@@ -162,8 +163,11 @@ class mnistclass:
         print("%s samples are considered" % (self.numSamples))
 
     def displaySuccessRate(self):
-        print("%s samples, within which there are %s adversarial examples" % (self.numSamples, self.numAdv))
-        print("the rate of adversarial examples is %.2f\n" % (self.numAdv / self.numSamples))
+        msg1 = "%s samples, within which there are %s adversarial examples" % (self.numSamples, self.numAdv)
+        msg2 = "the rate of adversarial examples is %.2f\n" % (self.numAdv / self.numSamples)
+        print(msg1)
+        print(msg2)
+        return msg1, msg2
 
     def displayPerturbations(self):
         if self.numAdv > 0:
